@@ -25,6 +25,7 @@ const requiredPaths = [
   "scripts/secret-scan.mjs",
   "scripts/dependency-audit-wrapper.mjs",
   "scripts/database-readiness-tooling.mjs",
+  "scripts/storage-readiness-tooling.mjs",
   "scripts/release-candidate-tag-helper.mjs",
   "package.json",
 ];

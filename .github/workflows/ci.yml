@@ -31,6 +31,8 @@ jobs:
             command: npm run a4:supabase
           - name: database-readiness
             command: npm run database:readiness
+          - name: storage-readiness
+            command: npm run storage:readiness
           - name: secret-scan
             command: npm run security:scan
           - name: dependency-audit-plan
