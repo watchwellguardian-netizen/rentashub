@@ -1,0 +1,16 @@
+# RentasHub repository ownership placeholders.
+# Replace role placeholders with real GitHub teams after remote ownership is confirmed.
+
+/src/ @frontend-team
+/server/ @backend-team
+/docs/ @devops-team
+/tests/ @frontend-team @backend-team
+/.github/ @devops-team @security-team
+
+# Security-sensitive operational areas.
+/server/src/auth/ @backend-team @security-team
+/server/src/middleware/ @backend-team @security-team
+/server/migrations/ @backend-team @devops-team
+/docs/security* @security-team
+/docs/*security* @security-team
+/docs/*incident* @security-team @devops-team
