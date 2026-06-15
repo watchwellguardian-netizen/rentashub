@@ -55,7 +55,7 @@ export default function LandingPage() {
       <section className="landing-section">
         <div className="section-kicker">
           <p className="eyebrow">Marketplace Categories</p>
-          <h2>One platform for rental, sale, trade, swap, and brokerage demand</h2>
+          <h2>One platform for rental, sale, trade, auction, swap, and brokerage demand</h2>
         </div>
         <div className="category-card-grid">
           {LANDING_CATEGORY_CARDS.map((category) => {

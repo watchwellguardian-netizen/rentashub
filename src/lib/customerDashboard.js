@@ -9,7 +9,7 @@ export const ACTIONS = [
   {
     id: "search-assets",
     label: "Search Assets",
-    description: "Find rentals, sales, swaps, trades, and brokerage assets.",
+    description: "Find rentals, sales, auctions, swaps, trades, and brokerage assets.",
     route: "/search",
     status: "active",
   },

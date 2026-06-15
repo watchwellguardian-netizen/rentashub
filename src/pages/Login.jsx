@@ -48,7 +48,7 @@ export default function Login() {
       <section className="login-panel">
         <BrandLogo />
         <h1>{APP_TAGLINE}</h1>
-        <p>Rent, list, buy, sell, trade, broker, and manage assets from one clean marketplace.</p>
+        <p>Rent, list, buy, sell, trade, auction, broker, and manage assets from one clean marketplace.</p>
         {authMode === AUTH_MODES.LOCAL ? (
           <p className="notice-text">Local demo sign-in is active for review. Backend authentication is prepared separately and is not enabled for this login screen yet.</p>
         ) : authMode === AUTH_MODES.SUPABASE ? (

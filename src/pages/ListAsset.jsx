@@ -40,7 +40,7 @@ export default function ListAsset() {
       <section className="hero-panel">
         <p className="eyebrow">RentasHub</p>
         <h1>Add Asset</h1>
-        <p>Create a supplier-owned rental, sale, swap, trade, or brokerage listing.</p>
+        <p>Create a supplier-owned rental, sale, auction, swap, trade, or brokerage listing.</p>
       </section>
       {error ? <section className="panel wide error-panel">{error}</section> : null}
       <AssetForm ownerSupplierId={user.id} supplierName={user.full_name} onSubmit={save} />

@@ -9,7 +9,7 @@ export const SUPPLIER_ACTIONS = [
   {
     id: "add-asset",
     label: "Add Asset",
-    description: "Create a new rental, sale, swap, trade, or brokerage asset.",
+    description: "Create a new rental, sale, auction, swap, trade, or brokerage asset.",
     route: "/list-asset",
   },
   {

@@ -45,7 +45,7 @@ test("marketplace exchange routes are wired", () => {
   assert.match(app, /allowedRoles={\["broker", "admin"\]}/);
 });
 
-test("asset model supports rent, buy, sell, trade, swap, and brokerage fields", () => {
+test("asset model supports rent, buy, sell, trade, auction, swap, and brokerage fields", () => {
   assert.deepEqual(MARKETPLACE_LISTING_TYPES, ["rental", "sale", "trade", "swap", "brokerage", "rent_or_buy", "rent_or_trade"]);
   assert.equal(MARKETPLACE_LISTING_LABELS.sale, "Available for Sale");
   const sale = validateAssetListing({ ...SEED_LISTINGS[0], listingType: "sale", salePrice: 0 });

@@ -8,7 +8,7 @@ import { EXCHANGE_NAV, createWantedRequest, loadWantedRequests } from "../lib/ma
 import { useAuth } from "../state/AuthContext.jsx";
 
 const PAGE_COPY = {
-  all: ["RentasHub Marketplace", "Browse assets for rent, buy, sell, trade, swap, and broker-assisted opportunities."],
+  all: ["RentasHub Marketplace", "Browse assets for rent, buy, sell, trade, auction, swap, and broker-assisted opportunities."],
   buy: ["RentasHub Buy Marketplace", "Find assets available for purchase or rent-or-buy negotiation."],
   sell: ["RentasHub Sell Marketplace", "Review supplier sale listings and controlled purchase inquiries."],
   trade: ["RentasHub Trade Marketplace", "Find assets open to trade proposals and value comparisons."],
