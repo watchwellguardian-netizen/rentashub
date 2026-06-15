@@ -1,12 +1,42 @@
-name: RentasHub CI
+name: CI Gate Matrix
 
 on:
   push:
+    branches:
+      - main
+      - release
+      - future-release-backlog
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  verify:
+  matrix:
+    name: ${{ matrix.gate.name }}
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        gate:
+          - name: frontend-tests
+            command: npm run test
+          - name: backend-tests
+            command: npm run test:server
+          - name: readiness
+            command: npm run readiness
+          - name: a4-supabase-readiness
+            command: npm run a4:supabase
+          - name: secret-scan
+            command: npm run security:scan
+          - name: artifact-validation
+            command: npm run artifact:validate
+          - name: zip-sanity
+            command: npm run zip:check
+          - name: production-build
+            command: npm run build
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,19 +48,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Run tests
-        run: npm run test
-
-      - name: Run backend scaffold tests
-        run: npm run test:server
-
-      - name: Generate credential readiness report
-        run: npm run readiness
-
-      - name: Build
-        run: npm run build
-
-      - name: Check deployable ZIP artifact contents
-        run: npm run zip:check
+      - name: Run ${{ matrix.gate.name }}
+        run: ${{ matrix.gate.command }}
