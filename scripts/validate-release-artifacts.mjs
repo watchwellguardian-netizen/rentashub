@@ -24,6 +24,7 @@ const requiredPaths = [
   "scripts/a4-supabase-tooling.mjs",
   "scripts/secret-scan.mjs",
   "scripts/dependency-audit-wrapper.mjs",
+  "scripts/database-readiness-tooling.mjs",
   "scripts/release-candidate-tag-helper.mjs",
   "package.json",
 ];

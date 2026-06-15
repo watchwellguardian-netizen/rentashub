@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = process.cwd();
+const npmExecutable = process.platform === "win32" ? "npm.cmd" : "npm";
 
 export const AUDIT_TARGETS = [
   {
@@ -65,11 +66,11 @@ export function runDependencyAudit() {
   }
 
   const results = AUDIT_TARGETS.map((target) => {
-    const [command, ...args] = target.command;
-    const result = spawnSync(command, args, {
+    const [, ...args] = target.command;
+    const result = spawnSync(npmExecutable, args, {
       cwd: target.cwd,
       encoding: "utf8",
-      shell: true,
+      shell: process.platform === "win32",
     });
     return {
       id: target.id,
