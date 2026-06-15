@@ -152,6 +152,27 @@ For state checks:
 - Reply `UNCHANGED` if this file still controls the program and no evidence package was submitted.
 - Explain changes only if this file has changed or the submitted evidence changes the gate outcome.
 
+## Review Suppression Rule
+
+Do not request or submit a governance review when all of the following are true:
+
+- `STATUS = UNCHANGED`.
+- `FILES CHANGED = None`.
+- `TEST RESULTS = Not run`.
+- No new evidence was generated.
+
+In those cases, governance is assumed unchanged and no review is required.
+
+Submit a review only when one or more of the following exists:
+
+- New gate evidence.
+- New code.
+- New documentation.
+- New test results.
+- New commit.
+- New defect.
+- A gate submission is being made.
+
 ## Current Next Input
 
 Next expected submission: A4-01 Infrastructure Ownership Confirmation Submitted
