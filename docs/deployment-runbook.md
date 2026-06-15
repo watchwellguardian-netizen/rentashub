@@ -83,7 +83,7 @@ Production deployment is blocked until formal approval.
 10. Monitor errors and performance.
 11. Announce deployment result.
 
-## Rollback
+## Rollback Steps
 
 1. Stop promotion or freeze current deployment.
 2. Identify last known good release artifact or tag.
