@@ -22,7 +22,7 @@ function read(path) {
 
 test("official RentasHub brand constants match governance standard", () => {
   assert.equal(APP_NAME, "RentasHub");
-  assert.equal(APP_TAGLINE, "Rent. Buy. Sell. Trade.");
+  assert.equal(APP_TAGLINE, "Rent. Buy. Sell. Trade. Auction.");
   assert.match(APP_DESCRIPTION, /unified marketplace/);
   assert.equal(BRAND_COLORS.primaryBlue, "#0A4DA3");
   assert.equal(BRAND_COLORS.marketplaceOrange, "#F58220");

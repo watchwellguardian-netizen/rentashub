@@ -1,6 +1,6 @@
 export const APP_NAME = "RentasHub";
-export const APP_TAGLINE = "Rent. Buy. Sell. Trade.";
-export const APP_DESCRIPTION = "RentasHub is a unified marketplace where individuals and businesses can rent, buy, sell, trade, broker, and manage vehicles, equipment, property, tools, event spaces, storage assets, and specialty assets from one trusted platform.";
+export const APP_TAGLINE = "Rent. Buy. Sell. Trade. Auction.";
+export const APP_DESCRIPTION = "RentasHub is a unified marketplace where individuals and businesses can rent, buy, sell, trade, auction, broker, and manage vehicles, equipment, property, tools, event spaces, storage assets, and specialty assets from one trusted platform.";
 
 export const BRAND_COLORS = {
   primaryBlue: "#0A4DA3",
@@ -18,7 +18,7 @@ export const BRAND_TYPOGRAPHY = {
 export const LOGO_VERSIONS = {
   master: {
     name: "Version A - Master Brand Logo",
-    structure: "R icon, RentasHub wordmark, Rent. Buy. Sell. Trade. tagline",
+    structure: "R icon, RentasHub wordmark, Rent. Buy. Sell. Trade. Auction. tagline",
     defaultUse: true,
   },
   hero: {

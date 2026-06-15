@@ -1020,7 +1020,7 @@
 ## RentasHub Brand Migration - 2026-06-07
 
 - Brand migrated from RentBroker Nexus to RentasHub.
-- Tagline adopted: "Rent. Buy. Sell. Trade."
+- Tagline adopted: "Rent. Buy. Sell. Trade. Auction."
 - Product remains a standalone web app.
 - Migration was branding-only; no functional module was built in this step.
 - Package, metadata, manifest, page titles, dashboard labels, category labels, and tests were updated to RentasHub.
@@ -1231,7 +1231,7 @@
 - Backend auth, API, DB, provider, resource, and file metadata tests passed: 36/36.
 - Production build passed after rerunning Vite with the established sandbox escalation for config/dependency access.
 - Added official RentasHub brand governance documentation covering logo versions, typography, color system, landing page rules, category naming, feature naming, dashboard treatment, SEO naming, AI branding, and future brand extensions.
-- Added reusable master logo treatment using the R icon, RentasHub wordmark, and `Rent. Buy. Sell. Trade.` tagline.
+- Added reusable master logo treatment using the R icon, RentasHub wordmark, and `Rent. Buy. Sell. Trade. Auction.` tagline.
 - Updated app header and login screen to use the master logo treatment.
 - Updated category labels to the approved RentasHub naming convention.
 - Updated design tokens to use primary blue `#0A4DA3`, marketplace orange `#F58220`, white `#FFFFFF`, dark navy `#0B1F3A`, and Sora-first typography.

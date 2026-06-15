@@ -83,7 +83,7 @@ CI is required before production approval because the current local sandbox does
 
 RentasHub Standalone uses plain CSS in `src/styles.css`. A local `postcss.config.js` is included to prevent inherited parent Tailwind configuration from processing this standalone app and emitting unrelated Tailwind content warnings.
 
-Brand governance lives in `docs/brand-governance.md`. The active app uses the RentasHub master logo treatment, `Rent. Buy. Sell. Trade.` tagline, Sora-first typography, and the approved blue/orange/white/navy palette. Legacy or parent-product branding must not be added to user-facing screens.
+Brand governance lives in `docs/brand-governance.md`. The active app uses the RentasHub master logo treatment, `Rent. Buy. Sell. Trade. Auction.` tagline, Sora-first typography, and the approved blue/orange/white/navy palette. Legacy or parent-product branding must not be added to user-facing screens.
 
 ## Backend Scaffold
 

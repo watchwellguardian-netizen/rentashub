@@ -3,7 +3,7 @@
 ## 2026-06-07
 
 - Brand migrated from RentBroker Nexus to RentasHub.
-- Tagline adopted: "Rent. Buy. Sell. Trade."
+- Tagline adopted: "Rent. Buy. Sell. Trade. Auction."
 - Product remains a standalone web app.
 - Migration was branding-only; no new functional module was built in this step.
 - No production-readiness claim was made.

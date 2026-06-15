@@ -60,8 +60,8 @@ test("brand constants and category naming use RentasHub convention", async () =>
   const brand = await import("../../src/lib/brand.js");
   const listing = await import("../../src/lib/assetListing.js");
   assert.equal(brand.APP_NAME, "RentasHub");
-  assert.equal(brand.APP_TAGLINE, "Rent. Buy. Sell. Trade.");
-  assert.match(brand.APP_DESCRIPTION, /rent, buy, sell, trade/);
+  assert.equal(brand.APP_TAGLINE, "Rent. Buy. Sell. Trade. Auction.");
+  assert.match(brand.APP_DESCRIPTION, /rent, buy, sell, trade, auction/);
   assert.deepEqual(
     listing.ASSET_CATEGORIES.map((category) => category.label),
     [

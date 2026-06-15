@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0-foundation",
   "type": "module",
-  "description": "RentasHub is a standalone marketplace to rent, buy, sell, trade, and manage vehicles, equipment, property, spaces, tools, and specialty assets.",
+  "description": "RentasHub is a standalone marketplace to rent, buy, sell, trade, auction, and manage vehicles, equipment, property, spaces, tools, and specialty assets.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

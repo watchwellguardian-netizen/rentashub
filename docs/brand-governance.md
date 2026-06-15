@@ -8,11 +8,11 @@ RentasHub
 
 ## Official Tagline
 
-Rent. Buy. Sell. Trade.
+Rent. Buy. Sell. Trade. Auction.
 
 ## Brand Positioning
 
-RentasHub is a unified marketplace where individuals and businesses can rent, buy, sell, trade, broker, and manage vehicles, equipment, property, tools, event spaces, storage assets, and specialty assets from one trusted platform.
+RentasHub is a unified marketplace where individuals and businesses can rent, buy, sell, trade, auction, broker, and manage vehicles, equipment, property, tools, event spaces, storage assets, and specialty assets from one trusted platform.
 
 ## Logo System
 
@@ -22,7 +22,7 @@ Default platform logo. Structure:
 
 - R icon.
 - RentasHub wordmark.
-- Rent. Buy. Sell. Trade. tagline.
+- Rent. Buy. Sell. Trade. Auction. tagline.
 
 Use on website headers, dashboards, login, registration, mobile/PWA surfaces, email templates, contracts, invoices, verification screens, notifications, reports, documents, and investor materials.
 
@@ -35,7 +35,7 @@ Marketing-only logo. Structure:
 - Excavator.
 - R icon.
 - RentasHub wordmark.
-- Rent. Buy. Sell. Trade. tagline.
+- Rent. Buy. Sell. Trade. Auction. tagline.
 
 Use only for marketing surfaces such as homepage hero sections, landing pages, brochures, trade shows, campaigns, investor presentations, press kits, and advertising.
 
@@ -74,7 +74,7 @@ Do not use comic, script, decorative, condensed, or novelty fonts.
 
 Homepage hero uses Version B only.
 
-Headline: Rent. Buy. Sell. Trade.
+Headline: Rent. Buy. Sell. Trade. Auction.
 
 Subheadline: The marketplace for vehicles, equipment, property, tools, storage, event spaces, and specialty assets.
 
