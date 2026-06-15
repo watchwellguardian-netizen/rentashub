@@ -156,3 +156,56 @@ test("protected write route accepts valid token and rejects no token", async () 
     assert.equal(withToken.body.data.title, "Auth asset");
   });
 });
+
+test("protected write route rejects invalid bearer token and wrong bearer role", async () => {
+  const { app } = await createTestApp();
+  await withServer(app.handler, async (baseUrl) => {
+    const invalid = await requestJson(baseUrl, "/api/assets", {
+      method: "POST",
+      token: "not-a-valid-token",
+      body: { owner_id: "customer-demo", title: "Invalid token asset", category: "cars", listing_type: "rental" },
+    });
+    assert.equal(invalid.response.status, 401);
+
+    const registered = await requestJson(baseUrl, "/api/auth/register", {
+      method: "POST",
+      body: { name: "Module Customer", email: "module-customer@example.test", password: "StrongPass!24", role: "customer" },
+    });
+    const wrongRole = await requestJson(baseUrl, "/api/assets", {
+      method: "POST",
+      token: registered.body.token,
+      body: { owner_id: registered.body.user.id, title: "Customer asset", category: "cars", listing_type: "rental" },
+    });
+    assert.equal(wrongRole.response.status, 403);
+    assert.equal(wrongRole.body.error, "forbidden");
+  });
+});
+
+test("production dev-header lockdown requires bearer token for protected writes", async () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousLock = process.env.AUTH_DISABLE_DEV_HEADERS_IN_PRODUCTION;
+  process.env.NODE_ENV = "production";
+  process.env.AUTH_DISABLE_DEV_HEADERS_IN_PRODUCTION = "true";
+  try {
+    const { app } = await createTestApp();
+    await withServer(app.handler, async (baseUrl) => {
+      const devHeaderAttempt = await requestJson(baseUrl, "/api/assets", {
+        method: "POST",
+        headers: { "x-user-role": "supplier", "x-user-id": "supplier-demo" },
+        body: { owner_id: "supplier-demo", title: "Header asset", category: "cars", listing_type: "rental" },
+      });
+      assert.equal(devHeaderAttempt.response.status, 401);
+
+      const registered = await requestJson(baseUrl, "/api/auth/register", { method: "POST", body: validUser });
+      const bearerAttempt = await requestJson(baseUrl, "/api/assets", {
+        method: "POST",
+        token: registered.body.token,
+        body: { owner_id: registered.body.user.id, title: "Bearer asset", category: "cars", listing_type: "rental" },
+      });
+      assert.equal(bearerAttempt.response.status, 201);
+    });
+  } finally {
+    process.env.NODE_ENV = previousNodeEnv;
+    process.env.AUTH_DISABLE_DEV_HEADERS_IN_PRODUCTION = previousLock;
+  }
+});

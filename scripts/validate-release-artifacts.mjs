@@ -26,6 +26,7 @@ const requiredPaths = [
   "scripts/dependency-audit-wrapper.mjs",
   "scripts/database-readiness-tooling.mjs",
   "scripts/storage-readiness-tooling.mjs",
+  "scripts/auth-rbac-readiness-tooling.mjs",
   "scripts/release-candidate-tag-helper.mjs",
   "package.json",
 ];

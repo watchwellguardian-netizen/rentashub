@@ -33,6 +33,8 @@ jobs:
             command: npm run database:readiness
           - name: storage-readiness
             command: npm run storage:readiness
+          - name: auth-rbac-readiness
+            command: npm run auth-rbac:readiness
           - name: secret-scan
             command: npm run security:scan
           - name: dependency-audit-plan
