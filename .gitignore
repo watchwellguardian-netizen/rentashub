@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Build and generated output
+dist/
+coverage/
+.preview-logs/
+*.log
+*.zip
+
+# Runtime data and local persistence
+server/.data/
+server/uploads/
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# Local environment and secrets
+.env
+.env.local
+.env.*.local
+server/.env
+server/.env.local
+server/.env.*.local
+
+# Keep safe templates tracked
+!.env.example
+!.env.staging.example
+!.env.production.example
+!server/.env.example
+!server/.env.staging.example
+!server/.env.production.example
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp

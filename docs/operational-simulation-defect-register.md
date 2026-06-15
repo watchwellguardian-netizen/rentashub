@@ -1,0 +1,10 @@
+# Operational Simulation Defect Register
+
+| Defect ID | Title | Severity | Simulation | Business Impact | Technical Impact | Recommended Fix | Blocks Demo | Blocks Closed Beta | Blocks Paid Pilot | Blocks Public Launch |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| OPS-SIM-001 | Local workflows do not create durable audit logs for every business transition | Critical | All simulations | Marketplace cannot prove transaction history for disputes, claims, escrow, or legal review. | Frontend-local state changes bypass API audit log repository. | Complete API migration and require backend audit logging for all protected mutations. | No | Conditional | Yes | Yes |
+| OPS-SIM-002 | Payments and escrow do not process live funds | Critical | Vehicle rental, property rental, escrow | Revenue transactions cannot be safely accepted. | Provider integrations remain readiness-only. | Activate payment provider sandbox, escrow/legal model, webhooks, reconciliation, and release/refund controls. | No | No | Yes | Yes |
+| OPS-SIM-003 | Verification documents are metadata/upload-ready only | Critical | Supplier onboarding | Supplier trust cannot be legally or operationally verified at scale. | No real object storage or document review workflow active. | Activate Supabase Storage, private buckets, signed URL workflow, and verification review SOP. | No | Conditional | Yes | Yes |
+| OPS-SIM-004 | Production database is not active | Critical | All simulations | Transaction durability and cross-device consistency are not guaranteed. | JSON fallback/localStorage remain active in demo flows. | Activate Supabase PostgreSQL, run migrations, seed staging, and migrate frontend domains. | No | Conditional | Yes | Yes |
+| OPS-SIM-005 | Security certification remains incomplete | Critical | All simulations | Public launch cannot be approved. | Pen test, OWASP review, secrets audit, RBAC audit, and incident tabletop are pending. | Complete security certification readiness project with external review. | No | Conditional | Yes | Yes |
+

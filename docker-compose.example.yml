@@ -1,0 +1,40 @@
+services:
+  rentashub-api:
+    build:
+      context: .
+    environment:
+      NODE_ENV: staging
+      APP_ENV: staging
+      PORT: 4000
+      DATABASE_PROVIDER: json
+      RENTASHUB_DB_PATH: /tmp/rentashub-dev-db.json
+      FILE_STORAGE_PROVIDER: local_placeholder
+      PAYMENT_PROVIDER: placeholder
+      PAYMENT_MODE: simulated
+      ESCROW_PROVIDER: placeholder
+      DEPLOYMENT_PROVIDER: local
+      CORS_ALLOWED_ORIGINS: http://localhost:4174
+      AUTH_TOKEN_SECRET: change-this-development-secret-before-real-use
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  rentashub-preview:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run build && npm run preview -- --host 0.0.0.0 --port 4174"
+    volumes:
+      - .:/app
+    environment:
+      VITE_APP_ENV: staging
+      VITE_API_BASE_URL: http://localhost:4000
+      VITE_DATA_MODE: local
+      VITE_AUTH_MODE: local
+    ports:
+      - "4174:4174"
+    depends_on:
+      - rentashub-api

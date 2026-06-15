@@ -1,0 +1,161 @@
+# RentasHub Program State
+
+This file is the single source of truth for current RentasHub governance.
+
+## Current State
+
+Platform: RentasHub Marketplace
+
+Current gate: A4-01 Infrastructure Ownership Confirmation
+
+Current owner: Operations / DevOps
+
+Last approved state: RC-0.6A
+
+Current classification: RC-0.6A
+
+Current state: Infrastructure Activation Hold
+
+Production ready: No
+
+Paid pilot ready: No
+
+Public launch ready: No
+
+## Authorized Work
+
+Only the following work is authorized:
+
+- A4-01 Infrastructure Ownership Confirmation
+
+The next valid submission must be infrastructure ownership evidence, not new code, architecture, planning, readiness documentation, feature development, or secrets.
+
+## Blocked Work
+
+The following remain blocked until A4-05 Infrastructure Review passes:
+
+- B3 Monitoring Production Activation
+- C2 Security Operationalization
+- D2 Compliance Operationalization
+- E2 Revenue Sandbox Activation
+- Closed Beta
+- Paid Pilot
+- Production Certification
+- New marketplace modules
+- New auction modules
+- New AI modules
+- New dashboards
+- Mobile apps
+- Government integrations
+- Customs integrations
+- Court integrations
+
+## A4 Gate Sequence
+
+- A4-01 Infrastructure Ownership Confirmation.
+- A4-02 Environment Provisioning Verification.
+- A4-03 Migration Execution.
+- A4-04 Infrastructure Certification.
+- A4-05 Infrastructure Review.
+
+## A4-01 Evidence Requirements
+
+The A4-01 Infrastructure Ownership Confirmation package must include:
+
+- Supabase account exists.
+- Supabase organization exists.
+- Account owner identified.
+- Billing owner identified.
+- Access owner identified.
+- Development Project Name.
+- Development Project ID.
+- UAT/Staging Project Name.
+- UAT/Staging Project ID.
+- Production Project Name.
+- Production Project ID.
+
+Do not include Supabase keys, database passwords, JWT secrets, service role keys, screenshots containing secrets, or any credential material in chat, documentation, source code, ZIP artifacts, or commits.
+
+## Later A4 Evidence Requirements
+
+After A4-01 passes, the remaining A4 evidence package must include:
+
+- Environment Evidence
+- Migration Evidence
+- Persistence Evidence
+- RLS/RBAC Evidence
+- Real Supabase Auth Evidence
+- Storage Evidence
+- Backup/Restore Evidence
+- Secrets Exposure Certification
+
+## A4-01 Pass Criteria
+
+A4-01 passes only if evidence proves:
+
+- Development Supabase project exists.
+- UAT/Staging Supabase project exists.
+- Production Supabase project exists.
+- Development, UAT/Staging, and Production project names and IDs are provided.
+- Account owner, billing owner, and access owner are identified.
+- No secrets are exposed.
+
+## Full A4 Pass Criteria
+
+A4-05 passes only if evidence proves:
+
+- Development Supabase project exists and is accessible.
+- UAT/Staging Supabase project exists and is accessible.
+- Production Supabase project exists and is isolated.
+- Development and UAT use separate Supabase project IDs, databases, storage buckets, and auth configurations.
+- Migrations `004`, `005`, `006`, and `007` succeed in Development and UAT.
+- Production migrations remain untouched until UAT signoff.
+- Real records validate create, read, update, delete, soft delete where supported, and restore where supported.
+- Tenant isolation, role isolation, admin access, cross-tenant denial, and cross-role denial are verified.
+- Real Supabase Auth validates registration, login, logout, password reset, email verification, session refresh, and session revocation.
+- Required storage buckets exist and validate upload, download, signed URL generation, and unauthorized-access denial.
+- Backup is created, restore is executed, and restored data integrity is verified.
+- `SUPABASE_SERVICE_ROLE_KEY` is absent from source control, frontend bundles, ZIP artifacts, documentation, and logs.
+
+## Decision Outcomes
+
+PASS:
+
+- If A4-01 passes, authorize A4-02 Environment Provisioning Verification.
+- If A4-05 passes, move to RC-0.6B - Infrastructure Certified and authorize B3 Monitoring Production Activation.
+
+FAIL:
+
+- Remain at RC-0.6A.
+- Authorize only remediation of failed infrastructure ownership, provisioning, migration, or certification items.
+
+## Response Protocol
+
+Before performing any task:
+
+1. Read this file.
+2. Work only within the authorized scope.
+3. Do not propose roadmap changes unless this file is changed by explicit user instruction.
+4. Do not repeat governance state unless it changed.
+
+For gate reviews, respond only with:
+
+- STATUS: PASS or FAIL
+- FILES CHANGED
+- TEST RESULTS
+- EVIDENCE GENERATED
+- DEFECTS
+- NEXT AUTHORIZED GATE
+
+For state checks:
+
+- Reply `UNCHANGED` if this file still controls the program and no evidence package was submitted.
+- Explain changes only if this file has changed or the submitted evidence changes the gate outcome.
+
+## Current Next Input
+
+Next expected submission: A4-01 Infrastructure Ownership Confirmation Submitted
+
+The next meaningful submission should begin with:
+
+`A4-01 Infrastructure Ownership Confirmation Submitted`

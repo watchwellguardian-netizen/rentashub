@@ -1,0 +1,19 @@
+# RC-0.6 Activation Gap Register
+
+| Gap ID | Gap title | Severity | Area | Business impact | Technical impact | Required fix | Manual intervention | Credentials required | Launch blocker | Recommended sequence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| RC06-GAP-001 | Supabase project not live | Critical | Infrastructure | Closed beta cannot use durable live infrastructure | JSON/local fallback remains active | Provision Supabase staging project and secure credentials | Yes | Yes | Yes | 1 |
+| RC06-GAP-002 | PostgreSQL migrations not run against live database | Critical | Database | Transactions/audits are not durable in live environment | Schema not validated against Supabase PostgreSQL | Run migrations and seed validation against staging DB | Yes | Yes | Yes | 2 |
+| RC06-GAP-003 | Supabase Auth not activated | Critical | Auth | Real user accounts and sessions are unavailable | Frontend remains local/demo by default | Configure Supabase Auth, email verification, reset, RBAC, session validation | Yes | Yes | Yes | 3 |
+| RC06-GAP-004 | Supabase Storage not activated | Critical | Storage | Photos/docs/evidence cannot be stored live | Metadata-only storage remains | Create buckets, policies, signed URL validation, upload tests | Yes | Yes | Yes | 4 |
+| RC06-GAP-005 | Backup and restore not tested | Critical | Infrastructure | Recovery confidence is insufficient | RPO/RTO unverified | Perform backup and restore test with integrity evidence | Yes | Yes | Yes | 5 |
+| RC06-GAP-006 | Monitoring not live | High | Monitoring | Incidents may be invisible during beta | Error/uptime/alert pipeline inactive | Activate Sentry, Better Stack, heartbeat, status page, alert routing | Yes | Yes | Yes | 6 |
+| RC06-GAP-007 | Security review not completed | Critical | Security | Paid pilot/public launch risk is unacceptable | MFA/WAF/rate limits/scans not verified | Complete OWASP, secrets, dependency, RBAC, auth, storage, payment reviews | Yes | Possibly | Yes | 7 |
+| RC06-GAP-008 | Penetration testing not completed | Critical | Security | Public launch cannot be certified | External exploitation risk unknown | Commission pen test and remediate critical/high findings | Yes | No | Yes | 8 |
+| RC06-GAP-009 | Jamaica DPA/GDPR legal review not complete | Critical | Compliance | Live user data processing may be non-compliant | Data rights/retention policies unapproved | Complete legal review and approve policies | Yes | No | Yes | 9 |
+| RC06-GAP-010 | KYC provider not active | High | Compliance | Verified paid marketplace participants cannot be trusted at scale | Identity checks remain simulated | Select provider and validate consent/document handling | Yes | Yes | Yes for paid pilot | 10 |
+| RC06-GAP-011 | Payment provider not selected/validated | Critical | Revenue | No real money can move | Payment architecture remains simulated | Select Stripe/WiPay/etc., configure sandbox, validate webhooks/refunds | Yes | Yes | Yes | 11 |
+| RC06-GAP-012 | Escrow legal structure not approved | Critical | Revenue | Deposits cannot be held or released | Escrow ledger remains simulated | Approve legal trust/provider model and release/refund rules | Yes | Possibly | Yes | 12 |
+| RC06-GAP-013 | Tax/GCT validation incomplete | Critical | Revenue | Revenue collection may be non-compliant | Invoicing/reporting policy unverified | Approve Tax/GCT policy and reporting process | Yes | No | Yes | 13 |
+| RC06-GAP-014 | Reconciliation and payout testing incomplete | High | Revenue | Supplier payout confidence is insufficient | Ledger/provider reconciliation untested | Validate settlement, reconciliation, payout, failed payout workflows | Yes | Yes | Yes | 14 |
+| RC06-GAP-015 | Production launch certification incomplete | Critical | Governance | Public launch cannot be approved | Final review evidence incomplete | Complete final certification after activation projects | Yes | No | Yes | 15 |

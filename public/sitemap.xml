@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>/</loc></url>
+  <url><loc>/marketplace/cars</loc></url>
+  <url><loc>/marketplace/trucks</loc></url>
+  <url><loc>/marketplace/heavy-equipment</loc></url>
+  <url><loc>/marketplace/small-tools-machines</loc></url>
+  <url><loc>/marketplace/event-spaces</loc></url>
+  <url><loc>/marketplace/real-estate</loc></url>
+  <url><loc>/marketplace/storage-containers</loc></url>
+  <url><loc>/marketplace/specialty-assets</loc></url>
+  <url><loc>/auctions</loc></url>
+  <url><loc>/auctions/live</loc></url>
+  <url><loc>/auctions/upcoming</loc></url>
+  <url><loc>/auctions/ending-soon</loc></url>
+  <url><loc>/auction-calendar</loc></url>
+  <url><loc>/auction-rules</loc></url>
+  <url><loc>/auction-legal-disclosures</loc></url>
+  <url><loc>/how-auctions-work</loc></url>
+</urlset>

@@ -1,0 +1,17 @@
+export const apiModels = {
+  user: ["id", "email", "role", "status"],
+  asset: ["id", "ownerSupplierId", "category", "listingType", "priceRate"],
+  booking: ["id", "assetId", "customerId", "supplierId", "status"],
+  inspection: ["id", "bookingId", "assetId", "type", "conditionStatus"],
+  ledgerTransaction: ["id", "bookingId", "type", "status", "total"],
+  messageThread: ["id", "bookingId", "customerId", "supplierId"],
+  notification: ["id", "recipientId", "type", "read"],
+  supplierProfile: ["supplierId", "businessName", "verificationStatus"],
+  review: ["id", "bookingId", "assetId", "rating", "status"],
+  dispute: ["id", "bookingId", "status"],
+  marketplaceOffer: ["offerId", "assetId", "requesterId", "ownerId"],
+  wantedRequest: ["requestId", "requesterId", "category", "status"],
+  trustScore: ["entityType", "entityId", "score", "riskLevel"],
+  protectionPlan: ["id", "type", "status", "priceModel"],
+  claim: ["id", "bookingId", "claimType", "status"],
+};

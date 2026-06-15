@@ -1,0 +1,19 @@
+{
+  "name": "rentashub-server",
+  "private": true,
+  "version": "1.0.0-foundation",
+  "type": "module",
+  "description": "RentasHub backend API scaffold. Contract skeleton only; not a production backend.",
+  "scripts": {
+    "dev": "node src/main/server.js",
+    "start": "node src/main/server.js",
+    "test": "node --test tests/*.test.mjs",
+    "db:check": "node src/db/checkConnection.js",
+    "db:migrate": "node src/db/cli.js migrate",
+    "db:seed": "node src/db/cli.js seed",
+    "db:reset": "node src/db/cli.js reset"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
