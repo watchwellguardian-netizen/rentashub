@@ -16,6 +16,8 @@
     "a4:template": "node scripts/a4-supabase-tooling.mjs template",
     "artifact:validate": "node scripts/validate-release-artifacts.mjs",
     "security:scan": "node scripts/secret-scan.mjs",
+    "security:audit": "node scripts/dependency-audit-wrapper.mjs plan",
+    "security:audit:run": "node scripts/dependency-audit-wrapper.mjs run",
     "rc:tag": "node scripts/release-candidate-tag-helper.mjs",
     "zip:check": "node scripts/check-zip-artifact.mjs",
     "db:check": "node server/src/db/checkConnection.js",

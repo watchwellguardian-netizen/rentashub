@@ -31,6 +31,8 @@ jobs:
             command: npm run a4:supabase
           - name: secret-scan
             command: npm run security:scan
+          - name: dependency-audit-plan
+            command: npm run security:audit
           - name: artifact-validation
             command: npm run artifact:validate
           - name: zip-sanity
