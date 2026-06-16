@@ -62,6 +62,40 @@ const STORAGE_BUCKETS = [
   { name: "private-disputes", visibility: "Private" },
 ];
 
+const A4_MIGRATION_DEPENDENCIES = [
+  {
+    name: "004_supabase_activation_architecture.sql",
+    dependsOn: ["001_initial_schema.sql", "002_auth_foundation.sql", "003_file_storage_foundation.sql"],
+    purpose: "Base Supabase tenant, role, marketplace, storage audit, and RLS architecture.",
+  },
+  {
+    name: "005_supabase_auth_rbac_activation.sql",
+    dependsOn: ["004_supabase_activation_architecture.sql"],
+    purpose: "Auth session, MFA placeholder, RBAC permission matrix, and role persistence readiness.",
+  },
+  {
+    name: "006_supabase_storage_activation.sql",
+    dependsOn: ["003_file_storage_foundation.sql", "004_supabase_activation_architecture.sql"],
+    purpose: "Supabase storage bucket policy metadata and storage audit readiness.",
+  },
+  {
+    name: "007_audit_logging_activation.sql",
+    dependsOn: ["001_initial_schema.sql", "004_supabase_activation_architecture.sql"],
+    purpose: "Enterprise audit event catalog, retention metadata, and audit policy readiness.",
+  },
+];
+
+const EXPECTED_RBAC_ROLES = [
+  "customer",
+  "supplier",
+  "dealer",
+  "inspector",
+  "transport_provider",
+  "financing_partner",
+  "admin",
+  "super_admin",
+];
+
 function hasOwn(env, key) {
   return Object.prototype.hasOwnProperty.call(env, key);
 }
@@ -77,6 +111,45 @@ function containsSecretLikeValue(value = "") {
 
 function countMatches(text, pattern) {
   return Array.from(String(text).matchAll(pattern)).length;
+}
+
+function readMigrationFile(root, name) {
+  const path = join(root, "server", "migrations", name);
+  return existsSync(path) ? readFileSync(path, "utf8") : "";
+}
+
+function readAllMigrationSql(root = ROOT) {
+  const names = [
+    "001_initial_schema.sql",
+    "002_auth_foundation.sql",
+    "003_file_storage_foundation.sql",
+    ...REQUIRED_MIGRATIONS,
+  ];
+  return names.map((name) => ({
+    name,
+    path: join("server", "migrations", name),
+    exists: existsSync(join(root, "server", "migrations", name)),
+    sql: readMigrationFile(root, name),
+  }));
+}
+
+function extractPublicTables(sql = "") {
+  return Array.from(sql.matchAll(/CREATE TABLE IF NOT EXISTS public\.([a-zA-Z0-9_]+)/g)).map((match) => match[1]);
+}
+
+function extractRlsTables(sql = "") {
+  const directTables = Array.from(sql.matchAll(/ALTER TABLE public\.([a-zA-Z0-9_]+) ENABLE ROW LEVEL SECURITY/g)).map((match) => match[1]);
+  const dynamicBlockTables = Array.from(sql.matchAll(/FOREACH table_name IN ARRAY ARRAY\[([\s\S]*?)\][\s\S]*?ENABLE ROW LEVEL SECURITY/g))
+    .flatMap((match) => Array.from(match[1].matchAll(/'([a-zA-Z0-9_]+)'/g)).map((tableMatch) => tableMatch[1]));
+  return [...directTables, ...dynamicBlockTables];
+}
+
+function extractPolicyTables(sql = "") {
+  return Array.from(sql.matchAll(/CREATE POLICY[\s\S]*?\sON public\.([a-zA-Z0-9_]+)/g)).map((match) => match[1]);
+}
+
+function statusFromFindings(findings = []) {
+  return findings.length ? "NEEDS_REVIEW" : "PASS";
 }
 
 export function validateProjectId(projectId = "") {
@@ -163,6 +236,166 @@ export function buildMigrationDryRunChecklist(root = ROOT) {
       production: "hold_until_uat_signoff",
     },
     migrations,
+  };
+}
+
+export function validateMigrationDependencyGraph(root = ROOT) {
+  const allMigrations = readAllMigrationSql(root);
+  const existingNames = new Set(allMigrations.filter((migration) => migration.exists).map((migration) => migration.name));
+  const findings = [];
+  const nodes = A4_MIGRATION_DEPENDENCIES.map((migration, index) => {
+    const missingDependencies = migration.dependsOn.filter((dependency) => !existingNames.has(dependency));
+    const missingSelf = !existingNames.has(migration.name);
+    if (missingSelf) findings.push(`${migration.name} is missing.`);
+    for (const dependency of missingDependencies) findings.push(`${migration.name} depends on missing ${dependency}.`);
+    return {
+      order: index + 4,
+      name: migration.name,
+      purpose: migration.purpose,
+      dependsOn: migration.dependsOn,
+      present: !missingSelf,
+      missingDependencies,
+      environmentOrder: {
+        development: "execute_first_after_A4_02",
+        uat: "execute_after_development_passes",
+        production: "hold_until_uat_signoff",
+      },
+    };
+  });
+  return {
+    status: statusFromFindings(findings),
+    nodes,
+    findings,
+  };
+}
+
+export function checkRlsPolicyCoverage(root = ROOT) {
+  const migrations = readAllMigrationSql(root).filter((migration) => REQUIRED_MIGRATIONS.includes(migration.name));
+  const combinedSql = migrations.map((migration) => migration.sql).join("\n");
+  const createdTables = Array.from(new Set(migrations.flatMap((migration) => extractPublicTables(migration.sql))));
+  const rlsTables = new Set(extractRlsTables(combinedSql));
+  const policyTables = new Set(extractPolicyTables(combinedSql));
+  const tableCoverage = createdTables.map((table) => ({
+    table,
+    rlsEnabled: rlsTables.has(table),
+    policyPresent: policyTables.has(table),
+  }));
+  const findings = tableCoverage.flatMap((item) => {
+    const issues = [];
+    if (!item.rlsEnabled) issues.push(`${item.table} does not enable row level security in A4 SQL.`);
+    if (!item.policyPresent) issues.push(`${item.table} does not define a policy in A4 SQL.`);
+    return issues;
+  });
+  return {
+    status: statusFromFindings(findings),
+    tableCoverage,
+    findings,
+  };
+}
+
+export function validateSupabaseBucketPolicySql(root = ROOT) {
+  const sql = readMigrationFile(root, "006_supabase_storage_activation.sql");
+  const findings = [];
+  const bucketRows = STORAGE_BUCKETS.map((bucket) => {
+    const rowPattern = new RegExp(`\\('${bucket.name}'[\\s\\S]*?'credential_ready_only'\\)`, "m");
+    const row = (sql.match(rowPattern) || [""])[0];
+    const present = Boolean(row);
+    const allowsPublicDownload = /,\s*true\s*,\s*true\s*,\s*false\s*,\s*true/.test(row);
+    const blocksPublicDownload = /,\s*false\s*,\s*true\s*,\s*true\s*,\s*true/.test(row);
+    const expectedPrivate = bucket.name.startsWith("private-");
+    const visibilitySafe = expectedPrivate ? blocksPublicDownload : allowsPublicDownload || bucket.name === "supplier-logos";
+    if (!present) findings.push(`${bucket.name} bucket policy row is missing.`);
+    if (present && !visibilitySafe) findings.push(`${bucket.name} bucket policy visibility/signing flags need review.`);
+    if (expectedPrivate && /'public'|'public_or_signed'/.test(row)) findings.push(`${bucket.name} private bucket must not be public.`);
+    return {
+      bucket: bucket.name,
+      expectedVisibility: bucket.visibility,
+      present,
+      activationStatusCredentialReadyOnly: /credential_ready_only/.test(row),
+      visibilitySafe,
+      privateBucketPublicBlocked: expectedPrivate ? !/'public'|'public_or_signed'/.test(row) : true,
+    };
+  });
+  if (!/Supabase storage\.objects policies must be created after live buckets exist/i.test(sql)) {
+    findings.push("Storage migration must document storage.objects policy hold until live buckets exist.");
+  }
+  return {
+    status: statusFromFindings(findings),
+    bucketRows,
+    findings,
+  };
+}
+
+export function checkAuthRbacSqlPolicyConsistency(root = ROOT) {
+  const migrations = readAllMigrationSql(root);
+  const combinedSql = migrations.map((migration) => migration.sql).join("\n");
+  const findings = [];
+  const roleCoverage = EXPECTED_RBAC_ROLES.map((role) => {
+    const present = new RegExp(`'${role}'`).test(combinedSql);
+    if (!present) findings.push(`${role} role is missing from Auth/RBAC SQL.`);
+    return { role, present };
+  });
+  const helperFunctions = [
+    "rentashub_auth_user_id",
+    "rentashub_auth_role",
+    "rentashub_is_admin",
+    "rentashub_is_service_role",
+    "rentashub_touch_updated_at",
+  ].map((helper) => {
+    const defined = new RegExp(`FUNCTION public\\.${helper}\\(`).test(combinedSql);
+    if (!defined) findings.push(`${helper} helper function is not defined in migration SQL.`);
+    return { helper, defined };
+  });
+  const referencedLegacyHelpers = ["current_app_role", "current_app_user_id", "set_updated_at"].filter((helper) => new RegExp(`public\\.${helper}\\(`).test(combinedSql));
+  const undefinedLegacyHelpers = referencedLegacyHelpers.filter((helper) => !new RegExp(`FUNCTION public\\.${helper}\\(`).test(combinedSql));
+  for (const helper of undefinedLegacyHelpers) findings.push(`${helper} is referenced but not defined in migration SQL.`);
+  return {
+    status: statusFromFindings(findings),
+    roleCoverage,
+    helperFunctions,
+    referencedLegacyHelpers,
+    undefinedLegacyHelpers,
+    findings,
+  };
+}
+
+export function enforceProductionHold(root = ROOT) {
+  const migrations = readAllMigrationSql(root).filter((migration) => REQUIRED_MIGRATIONS.includes(migration.name));
+  const findings = [];
+  const migrationHolds = migrations.map((migration) => {
+    const holdLanguagePresent = /do not apply to production|production.*hold|production.*untouched|until uat signoff|live activation notes/i.test(migration.sql);
+    const unsafeProductionMutation = /\bproduction\b[\s\S]{0,80}\b(execute|apply|migrate|run)\b/i.test(migration.sql)
+      && !/do not apply to production|hold|until uat signoff/i.test(migration.sql);
+    if (!holdLanguagePresent) findings.push(`${migration.name} does not include explicit production-hold language.`);
+    if (unsafeProductionMutation) findings.push(`${migration.name} may imply unsafe production execution.`);
+    return {
+      migration: migration.name,
+      holdLanguagePresent,
+      unsafeProductionMutation,
+    };
+  });
+  return {
+    status: statusFromFindings(findings),
+    productionStatus: "hold_until_uat_signoff",
+    migrationHolds,
+    findings,
+  };
+}
+
+export function buildSupabaseActivationDryRunReport(root = ROOT) {
+  const checks = {
+    migrationDependencyGraph: validateMigrationDependencyGraph(root),
+    rlsPolicyCoverage: checkRlsPolicyCoverage(root),
+    bucketPolicyStaticValidation: validateSupabaseBucketPolicySql(root),
+    authRbacSqlPolicyConsistency: checkAuthRbacSqlPolicyConsistency(root),
+    productionHoldEnforcement: enforceProductionHold(root),
+  };
+  const findings = Object.entries(checks).flatMap(([key, result]) => result.findings.map((finding) => `${key}: ${finding}`));
+  return {
+    status: findings.length ? "NEEDS_REVIEW" : "PASS",
+    note: "Static dry-run only. No Supabase project, credentials, migration execution, bucket creation, or production action occurred.",
+    checks,
+    findings,
   };
 }
 
@@ -586,6 +819,42 @@ export function renderA4RedactionReport(result) {
   ].join("\n");
 }
 
+export function renderSupabaseActivationDryRunReport(report) {
+  return [
+    "# Supabase Activation Static Dry-Run Report",
+    "",
+    `Status: ${report.status}`,
+    "",
+    report.note,
+    "",
+    "## Migration Dependency Graph",
+    "",
+    ...report.checks.migrationDependencyGraph.nodes.map((node) => `- ${node.name}: ${node.present ? "PRESENT" : "MISSING"}; depends on ${node.dependsOn.join(", ")}; production ${node.environmentOrder.production}`),
+    "",
+    "## RLS Policy Coverage",
+    "",
+    ...report.checks.rlsPolicyCoverage.tableCoverage.map((item) => `- ${item.table}: RLS ${item.rlsEnabled ? "YES" : "NO"}; policy ${item.policyPresent ? "YES" : "NO"}`),
+    "",
+    "## Bucket Policy Static Validation",
+    "",
+    ...report.checks.bucketPolicyStaticValidation.bucketRows.map((item) => `- ${item.bucket}: present ${item.present ? "YES" : "NO"}; visibility safe ${item.visibilitySafe ? "YES" : "NO"}; credential-ready ${item.activationStatusCredentialReadyOnly ? "YES" : "NO"}`),
+    "",
+    "## Auth/RBAC SQL Policy Consistency",
+    "",
+    ...report.checks.authRbacSqlPolicyConsistency.roleCoverage.map((item) => `- role ${item.role}: ${item.present ? "PRESENT" : "MISSING"}`),
+    ...report.checks.authRbacSqlPolicyConsistency.helperFunctions.map((item) => `- helper ${item.helper}: ${item.defined ? "DEFINED" : "MISSING"}`),
+    "",
+    "## Production-Hold Enforcement",
+    "",
+    ...report.checks.productionHoldEnforcement.migrationHolds.map((item) => `- ${item.migration}: hold language ${item.holdLanguagePresent ? "YES" : "NO"}; unsafe production mutation ${item.unsafeProductionMutation ? "YES" : "NO"}`),
+    "",
+    "## Findings",
+    "",
+    ...(report.findings.length ? report.findings.map((finding) => `- ${finding}`) : ["- None."]),
+    "",
+  ].join("\n");
+}
+
 export function renderReadinessReport(result) {
   const lines = [
     "# A4 Supabase Credential-Readiness Report",
@@ -709,6 +978,9 @@ if (resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1] || "")) 
     const packagePath = args.package || args.input || "artifacts/a4/a4-execution-verification-evidence-package.md";
     const packageContent = loadPackageContent({ packagePath: args.package || args.input, fallbackContent: renderA4EvidencePackage({ intake }) });
     writeOrPrint(JSON.stringify(buildA4EvidenceManifest({ packagePath, packageContent }), null, 2), args.output);
+  } else if (args.command === "dry-run") {
+    const dryRun = buildSupabaseActivationDryRunReport();
+    writeOrPrint(args.format === "json" ? JSON.stringify(dryRun, null, 2) : renderSupabaseActivationDryRunReport(dryRun), args.output);
   } else if (args.command === "validate") {
     console.log(JSON.stringify(result, null, 2));
     process.exitCode = result.status === "READY_FOR_A4_02_REVIEW" ? 0 : 1;

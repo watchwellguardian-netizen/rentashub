@@ -55,6 +55,32 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.current_app_role()
+RETURNS text
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT public.rentashub_auth_role();
+$$;
+
+CREATE OR REPLACE FUNCTION public.current_app_user_id()
+RETURNS uuid
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT NULLIF(public.rentashub_auth_user_id(), '')::uuid;
+$$;
+
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$;
+
 CREATE TABLE IF NOT EXISTS public.tenants (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   slug text NOT NULL UNIQUE,
@@ -302,6 +328,11 @@ DROP POLICY IF EXISTS "service role full access" ON public.tenants;
 CREATE POLICY "service role full access" ON public.tenants
   FOR ALL USING (public.rentashub_is_service_role() OR public.rentashub_is_admin())
   WITH CHECK (public.rentashub_is_service_role() OR public.rentashub_is_admin());
+
+DROP POLICY IF EXISTS "admins manage user role assignments" ON public.user_role_assignments;
+CREATE POLICY "admins manage user role assignments" ON public.user_role_assignments
+  FOR ALL USING (public.rentashub_is_admin())
+  WITH CHECK (public.rentashub_is_admin());
 
 DROP POLICY IF EXISTS "users can read own profile" ON public.users;
 CREATE POLICY "users can read own profile" ON public.users

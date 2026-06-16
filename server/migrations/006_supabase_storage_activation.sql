@@ -2,6 +2,9 @@
 -- This migration prepares metadata, policy, and audit structures for Supabase
 -- Storage. It does not create live buckets, upload binary files, or enable real
 -- signed URL generation.
+-- Production hold: do not apply to production until Development and UAT execution,
+-- bucket policy evidence, storage access denial evidence, backup/restore evidence,
+-- and release approval are complete.
 
 CREATE TABLE IF NOT EXISTS public.storage_bucket_policies (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

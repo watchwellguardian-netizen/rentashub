@@ -1,6 +1,8 @@
 -- RentasHub Project A2 Supabase Auth and RBAC activation readiness.
 -- Credential-ready only: do not apply to a live project until Supabase credentials,
 -- backup/restore, RLS tests, and auth owner approval exist.
+-- Production hold: do not apply to production until Development and UAT execution,
+-- rollback evidence, backup/restore evidence, and release approval are complete.
 
 CREATE TABLE IF NOT EXISTS public.auth_session_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

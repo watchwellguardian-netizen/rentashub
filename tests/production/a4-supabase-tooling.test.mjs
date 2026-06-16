@@ -7,11 +7,17 @@ import {
   buildA4EvidencePackageData,
   buildA4EvidenceManifest,
   buildMigrationDryRunChecklist,
+  buildSupabaseActivationDryRunReport,
   checkSecretPresence,
+  checkAuthRbacSqlPolicyConsistency,
+  checkRlsPolicyCoverage,
+  enforceProductionHold,
   renderA4EvidenceTemplate,
   renderA4EvidencePackage,
   renderReadinessReport,
   scoreA4EvidencePackage,
+  validateMigrationDependencyGraph,
+  validateSupabaseBucketPolicySql,
   validateEvidenceRedaction,
   validateA4EnvironmentConfig,
   validateProjectId,
@@ -188,4 +194,55 @@ test("A4 evidence manifest indexes package status and manual evidence still requ
   assert.equal(manifest.sections.length, 10);
   assert.ok(manifest.manualEvidenceStillRequired.some((item) => item.includes("Supabase Development")));
   assert.doesNotMatch(JSON.stringify(manifest), /eyJ|postgresql:\/\/|sb_service/i);
+});
+
+test("Supabase dry-run migration dependency graph validates ordered A4 migrations", () => {
+  const graph = validateMigrationDependencyGraph(root);
+  assert.equal(graph.status, "PASS");
+  assert.deepEqual(graph.nodes.map((node) => node.name), REQUIRED_MIGRATIONS);
+  assert.ok(graph.nodes.every((node) => node.environmentOrder.production === "hold_until_uat_signoff"));
+});
+
+test("Supabase dry-run RLS policy coverage checks SQL files without credentials", () => {
+  const coverage = checkRlsPolicyCoverage(root);
+  assert.ok(["PASS", "NEEDS_REVIEW"].includes(coverage.status));
+  assert.ok(coverage.tableCoverage.some((item) => item.table === "auctions" && item.rlsEnabled && item.policyPresent));
+  assert.ok(coverage.tableCoverage.some((item) => item.table === "storage_bucket_policies"));
+});
+
+test("Supabase dry-run bucket policy static validator protects private buckets", () => {
+  const bucketPolicy = validateSupabaseBucketPolicySql(root);
+  assert.equal(bucketPolicy.status, "PASS");
+  for (const bucket of ["private-verification", "private-inspections", "private-claims", "private-disputes"]) {
+    const row = bucketPolicy.bucketRows.find((item) => item.bucket === bucket);
+    assert.equal(row.present, true);
+    assert.equal(row.privateBucketPublicBlocked, true);
+    assert.equal(row.activationStatusCredentialReadyOnly, true);
+  }
+});
+
+test("Supabase dry-run Auth/RBAC SQL consistency reports roles and helper review items", () => {
+  const consistency = checkAuthRbacSqlPolicyConsistency(root);
+  assert.ok(["PASS", "NEEDS_REVIEW"].includes(consistency.status));
+  assert.ok(consistency.roleCoverage.every((item) => item.present));
+  assert.ok(consistency.helperFunctions.some((item) => item.helper === "rentashub_auth_role" && item.defined));
+});
+
+test("Supabase dry-run production-hold enforcement keeps production blocked", () => {
+  const hold = enforceProductionHold(root);
+  assert.ok(["PASS", "NEEDS_REVIEW"].includes(hold.status));
+  assert.equal(hold.productionStatus, "hold_until_uat_signoff");
+  assert.ok(hold.migrationHolds.every((item) => item.unsafeProductionMutation === false));
+});
+
+test("Supabase activation dry-run report covers all requested static checks", () => {
+  const report = buildSupabaseActivationDryRunReport(root);
+  assert.equal(report.status, "PASS");
+  assert.ok(report.note.includes("Static dry-run only"));
+  assert.ok(report.checks.migrationDependencyGraph);
+  assert.ok(report.checks.rlsPolicyCoverage);
+  assert.ok(report.checks.bucketPolicyStaticValidation);
+  assert.ok(report.checks.authRbacSqlPolicyConsistency);
+  assert.ok(report.checks.productionHoldEnforcement);
+  assert.doesNotMatch(JSON.stringify(report), /eyJ|postgresql:\/\/[^<\s]+|sb_service/i);
 });
