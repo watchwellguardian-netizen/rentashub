@@ -5,12 +5,20 @@
 /server/ @backend-team
 /docs/ @devops-team
 /tests/ @frontend-team @backend-team
+/scripts/ @devops-team @security-team
 /.github/ @devops-team @security-team
 
 # Security-sensitive operational areas.
 /server/src/auth/ @backend-team @security-team
 /server/src/middleware/ @backend-team @security-team
 /server/migrations/ @backend-team @devops-team
+/server/src/payments/ @backend-team @security-team
+/server/src/escrow/ @backend-team @security-team
+/server/src/files/ @backend-team @security-team
+/server/src/db/ @backend-team @devops-team
+/docs/adr/ @devops-team @security-team
 /docs/security* @security-team
 /docs/*security* @security-team
 /docs/*incident* @security-team @devops-team
+/docs/*release* @devops-team
+/docs/*compliance* @security-team @devops-team

@@ -43,6 +43,15 @@ Describe evidence without exposing secrets.
 - [ ] Revoke sessions.
 - [ ] Block deployment.
 - [ ] Notify security owner.
+- [ ] Preserve audit evidence.
+- [ ] Open incident response runbook.
+
+## Release Control
+
+- Affected branch/tag:
+- Release freeze required: Yes / No
+- Public advisory likely: Yes / No
+- External legal/compliance review required: Yes / No
 
 ## Contact
 

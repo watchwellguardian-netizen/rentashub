@@ -43,6 +43,8 @@ jobs:
             command: npm run escrow:readiness
           - name: operational-readiness
             command: npm run operations:readiness
+          - name: repository-release-readiness
+            command: npm run release:readiness
           - name: secret-scan
             command: npm run security:scan
           - name: dependency-audit-plan

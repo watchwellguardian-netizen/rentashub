@@ -37,6 +37,8 @@ What happened instead?
 - Closed beta blocker: Yes / No
 - Paid pilot blocker: Yes / No
 - Public launch blocker: Yes / No
+- Security/data integrity blocker: Yes / No
+- Affected release candidate:
 
 ## Evidence
 
@@ -52,3 +54,10 @@ Attach screenshots, logs, or DOM notes. Do not include secrets.
 - Payments/Escrow
 - CI/Deployment
 - Documentation
+
+## Release Evidence Required
+
+- [ ] Reproduction evidence attached.
+- [ ] Expected fix owner identified.
+- [ ] Regression test required.
+- [ ] Rollback or workaround documented.

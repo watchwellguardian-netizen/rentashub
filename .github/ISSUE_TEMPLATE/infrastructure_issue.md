@@ -53,3 +53,15 @@ What needs to happen next?
 - A4-04
 - A4-05
 - Other:
+
+## Secret Safety
+
+- [ ] No keys, tokens, passwords, service-role keys, database URLs, or screenshots with credentials are attached.
+- [ ] Evidence uses project names/IDs, command results, redacted logs, or secret-store references only.
+
+## Release Impact
+
+- Blocks RC promotion: Yes / No
+- Blocks closed beta: Yes / No
+- Blocks paid pilot: Yes / No
+- Blocks public launch: Yes / No
