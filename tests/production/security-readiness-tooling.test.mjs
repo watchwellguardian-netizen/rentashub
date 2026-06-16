@@ -4,6 +4,15 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { buildDependencyAuditPlan } from "../../scripts/dependency-audit-wrapper.mjs";
 import { scanForSecrets } from "../../scripts/secret-scan.mjs";
+import {
+  buildSecretSafetyReport,
+  detectServiceRoleExposure,
+  renderSecretSafetyReport,
+  scanDocumentationSecrets,
+  scanFrontendBundleSecrets,
+  scanLogPatternSecrets,
+  scanZipArtifactSecrets,
+} from "../../scripts/secret-safety-tooling.mjs";
 import { validateReleaseArtifacts } from "../../scripts/validate-release-artifacts.mjs";
 
 const root = process.cwd();
@@ -94,4 +103,53 @@ test("security readiness scripts and docs are included in artifact validation", 
   const security = read(".github/workflows/security.yml");
   assert.match(ci, /npm run security:audit/);
   assert.match(security, /npm run security:audit:run/);
+});
+
+test("frontend bundle secret scanner is available and credential-safe", () => {
+  const result = scanFrontendBundleSecrets();
+  assert.equal(result.surface, "frontend_bundle");
+  assert.equal(result.status, "PASS");
+  assert.ok(result.scannedFiles >= 0);
+  assert.deepEqual(result.findings, []);
+});
+
+test("ZIP artifact secret scanner checks packageable files and artifact validation", () => {
+  const result = scanZipArtifactSecrets();
+  assert.equal(result.surface, "zip_artifact_packageable_files");
+  assert.equal(result.status, "PASS");
+  assert.equal(result.artifactValidationStatus, "PASS");
+  assert.deepEqual(result.findings, []);
+});
+
+test("documentation and log-pattern secret scanners are available", () => {
+  const docs = scanDocumentationSecrets();
+  const logs = scanLogPatternSecrets();
+  assert.equal(docs.surface, "documentation");
+  assert.equal(logs.surface, "logs");
+  assert.equal(docs.status, "PASS");
+  assert.equal(logs.status, "PASS");
+  assert.deepEqual(docs.findings, []);
+  assert.deepEqual(logs.findings, []);
+});
+
+test("service-role-key exposure detector allows labels but blocks values", () => {
+  const result = detectServiceRoleExposure();
+  assert.equal(result.surface, "service_role_key_exposure");
+  assert.equal(result.status, "PASS");
+  assert.deepEqual(result.findings, []);
+});
+
+test("secret safety report combines bundle zip docs logs and service-role checks", () => {
+  const report = buildSecretSafetyReport();
+  assert.equal(report.status, "PASS");
+  assert.equal(report.checks.length, 5);
+  assert.ok(report.checks.some((check) => check.surface === "frontend_bundle"));
+  assert.ok(report.checks.some((check) => check.surface === "zip_artifact_packageable_files"));
+  assert.ok(report.checks.some((check) => check.surface === "documentation"));
+  assert.ok(report.checks.some((check) => check.surface === "logs"));
+  assert.ok(report.checks.some((check) => check.surface === "service_role_key_exposure"));
+  assert.deepEqual(report.findings, []);
+  const rendered = renderSecretSafetyReport(report);
+  assert.match(rendered, /Secret Safety Report/);
+  assert.doesNotMatch(rendered, /eyJ|postgresql:\/\/|sb_service_[a-z0-9_]+/i);
 });
