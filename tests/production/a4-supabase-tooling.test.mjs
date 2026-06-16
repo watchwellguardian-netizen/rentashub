@@ -6,6 +6,8 @@ import {
   REQUIRED_MIGRATIONS,
   buildA4EvidencePackageData,
   buildA4EvidenceManifest,
+  buildA4GateEvidenceIndex,
+  buildA4MasterEvidenceIndex,
   buildMigrationDryRunChecklist,
   buildSupabaseActivationDryRunReport,
   checkSecretPresence,
@@ -14,6 +16,9 @@ import {
   enforceProductionHold,
   renderA4EvidenceTemplate,
   renderA4EvidencePackage,
+  renderA4EvidenceDashboard,
+  renderA4GateEvidenceIndex,
+  renderA4MasterEvidenceIndex,
   renderReadinessReport,
   scoreA4EvidencePackage,
   validateMigrationDependencyGraph,
@@ -194,6 +199,51 @@ test("A4 evidence manifest indexes package status and manual evidence still requ
   assert.equal(manifest.sections.length, 10);
   assert.ok(manifest.manualEvidenceStillRequired.some((item) => item.includes("Supabase Development")));
   assert.doesNotMatch(JSON.stringify(manifest), /eyJ|postgresql:\/\/|sb_service/i);
+});
+
+test("A4 master evidence index summarizes every A4 gate without secrets", () => {
+  const packageText = renderA4EvidencePackage({ intake: validIntake, generatedAt: "2026-06-16T00:00:00.000Z" });
+  const index = buildA4MasterEvidenceIndex({
+    packagePath: "artifacts/a4/sample-package.md",
+    packageContent: packageText,
+    generatedAt: "2026-06-16T00:00:00.000Z",
+  });
+  assert.equal(index.currentGate, "A4-01 Infrastructure Ownership Confirmation");
+  assert.equal(index.gates.length, 5);
+  assert.deepEqual(index.gates.map((gate) => gate.gateId), ["A4-01", "A4-02", "A4-03", "A4-04", "A4-05"]);
+  assert.equal(index.redactionStatus, "PASS");
+  assert.ok(index.blockers.some((blocker) => blocker.includes("evidence items remain pending")));
+  assert.doesNotMatch(JSON.stringify(index), /eyJ|postgresql:\/\/|sb_service/i);
+});
+
+test("A4 per-gate evidence index reports required evidence and next gate", () => {
+  const packageText = renderA4EvidencePackage({ intake: validIntake, generatedAt: "2026-06-16T00:00:00.000Z" });
+  const gateIndex = buildA4GateEvidenceIndex({
+    gateId: "A4-04",
+    packagePath: "artifacts/a4/sample-package.md",
+    packageContent: packageText,
+    generatedAt: "2026-06-16T00:00:00.000Z",
+  });
+  assert.equal(gateIndex.gateId, "A4-04");
+  assert.equal(gateIndex.sections.length, 6);
+  assert.ok(gateIndex.requiredEvidence.some((item) => item.includes("Persistence CRUD")));
+  assert.equal(gateIndex.nextGate, "A4-05 Execution Verification Decision");
+  assert.equal(gateIndex.redactionStatus, "PASS");
+});
+
+test("A4 evidence index renderers include manifest dashboard and gate summaries", () => {
+  const packageText = renderA4EvidencePackage({ intake: validIntake, generatedAt: "2026-06-16T00:00:00.000Z" });
+  const masterIndex = buildA4MasterEvidenceIndex({ packageContent: packageText });
+  const gateIndex = buildA4GateEvidenceIndex({ gateId: "A4-01", packageContent: packageText });
+  const masterReport = renderA4MasterEvidenceIndex(masterIndex);
+  const gateReport = renderA4GateEvidenceIndex(gateIndex);
+  const dashboard = renderA4EvidenceDashboard(masterIndex);
+  assert.match(masterReport, /A4 Master Evidence Index/);
+  assert.match(masterReport, /Evidence Package Manifest/);
+  assert.match(gateReport, /A4-01 Evidence Index/);
+  assert.match(dashboard, /A4 Evidence Completeness Dashboard/);
+  assert.match(dashboard, /\| Gate \| Status \| Score \| Pending Items \| Findings \|/);
+  assert.doesNotMatch(`${masterReport}\n${gateReport}\n${dashboard}`, /eyJ|postgresql:\/\/|sb_service/i);
 });
 
 test("Supabase dry-run migration dependency graph validates ordered A4 migrations", () => {

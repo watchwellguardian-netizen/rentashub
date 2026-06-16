@@ -43,6 +43,105 @@ const EVIDENCE_SECTIONS = [
   "A4-05 Execution Verification Decision",
 ];
 
+const A4_GATE_DEFINITIONS = [
+  {
+    id: "A4-01",
+    title: "Infrastructure Ownership Confirmation",
+    section: "A4-01 Infrastructure Ownership Confirmation",
+    owner: "Operations / DevOps",
+    requiredEvidence: [
+      "Development Project Name",
+      "Development Project ID",
+      "UAT Project Name",
+      "UAT Project ID",
+      "Production Project Name",
+      "Production Project ID",
+      "Infrastructure Owner",
+      "Billing Owner",
+      "Access Owner",
+    ],
+    blockedUntil: "Supabase projects exist and ownership evidence is submitted.",
+    nextGate: "A4-02 Environment Provisioning Verification",
+  },
+  {
+    id: "A4-02",
+    title: "Environment Provisioning Verification",
+    section: "A4-02 Environment Provisioning Verification",
+    owner: "Operations / DevOps",
+    requiredEvidence: [
+      "Project accessibility confirmed",
+      "Secrets stored in approved secret store",
+      "Separate database per environment",
+      "Separate auth configuration per environment",
+      "Separate storage buckets per environment",
+      "Production isolated and not migrated",
+    ],
+    blockedUntil: "A4-01 ownership evidence passes.",
+    nextGate: "A4-03 Migration Execution Evidence",
+  },
+  {
+    id: "A4-03",
+    title: "Migration Execution Evidence",
+    section: "A4-03 Migration Execution Evidence",
+    owner: "Operations / DevOps",
+    requiredEvidence: [
+      "Development migration 004 PASS",
+      "Development migration 005 PASS",
+      "Development migration 006 PASS",
+      "Development migration 007 PASS",
+      "UAT migration 004 PASS",
+      "UAT migration 005 PASS",
+      "UAT migration 006 PASS",
+      "UAT migration 007 PASS",
+      "Production untouched YES",
+    ],
+    blockedUntil: "A4-02 provisioning evidence passes.",
+    nextGate: "A4-04 Infrastructure Certification Evidence",
+  },
+  {
+    id: "A4-04",
+    title: "Infrastructure Certification Evidence",
+    sections: [
+      "A4-04 Persistence Certification Evidence",
+      "A4-04 RLS / RBAC Certification Evidence",
+      "A4-04 Supabase Auth Evidence",
+      "A4-04 Supabase Storage Evidence",
+      "A4-04 Backup / Restore Evidence",
+      "A4-04 Secrets Exposure Certification",
+    ],
+    owner: "Operations / DevOps",
+    requiredEvidence: [
+      "Persistence CRUD validation",
+      "RLS/RBAC denial and admin access validation",
+      "Supabase Auth lifecycle validation",
+      "Storage upload/download/signed URL validation",
+      "Backup and restore validation",
+      "Secrets exposure certification",
+    ],
+    blockedUntil: "A4-03 migration evidence passes.",
+    nextGate: "A4-05 Execution Verification Decision",
+  },
+  {
+    id: "A4-05",
+    title: "Execution Verification Decision",
+    section: "A4-05 Execution Verification Decision",
+    owner: "Release Governance",
+    requiredEvidence: [
+      "Environment evidence complete",
+      "Migration evidence complete",
+      "Persistence evidence complete",
+      "RLS/RBAC evidence complete",
+      "Auth evidence complete",
+      "Storage evidence complete",
+      "Backup/restore evidence complete",
+      "Secrets exposure certification complete",
+      "PASS to RC-0.6B or FAIL remain RC-0.6A recommendation",
+    ],
+    blockedUntil: "A4-04 infrastructure certification evidence passes.",
+    nextGate: "RC-0.6B Infrastructure Certified / remediation only",
+  },
+];
+
 const EVIDENCE_ROLES = [
   "Customer",
   "Supplier",
@@ -110,7 +209,10 @@ function containsSecretLikeValue(value = "") {
 }
 
 function countMatches(text, pattern) {
-  return Array.from(String(text).matchAll(pattern)).length;
+  const matcher = pattern instanceof RegExp
+    ? new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`)
+    : new RegExp(String(pattern), "g");
+  return Array.from(String(text).matchAll(matcher)).length;
 }
 
 function readMigrationFile(root, name) {
@@ -782,6 +884,180 @@ export function buildA4EvidenceManifest({
   };
 }
 
+function extractSection(content = "", section = "") {
+  return (String(content).match(new RegExp(`## ${section.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[\\s\\S]*?(?=\\n## |$)`)) || [""])[0];
+}
+
+function gateSections(gate) {
+  return gate.sections || [gate.section];
+}
+
+export function buildA4GateEvidenceIndex({
+  gateId = "A4-01",
+  packagePath = "artifacts/a4/a4-execution-verification-evidence-package.md",
+  packageContent = "",
+  generatedAt = new Date().toISOString(),
+} = {}) {
+  const gate = A4_GATE_DEFINITIONS.find((item) => item.id === gateId);
+  if (!gate) {
+    return {
+      generatedAt,
+      gateId,
+      status: "UNKNOWN_GATE",
+      findings: [`${gateId} is not a recognized A4 gate.`],
+    };
+  }
+  const redaction = validateEvidenceRedaction(packageContent);
+  const sections = gateSections(gate).map((section) => {
+    const sectionText = extractSection(packageContent, section);
+    return {
+      name: section,
+      present: sectionText.length > 0,
+      pendingEvidenceItems: countMatches(sectionText, /\bPending\b/g),
+      passMarkers: countMatches(sectionText, /\bPASS\b/g),
+      failMarkers: countMatches(sectionText, /\bFAIL\b/g),
+      evidenceLocationMarkers: countMatches(sectionText, /Evidence Location/i),
+    };
+  });
+  const missingSections = sections.filter((section) => !section.present).map((section) => section.name);
+  const pendingEvidenceItems = sections.reduce((sum, section) => sum + section.pendingEvidenceItems, 0);
+  const findings = [
+    ...missingSections.map((section) => `${section} section is missing.`),
+    ...(pendingEvidenceItems ? [`${pendingEvidenceItems} evidence items remain pending for ${gate.id}.`] : []),
+    ...(redaction.status === "PASS" ? [] : ["Secret-like values detected in evidence package."]),
+  ];
+  const completenessScore = Math.max(0, Math.round(((sections.length - missingSections.length) / sections.length) * 100) - Math.min(60, pendingEvidenceItems));
+
+  return {
+    generatedAt,
+    gateId: gate.id,
+    title: gate.title,
+    owner: gate.owner,
+    packagePath,
+    status: findings.length ? "INCOMPLETE" : "PASS",
+    completenessScore,
+    redactionStatus: redaction.status,
+    blockedUntil: gate.blockedUntil,
+    nextGate: gate.nextGate,
+    requiredEvidence: gate.requiredEvidence,
+    sections,
+    findings,
+  };
+}
+
+export function buildA4MasterEvidenceIndex({
+  packagePath = "artifacts/a4/a4-execution-verification-evidence-package.md",
+  packageContent = "",
+  generatedAt = new Date().toISOString(),
+} = {}) {
+  const manifest = buildA4EvidenceManifest({ packagePath, packageContent, generatedAt });
+  const gates = A4_GATE_DEFINITIONS.map((gate) => buildA4GateEvidenceIndex({
+    gateId: gate.id,
+    packagePath,
+    packageContent,
+    generatedAt,
+  }));
+  const totalScore = Math.round(gates.reduce((sum, gate) => sum + gate.completenessScore, 0) / gates.length);
+  const incompleteGates = gates.filter((gate) => gate.status !== "PASS");
+  return {
+    generatedAt,
+    classification: "RC-0.6A Infrastructure Activation Hold",
+    currentGate: "A4-01 Infrastructure Ownership Confirmation",
+    packagePath,
+    status: incompleteGates.length ? "INCOMPLETE" : "PASS",
+    completenessScore: totalScore,
+    redactionStatus: manifest.redactionStatus,
+    manifest,
+    gates,
+    blockers: [
+      ...manifest.blockers,
+      ...incompleteGates.map((gate) => `${gate.gateId} ${gate.title} is incomplete.`),
+    ],
+    nextAuthorizedGate: "A4-01 Infrastructure Ownership Confirmation Submitted",
+    note: "Evidence index is generated from submitted package content only. It does not create projects, read secrets, run migrations, or activate Supabase.",
+  };
+}
+
+export function renderA4GateEvidenceIndex(index) {
+  return [
+    `# ${index.gateId} Evidence Index`,
+    "",
+    `Status: ${index.status}`,
+    `Completeness score: ${index.completenessScore ?? 0}`,
+    `Redaction status: ${index.redactionStatus || "N/A"}`,
+    `Owner: ${index.owner || "N/A"}`,
+    `Package: ${index.packagePath || "N/A"}`,
+    "",
+    "## Required Evidence",
+    "",
+    ...(index.requiredEvidence || []).map((item) => `- ${item}`),
+    "",
+    "## Sections",
+    "",
+    ...(index.sections || []).map((section) => `- ${section.name}: ${section.present ? "PRESENT" : "MISSING"}; pending ${section.pendingEvidenceItems}; PASS markers ${section.passMarkers}; FAIL markers ${section.failMarkers}`),
+    "",
+    "## Findings",
+    "",
+    ...(index.findings?.length ? index.findings.map((finding) => `- ${finding}`) : ["- None."]),
+    "",
+    `Blocked until: ${index.blockedUntil || "N/A"}`,
+    `Next gate: ${index.nextGate || "N/A"}`,
+    "",
+  ].join("\n");
+}
+
+export function renderA4MasterEvidenceIndex(index) {
+  return [
+    "# A4 Master Evidence Index",
+    "",
+    `Status: ${index.status}`,
+    `Completeness score: ${index.completenessScore}`,
+    `Redaction status: ${index.redactionStatus}`,
+    `Package: ${index.packagePath}`,
+    "",
+    index.note,
+    "",
+    "## Gate Index",
+    "",
+    ...index.gates.map((gate) => `- ${gate.gateId} ${gate.title}: ${gate.status}; score ${gate.completenessScore}; next ${gate.nextGate}`),
+    "",
+    "## Evidence Package Manifest",
+    "",
+    `- Package status: ${index.manifest.packageStatus}`,
+    `- Manifest completeness score: ${index.manifest.completenessScore}`,
+    `- Sections indexed: ${index.manifest.sections.length}`,
+    "",
+    "## Blockers",
+    "",
+    ...(index.blockers.length ? index.blockers.map((blocker) => `- ${blocker}`) : ["- None."]),
+    "",
+    `Next authorized gate: ${index.nextAuthorizedGate}`,
+    "",
+  ].join("\n");
+}
+
+export function renderA4EvidenceDashboard(index) {
+  return [
+    "# A4 Evidence Completeness Dashboard",
+    "",
+    `Overall status: ${index.status}`,
+    `Overall score: ${index.completenessScore}`,
+    `Redaction: ${index.redactionStatus}`,
+    "",
+    "| Gate | Status | Score | Pending Items | Findings |",
+    "| --- | --- | ---: | ---: | ---: |",
+    ...index.gates.map((gate) => {
+      const pending = gate.sections.reduce((sum, section) => sum + section.pendingEvidenceItems, 0);
+      return `| ${gate.gateId} ${gate.title} | ${gate.status} | ${gate.completenessScore} | ${pending} | ${gate.findings.length} |`;
+    }),
+    "",
+    "## Manual Evidence Still Required",
+    "",
+    ...index.manifest.manualEvidenceStillRequired.map((item) => `- ${item}`),
+    "",
+  ].join("\n");
+}
+
 export function renderA4EvidenceScore(score) {
   return [
     "# A4 Evidence Completeness Score",
@@ -894,13 +1170,14 @@ export function renderReadinessReport(result) {
 }
 
 function parseArgs(argv) {
-  const parsed = { command: argv[2] || "report", input: null, output: null, package: null, manifestOutput: null, format: "text" };
+  const parsed = { command: argv[2] || "report", input: null, output: null, package: null, manifestOutput: null, format: "text", gate: null };
   for (let i = 3; i < argv.length; i += 1) {
     if (argv[i] === "--input") parsed.input = argv[++i];
     else if (argv[i] === "--output") parsed.output = argv[++i];
     else if (argv[i] === "--package") parsed.package = argv[++i];
     else if (argv[i] === "--manifest-output") parsed.manifestOutput = argv[++i];
     else if (argv[i] === "--format") parsed.format = argv[++i];
+    else if (argv[i] === "--gate") parsed.gate = argv[++i];
   }
   return parsed;
 }
@@ -978,6 +1255,21 @@ if (resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1] || "")) 
     const packagePath = args.package || args.input || "artifacts/a4/a4-execution-verification-evidence-package.md";
     const packageContent = loadPackageContent({ packagePath: args.package || args.input, fallbackContent: renderA4EvidencePackage({ intake }) });
     writeOrPrint(JSON.stringify(buildA4EvidenceManifest({ packagePath, packageContent }), null, 2), args.output);
+  } else if (args.command === "evidence-index") {
+    const packagePath = args.package || args.input || "artifacts/a4/a4-execution-verification-evidence-package.md";
+    const packageContent = loadPackageContent({ packagePath: args.package || args.input, fallbackContent: renderA4EvidencePackage({ intake }) });
+    const index = buildA4MasterEvidenceIndex({ packagePath, packageContent });
+    writeOrPrint(args.format === "json" ? JSON.stringify(index, null, 2) : renderA4MasterEvidenceIndex(index), args.output);
+  } else if (args.command === "gate-index") {
+    const packagePath = args.package || args.input || "artifacts/a4/a4-execution-verification-evidence-package.md";
+    const packageContent = loadPackageContent({ packagePath: args.package || args.input, fallbackContent: renderA4EvidencePackage({ intake }) });
+    const gateIndex = buildA4GateEvidenceIndex({ gateId: args.gate || "A4-01", packagePath, packageContent });
+    writeOrPrint(args.format === "json" ? JSON.stringify(gateIndex, null, 2) : renderA4GateEvidenceIndex(gateIndex), args.output);
+  } else if (args.command === "evidence-dashboard") {
+    const packagePath = args.package || args.input || "artifacts/a4/a4-execution-verification-evidence-package.md";
+    const packageContent = loadPackageContent({ packagePath: args.package || args.input, fallbackContent: renderA4EvidencePackage({ intake }) });
+    const index = buildA4MasterEvidenceIndex({ packagePath, packageContent });
+    writeOrPrint(args.format === "json" ? JSON.stringify(index, null, 2) : renderA4EvidenceDashboard(index), args.output);
   } else if (args.command === "dry-run") {
     const dryRun = buildSupabaseActivationDryRunReport();
     writeOrPrint(args.format === "json" ? JSON.stringify(dryRun, null, 2) : renderSupabaseActivationDryRunReport(dryRun), args.output);
