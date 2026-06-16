@@ -128,6 +128,68 @@ export function validateBucketNames(env = process.env) {
   };
 }
 
+export function scanBucketNamingConformance(env = process.env) {
+  const result = validateBucketNames(env);
+  const checks = result.checks.map((check) => ({
+    id: check.id,
+    envKey: check.envKey,
+    expectedName: check.expectedName,
+    configured: check.configured,
+    validName: check.validName,
+    conformsToExpectedName: !check.configured || env[check.envKey] === check.expectedName,
+    visibility: check.visibility,
+    valuePrinted: false,
+    blockers: [
+      ...check.blockers,
+      ...(check.configured && env[check.envKey] !== check.expectedName ? [`${check.envKey}: configured bucket should match approved name ${check.expectedName}.`] : []),
+    ],
+  }));
+  const blockers = checks.flatMap((check) => check.blockers);
+  return {
+    status: blockers.length ? "FAIL" : result.status,
+    provider: "supabase",
+    scannedBuckets: checks.length,
+    checks,
+    valuePrinted: false,
+  };
+}
+
+export function validateBucketToFileClassMatrix(env = process.env) {
+  const rows = FILE_CLASSIFICATION_MATRIX.map((item) => {
+    const configuredBucket = getBucketForEntityType(item.relatedEntityType, env);
+    const bucketName = env[item.bucketKey] || configuredBucket.bucketName || item.expectedBucket;
+    const bucketNameCheck = validateBucketName(bucketName);
+    const bucketMatches = bucketName === item.expectedBucket;
+    const entityRoutesToExpectedBucket = configuredBucket.envKey === item.bucketKey;
+    const blockers = [
+      ...bucketNameCheck.blockers.map((blocker) => `${item.classification}: ${blocker}`),
+      ...(!bucketMatches ? [`${item.classification}: bucket ${bucketName} does not match approved bucket ${item.expectedBucket}.`] : []),
+      ...(!entityRoutesToExpectedBucket ? [`${item.classification}: entity type ${item.relatedEntityType} routes to ${configuredBucket.envKey}, expected ${item.bucketKey}.`] : []),
+    ];
+    return {
+      classification: item.classification,
+      relatedEntityType: item.relatedEntityType,
+      bucketEnvKey: item.bucketKey,
+      expectedBucket: item.expectedBucket,
+      configuredBucketPresent: hasRealValue(env[item.bucketKey]),
+      bucketNameConforms: bucketNameCheck.status === "PASS",
+      bucketMatchesApprovedName: bucketMatches,
+      entityRoutesToExpectedBucket,
+      visibility: item.visibility,
+      signedUrlRequired: item.signedUrlRequired,
+      publicAllowed: item.publicAllowed,
+      blockers,
+    };
+  });
+  const blockers = rows.flatMap((row) => row.blockers);
+  return {
+    status: blockers.length ? "FAIL" : "PASS",
+    rows,
+    valuePrinted: false,
+    blockers,
+  };
+}
+
 export function buildBucketPolicyChecklist(env = process.env) {
   const rows = FILE_CLASSIFICATION_MATRIX.map((item) => {
     const configuredBucket = getBucketForEntityType(item.relatedEntityType, env);
@@ -158,6 +220,35 @@ export function buildBucketPolicyChecklist(env = process.env) {
   };
 }
 
+export function detectPrivatePublicMismatches(env = process.env) {
+  const rows = FILE_CLASSIFICATION_MATRIX.map((item) => {
+    const bucket = getBucketForEntityType(item.relatedEntityType, env);
+    const bucketVisibility = bucket.visibility;
+    const bucketLooksPublic = bucketVisibility === "public" || bucketVisibility === "public_or_signed" || /^public-/i.test(bucket.bucketName || "");
+    const privateClass = !item.publicAllowed || PRIVATE_ENTITY_TYPES.has(item.relatedEntityType);
+    const blockers = [];
+    if (privateClass && bucketLooksPublic) blockers.push(`${item.classification} is private but routes to public-like bucket ${bucket.envKey}.`);
+    if (privateClass && isPublicVisibilityAllowed(item.relatedEntityType)) blockers.push(`${item.classification} entity type incorrectly allows public visibility.`);
+    if (!privateClass && !item.publicAllowed) blockers.push(`${item.classification} public rule is inconsistent.`);
+    return {
+      classification: item.classification,
+      relatedEntityType: item.relatedEntityType,
+      bucketEnvKey: bucket.envKey,
+      expectedPublicAllowed: item.publicAllowed,
+      observedBucketVisibility: bucketVisibility,
+      privateClass,
+      mismatchDetected: blockers.length > 0,
+      blockers,
+    };
+  });
+  const blockers = rows.flatMap((row) => row.blockers);
+  return {
+    status: blockers.length ? "FAIL" : "PASS",
+    rows,
+    blockers,
+  };
+}
+
 export function validateSignedUrlReadiness(env = process.env) {
   const plan = getSupabaseStorageActivationPlan({ ...env, FILE_STORAGE_PROVIDER: env.FILE_STORAGE_PROVIDER || "supabase" });
   const ttlSeconds = Number(env.FILE_STORAGE_SIGNED_URL_TTL_SECONDS || SUPABASE_SIGNED_URL_STRATEGY.upload.defaultTtlSeconds);
@@ -176,6 +267,32 @@ export function validateSignedUrlReadiness(env = process.env) {
     valuePrinted: false,
     blockers,
   };
+}
+
+export function renderSignedUrlEvidenceChecklist() {
+  return `# Signed URL Evidence Checklist
+
+Do not include Supabase keys, service role tokens, JWTs, database passwords, raw signed URL values, or screenshots containing credentials.
+
+## Required Evidence
+
+| Evidence Item | Development | UAT | Notes |
+| --- | --- | --- | --- |
+| Signed upload URL generated by backend only | Pending | Pending | Do not paste URL value. |
+| Signed download URL generated for private verification file | Pending | Pending | Record only pass/fail and evidence location. |
+| Signed download URL generated for inspection evidence | Pending | Pending | Record only pass/fail and evidence location. |
+| Signed URL expires within approved TTL | Pending | Pending | Expected 60-3600 seconds. |
+| Expired signed URL denied | Pending | Pending | Capture status code only. |
+| Anonymous private bucket access denied | Pending | Pending | Capture status code only. |
+| Frontend never receives service role credentials | Pending | Pending | Reference secret scan evidence. |
+| Storage audit event recorded | Pending | Pending | Reference audit event ID only. |
+
+## Decision
+
+- Result: PASS / FAIL
+- Blockers:
+- Next action:
+`;
 }
 
 export function runUploadIntentHarness(env = process.env) {
@@ -323,14 +440,75 @@ Do not include Supabase keys, service role tokens, database passwords, screensho
 `;
 }
 
+export function buildStorageAccessEvidencePackage({ env = process.env } = {}) {
+  const bucketNaming = scanBucketNamingConformance(env);
+  const fileClassMatrix = validateBucketToFileClassMatrix(env);
+  const mismatchDetector = detectPrivatePublicMismatches(env);
+  const signedUrlReadiness = validateSignedUrlReadiness(env);
+  const uploadIntentHarness = runUploadIntentHarness(env);
+  const bucketPolicy = buildBucketPolicyChecklist(env);
+  const checks = [
+    { name: "bucket_naming_conformance", status: bucketNaming.status, blockers: bucketNaming.checks.flatMap((check) => check.blockers) },
+    { name: "bucket_to_file_class_matrix", status: fileClassMatrix.status, blockers: fileClassMatrix.blockers },
+    { name: "private_public_mismatch_detector", status: mismatchDetector.status, blockers: mismatchDetector.blockers },
+    { name: "bucket_policy_checklist", status: bucketPolicy.status, blockers: bucketPolicy.blockers },
+    { name: "signed_url_readiness", status: signedUrlReadiness.status, blockers: signedUrlReadiness.blockers },
+    { name: "upload_intent_harness", status: uploadIntentHarness.status, blockers: uploadIntentHarness.blockers },
+  ];
+  const blockers = checks.flatMap((check) => check.blockers.map((blocker) => `${check.name}: ${blocker}`));
+  return {
+    status: blockers.length ? "NEEDS_CREDENTIALS_OR_REMEDIATION" : "CREDENTIAL_READY",
+    generatedAt: new Date().toISOString(),
+    provider: "supabase",
+    liveStorageTouched: false,
+    valuePrinted: false,
+    checks,
+    bucketNaming,
+    fileClassMatrix,
+    mismatchDetector,
+    signedUrlReadiness,
+    uploadIntentHarness,
+    bucketPolicy,
+    evidenceTemplates: {
+      signedUrlChecklist: renderSignedUrlEvidenceChecklist(),
+      storageAccessPackage: renderStorageEvidencePackageTemplate(),
+    },
+    blockers,
+  };
+}
+
+export function renderStorageAccessEvidencePackage(report = buildStorageAccessEvidencePackage()) {
+  const lines = [
+    "# Storage Access Evidence Package",
+    "",
+    `Status: ${report.status}`,
+    `Generated At: ${report.generatedAt}`,
+    `Provider: ${report.provider}`,
+    `Live Storage Touched: ${report.liveStorageTouched ? "YES" : "NO"}`,
+    "",
+    "## Checks",
+    ...report.checks.map((check) => `- ${check.name}: ${check.status}`),
+  ];
+  if (report.blockers.length) lines.push("", "## Blockers", ...report.blockers.map((blocker) => `- ${blocker}`));
+  lines.push("", "## Manual Evidence Required", "- Bucket creation evidence", "- Bucket policy evidence", "- Signed URL generation evidence", "- Unauthorized access denial evidence", "- Storage audit event evidence");
+  return lines.join("\n");
+}
+
 export function buildStorageReadinessReport({ env = process.env } = {}) {
   const bucketNames = validateBucketNames(env);
+  const bucketNamingConformance = scanBucketNamingConformance(env);
+  const bucketToFileClassMatrix = validateBucketToFileClassMatrix(env);
   const bucketPolicy = buildBucketPolicyChecklist(env);
+  const privatePublicMismatches = detectPrivatePublicMismatches(env);
   const signedUrls = validateSignedUrlReadiness(env);
   const uploadIntentHarness = runUploadIntentHarness(env);
+  const storageEvidencePackage = buildStorageAccessEvidencePackage({ env });
   const blockers = [
     ...bucketNames.blockers,
+    ...bucketNamingConformance.checks.flatMap((check) => check.blockers),
+    ...bucketToFileClassMatrix.blockers,
     ...bucketPolicy.blockers,
+    ...privatePublicMismatches.blockers,
     ...signedUrls.blockers,
     ...uploadIntentHarness.blockers,
   ];
@@ -338,9 +516,17 @@ export function buildStorageReadinessReport({ env = process.env } = {}) {
     status: blockers.length ? "NEEDS_CREDENTIALS_OR_REMEDIATION" : "CREDENTIAL_READY",
     provider: "supabase",
     bucketNames,
+    bucketNamingConformance,
+    bucketToFileClassMatrix,
     bucketPolicy,
+    privatePublicMismatches,
     signedUrls,
     uploadIntentHarness,
+    storageEvidencePackage: {
+      status: storageEvidencePackage.status,
+      liveStorageTouched: storageEvidencePackage.liveStorageTouched,
+      valuePrinted: storageEvidencePackage.valuePrinted,
+    },
     classificationCount: FILE_CLASSIFICATION_MATRIX.length,
     valuePrinted: false,
     blockers,
@@ -364,5 +550,10 @@ if (resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1] || "")) 
   if (command === "json") console.log(JSON.stringify(buildStorageReadinessReport(), null, 2));
   else if (command === "classification-matrix") console.log(renderFileClassificationMatrix());
   else if (command === "evidence-template") console.log(renderStorageEvidencePackageTemplate());
+  else if (command === "bucket-naming") console.log(JSON.stringify(scanBucketNamingConformance(), null, 2));
+  else if (command === "bucket-file-class") console.log(JSON.stringify(validateBucketToFileClassMatrix(), null, 2));
+  else if (command === "private-public-mismatch") console.log(JSON.stringify(detectPrivatePublicMismatches(), null, 2));
+  else if (command === "signed-url-checklist") console.log(renderSignedUrlEvidenceChecklist());
+  else if (command === "access-evidence-package") console.log(renderStorageAccessEvidencePackage());
   else renderReport(buildStorageReadinessReport());
 }

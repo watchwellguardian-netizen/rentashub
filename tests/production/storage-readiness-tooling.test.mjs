@@ -3,13 +3,19 @@ import { test } from "node:test";
 import {
   FILE_CLASSIFICATION_MATRIX,
   REQUIRED_SUPABASE_STORAGE_KEYS,
+  buildStorageAccessEvidencePackage,
   buildBucketPolicyChecklist,
   buildStorageReadinessReport,
+  detectPrivatePublicMismatches,
+  renderSignedUrlEvidenceChecklist,
+  renderStorageAccessEvidencePackage,
   renderFileClassificationMatrix,
   renderStorageEvidencePackageTemplate,
   runUploadIntentHarness,
+  scanBucketNamingConformance,
   validateBucketName,
   validateBucketNames,
+  validateBucketToFileClassMatrix,
   validateSignedUrlReadiness,
 } from "../../scripts/storage-readiness-tooling.mjs";
 
@@ -105,7 +111,69 @@ test("storage readiness report remains credential-safe and reports manual SDK bl
   assert.equal(report.status, "NEEDS_CREDENTIALS_OR_REMEDIATION");
   assert.equal(report.valuePrinted, false);
   assert.equal(report.bucketNames.status, "PASS");
+  assert.equal(report.bucketNamingConformance.status, "PASS");
+  assert.equal(report.bucketToFileClassMatrix.status, "PASS");
   assert.equal(report.bucketPolicy.status, "PASS");
+  assert.equal(report.privatePublicMismatches.status, "PASS");
   assert.equal(report.uploadIntentHarness.status, "PASS");
   assert.ok(report.blockers.some((blocker) => /SDK signed upload\/download/.test(blocker)));
+});
+
+test("bucket naming conformance scanner detects valid but unapproved bucket names", () => {
+  const result = scanBucketNamingConformance({
+    ...shapedEnv,
+    FILE_STORAGE_BUCKET_PUBLIC_ASSETS: "public-assets-custom",
+  });
+  assert.equal(result.status, "FAIL");
+  assert.equal(result.valuePrinted, false);
+  assert.ok(result.checks.some((check) => check.envKey === "FILE_STORAGE_BUCKET_PUBLIC_ASSETS" && check.validName && !check.conformsToExpectedName));
+});
+
+test("bucket-to-file-class matrix validator confirms expected routing and catches mismatches", () => {
+  const result = validateBucketToFileClassMatrix(shapedEnv);
+  assert.equal(result.status, "PASS");
+  assert.ok(result.rows.every((row) => row.entityRoutesToExpectedBucket));
+
+  const mismatch = validateBucketToFileClassMatrix({
+    ...shapedEnv,
+    FILE_STORAGE_BUCKET_PRIVATE_CLAIMS: "claims-public",
+  });
+  assert.equal(mismatch.status, "FAIL");
+  assert.ok(mismatch.blockers.some((blocker) => /claim_evidence/.test(blocker)));
+});
+
+test("private/public mismatch detector blocks private evidence routed to public-like buckets", () => {
+  const result = detectPrivatePublicMismatches(shapedEnv);
+  assert.equal(result.status, "PASS");
+
+  const mismatch = detectPrivatePublicMismatches({
+    ...shapedEnv,
+    FILE_STORAGE_BUCKET_PRIVATE_VERIFICATION: "public-verification",
+  });
+  assert.equal(mismatch.status, "FAIL");
+  assert.ok(mismatch.rows.some((row) => row.classification === "verification_document" && row.privateClass && row.mismatchDetected));
+});
+
+test("signed URL evidence checklist is generated without credential values", () => {
+  const checklist = renderSignedUrlEvidenceChecklist();
+  assert.match(checklist, /Signed URL Evidence Checklist/);
+  assert.match(checklist, /Expired signed URL denied/);
+  assert.match(checklist, /Frontend never receives service role credentials/);
+  for (const label of ["SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_ANON_KEY", "SUPABASE_URL"]) {
+    assert.doesNotMatch(checklist, new RegExp(`${label}\\s*=`));
+  }
+});
+
+test("storage access evidence package generator combines storage automation checks", () => {
+  const report = buildStorageAccessEvidencePackage({ env: shapedEnv });
+  assert.equal(report.status, "NEEDS_CREDENTIALS_OR_REMEDIATION");
+  assert.equal(report.liveStorageTouched, false);
+  assert.equal(report.valuePrinted, false);
+  assert.ok(report.checks.some((check) => check.name === "bucket_naming_conformance" && check.status === "PASS"));
+  assert.ok(report.checks.some((check) => check.name === "private_public_mismatch_detector" && check.status === "PASS"));
+  assert.ok(report.blockers.some((blocker) => /signed_url_readiness/.test(blocker)));
+
+  const rendered = renderStorageAccessEvidencePackage(report);
+  assert.match(rendered, /Storage Access Evidence Package/);
+  assert.match(rendered, /Live Storage Touched: NO/);
 });
