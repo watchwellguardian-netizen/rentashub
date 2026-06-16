@@ -30,6 +30,7 @@ const requiredPaths = [
   "scripts/compliance-readiness-tooling.mjs",
   "scripts/revenue-readiness-tooling.mjs",
   "scripts/escrow-readiness-tooling.mjs",
+  "scripts/operational-readiness-tooling.mjs",
   "scripts/release-candidate-tag-helper.mjs",
   "package.json",
 ];
