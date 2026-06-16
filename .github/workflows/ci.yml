@@ -39,6 +39,8 @@ jobs:
             command: npm run compliance:readiness
           - name: revenue-readiness
             command: npm run revenue:readiness
+          - name: escrow-readiness
+            command: npm run escrow:readiness
           - name: secret-scan
             command: npm run security:scan
           - name: dependency-audit-plan
