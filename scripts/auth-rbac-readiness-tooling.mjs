@@ -1,4 +1,5 @@
-import { resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ROLE_ALIASES as FRONTEND_ROLE_ALIASES, ROLE_GROUPS, ROLE_LABELS, expandAllowedRoles } from "../src/lib/rbac.js";
 import {
@@ -13,6 +14,8 @@ import {
 import { getSupabaseAuthActivationPlan, validateSupabaseJwtReadiness } from "../server/src/auth/supabaseAuthService.js";
 
 const PLACEHOLDER_PATTERNS = [/^$/, /placeholder/i, /change/i, /your[-_]?/i, /example/i, /<[^>]+>/];
+const root = process.cwd();
+const routesDir = join(root, "server", "src", "routes");
 
 export const SUPABASE_AUTH_CONFIG_KEYS = [
   "AUTH_PROVIDER",
@@ -52,6 +55,35 @@ export const API_BEARER_GUARD_SCENARIOS = [
   { scenario: "valid customer bearer token on supplier write", endpoint: "POST /api/assets", expectedStatus: 403, expectedCode: "forbidden" },
   { scenario: "valid admin bearer token", endpoint: "GET /api/admin", expectedStatus: 200, expectedCode: "ok" },
 ];
+
+export const RLS_POLICY_TABLES = [
+  { table: "tenants", ownerRole: "admin", policyRole: "admin", tenantScoped: true, adminException: true },
+  { table: "user_role_assignments", ownerRole: "admin", policyRole: "admin", tenantScoped: true, adminException: true },
+  { table: "users", ownerRole: "customer", policyRole: "self", tenantScoped: true, adminException: true },
+  { table: "assets", ownerRole: "supplier", policyRole: "owner", tenantScoped: true, adminException: true },
+  { table: "bookings", ownerRole: "customer", policyRole: "participant", tenantScoped: true, adminException: true },
+  { table: "file_metadata", ownerRole: "participant", policyRole: "owner_or_admin", tenantScoped: true, adminException: true },
+  { table: "auctions", ownerRole: "supplier", policyRole: "seller_or_admin", tenantScoped: true, adminException: true },
+  { table: "auction_bids", ownerRole: "customer", policyRole: "bidder_or_admin", tenantScoped: true, adminException: true },
+  { table: "inspection_marketplace_requests", ownerRole: "inspector", policyRole: "participant_or_admin", tenantScoped: true, adminException: true },
+  { table: "transport_marketplace_requests", ownerRole: "transport_provider", policyRole: "participant_or_admin", tenantScoped: true, adminException: true },
+  { table: "financing_marketplace_referrals", ownerRole: "financing_partner", policyRole: "participant_or_admin", tenantScoped: true, adminException: true },
+  { table: "generated_documents", ownerRole: "participant", policyRole: "participant_or_admin", tenantScoped: true, adminException: true },
+  { table: "notification_events", ownerRole: "recipient", policyRole: "recipient_or_admin", tenantScoped: true, adminException: true },
+  { table: "audit_logs", ownerRole: "admin", policyRole: "admin", tenantScoped: false, adminException: true },
+  { table: "storage_objects_audit", ownerRole: "owner", policyRole: "owner_or_admin", tenantScoped: true, adminException: true },
+];
+
+const ADMIN_EXCEPTION_REASONS = {
+  customer: "support_impersonation_for_customer_case_review",
+  supplier: "listing_moderation_supplier_support_and_dispute_review",
+  dealer: "brokerage_lead_review_and_auction_compliance",
+  inspector: "provider_credential_review_and_report_moderation",
+  transport_provider: "provider_credential_review_and_transport_dispute_support",
+  financing_partner: "partner_compliance_review_and_referral_support",
+  admin: "native_admin_access",
+  super_admin: "security_and_rbac_break_glass_review",
+};
 
 function hasRealValue(value) {
   const raw = String(value || "").trim();
@@ -201,6 +233,212 @@ export function validateSessionLifecycleReadiness(env = process.env) {
   };
 }
 
+export function buildRoleToPolicyCoverageMatrix() {
+  const roleRows = buildRoleMappingMatrix();
+  return roleRows.map((role) => {
+    const tableCoverage = RLS_POLICY_TABLES.filter((table) => {
+      const normalizedOwner = normalizeRole(table.ownerRole);
+      return normalizedOwner === role.role || table.policyRole.includes(role.role) || table.adminException && ["admin", "super_admin"].includes(role.role);
+    }).map((table) => ({
+      table: table.table,
+      policyRole: table.policyRole,
+      tenantScoped: table.tenantScoped,
+      adminException: table.adminException,
+    }));
+    return {
+      role: role.role,
+      aliases: role.serverAliases,
+      permissions: role.permissions,
+      supabaseClaim: role.supabaseClaim,
+      rlsTablesCovered: tableCoverage,
+      policyCount: tableCoverage.length,
+      coverageStatus: tableCoverage.length ? "covered" : "needs_review",
+    };
+  });
+}
+
+export function renderRoleToPolicyCoverageMatrix() {
+  const rows = buildRoleToPolicyCoverageMatrix();
+  return [
+    "# Role-to-Policy Coverage Matrix",
+    "",
+    "| Role | Supabase Claim | Policy Count | Covered Tables | Status |",
+    "| --- | --- | ---: | --- | --- |",
+    ...rows.map((row) => `| ${row.role} | ${row.supabaseClaim} | ${row.policyCount} | ${row.rlsTablesCovered.map((item) => item.table).join(", ") || "-"} | ${row.coverageStatus} |`),
+  ].join("\n");
+}
+
+export function renderCrossRoleDenialTestTemplate() {
+  const roles = ["customer", "supplier", "dealer", "inspector", "transport_provider", "financing_partner", "admin"];
+  const scenarios = [
+    ["customer", "supplier", "supplier asset/listing records"],
+    ["supplier", "dealer", "dealer brokerage leads"],
+    ["dealer", "admin", "admin readiness and moderation routes"],
+    ["inspector", "transport_provider", "transport provider requests"],
+    ["transport_provider", "financing_partner", "financing partner referrals"],
+    ["financing_partner", "supplier", "supplier-owned auction records"],
+  ];
+  return `# Cross-Role Denial Test Template
+
+Do not include passwords, bearer tokens, refresh tokens, service role keys, JWT secrets, or screenshots containing credentials.
+
+## Test Matrix
+
+Canonical roles under test: ${roles.join(", ")}
+
+| Actor Role | Target Role/Data | Expected Result | Development Evidence | UAT Evidence |
+| --- | --- | --- | --- | --- |
+${scenarios.map(([actor, target, data]) => `| ${actor} | ${target} ${data} | DENIED unless admin exception is explicitly approved | Pending | Pending |`).join("\n")}
+
+## Required Assertions
+
+- Cross-role read denial confirmed.
+- Cross-role mutation denial confirmed.
+- Admin exception tested separately.
+- Denial returns controlled 401/403 without exposing target data.
+- Audit event recorded for denied privileged operation where supported.
+
+## Decision
+
+- Result: PASS / FAIL
+- Blockers:
+- Next action:
+`;
+}
+
+export function renderTenantIsolationEvidenceTemplate() {
+  return `# Tenant Isolation Evidence Template
+
+Do not include secrets, raw production customer data, database passwords, JWTs, screenshots containing credentials, or service role keys.
+
+## Environment
+
+- Environment: Development / UAT
+- Supabase Project Name:
+- Supabase Project ID:
+- Test Operator:
+- Date:
+
+## Tenant Setup
+
+| Tenant | Test Users | Test Records | Status |
+| --- | --- | --- | --- |
+| Tenant A | customer, supplier, admin | listings, bookings, files, audit records | Pending |
+| Tenant B | customer, supplier, admin | listings, bookings, files, audit records | Pending |
+
+## Isolation Tests
+
+| Scenario | Expected Result | Actual Result | Evidence Location |
+| --- | --- | --- | --- |
+| Tenant A customer reads Tenant B booking | DENIED | Pending |  |
+| Tenant A supplier mutates Tenant B listing | DENIED | Pending |  |
+| Tenant A user requests Tenant B private file metadata | DENIED | Pending |  |
+| Admin reviews both tenants with approved support context | ALLOWED | Pending |  |
+| Cross-tenant audit access by non-admin | DENIED | Pending |  |
+
+## Decision
+
+- Result: PASS / FAIL
+- Blockers:
+- Next action:
+`;
+}
+
+export function buildAdminAccessExceptionMatrix() {
+  const roles = RENTASHUB_ROLES.filter((role) => role !== "anon").map((role) => ({
+    role,
+    adminMayAccess: canRoleAccess("admin", [role]) || role === "admin",
+    superAdminMayAccess: canRoleAccess("super_admin", [role]) || role === "super_admin",
+    exceptionReason: ADMIN_EXCEPTION_REASONS[role] || "requires_security_review",
+    evidenceRequired: role === "admin" || role === "super_admin"
+      ? "privileged_access_review_and_break_glass_audit"
+      : "support_case_or_moderation_context_required",
+  }));
+  return {
+    status: roles.every((row) => row.exceptionReason) ? "PASS" : "FAIL",
+    roles,
+    blockers: roles.filter((row) => !row.exceptionReason).map((row) => `Missing admin exception reason for ${row.role}`),
+  };
+}
+
+export function renderAdminAccessExceptionMatrix() {
+  const matrix = buildAdminAccessExceptionMatrix();
+  return [
+    "# Admin Access Exception Matrix",
+    "",
+    "| Role | Admin May Access | Super Admin May Access | Exception Reason | Evidence Required |",
+    "| --- | --- | --- | --- | --- |",
+    ...matrix.roles.map((row) => `| ${row.role} | ${row.adminMayAccess ? "Yes" : "No"} | ${row.superAdminMayAccess ? "Yes" : "No"} | ${row.exceptionReason} | ${row.evidenceRequired} |`),
+  ].join("\n");
+}
+
+function extractRouteCoverageFromFile(path) {
+  const text = readFileSync(path, "utf8");
+  const constantRoles = new Map();
+  for (const match of text.matchAll(/const\s+([A-Z0-9_]+)\s*=\s*(\[[^\]]*\])/g)) {
+    const roles = [...match[2].matchAll(/"([^"]+)"/g)].map((roleMatch) => roleMatch[1]);
+    if (roles.length) constantRoles.set(match[1], roles);
+  }
+  const routePattern = /router\.(get|post|patch|put|delete)\(\s*"([^"]+)"([\s\S]*?)\);/g;
+  return [...text.matchAll(routePattern)].map((match) => {
+    const middlewareText = match[3];
+    let roles = [];
+    const inlineMatch = middlewareText.match(/requireRoles\(\s*(\[[^\]]*\]|[A-Z0-9_]+)\s*\)/);
+    if (inlineMatch) {
+      if (inlineMatch[1].startsWith("[")) roles = [...inlineMatch[1].matchAll(/"([^"]+)"/g)].map((roleMatch) => roleMatch[1]);
+      else roles = constantRoles.get(inlineMatch[1]) || [];
+    }
+    return {
+      method: match[1].toUpperCase(),
+      route: match[2],
+      roles,
+      file: path.replace(`${root}\\`, "").replaceAll("\\", "/"),
+      protected: Boolean(inlineMatch),
+    };
+  });
+}
+
+export function buildApiRouteToRoleCoverageReport({ directory = routesDir } = {}) {
+  const files = existsSync(directory)
+    ? readdirSync(directory).filter((file) => file.endsWith(".js")).map((file) => join(directory, file))
+    : [];
+  const routes = files.flatMap(extractRouteCoverageFromFile).sort((a, b) => `${a.route}:${a.method}`.localeCompare(`${b.route}:${b.method}`));
+  const protectedRoutes = routes.filter((route) => route.protected);
+  const publicRoutes = routes.filter((route) => !route.protected);
+  const adminRoutesWithoutAdmin = protectedRoutes.filter((route) => route.route.includes("/admin") && !expandAllowedRoles(route.roles).includes("admin"));
+  const mutationWithoutProtection = routes.filter((route) => ["POST", "PATCH", "PUT", "DELETE"].includes(route.method) && !route.protected && !route.route.includes("/auth/"));
+  const blockers = [
+    ...adminRoutesWithoutAdmin.map((route) => `${route.method} ${route.route} is admin-like but lacks admin role coverage.`),
+    ...mutationWithoutProtection.map((route) => `${route.method} ${route.route} mutation route lacks requireRoles coverage.`),
+  ];
+  return {
+    status: blockers.length ? "FAIL" : "PASS",
+    scannedFiles: files.length,
+    routeCount: routes.length,
+    protectedCount: protectedRoutes.length,
+    publicCount: publicRoutes.length,
+    routes: routes.map((route) => ({ ...route, expandedRoles: expandAllowedRoles(route.roles) })),
+    blockers,
+  };
+}
+
+export function renderApiRouteToRoleCoverageReport(report = buildApiRouteToRoleCoverageReport()) {
+  const lines = [
+    "# API Route-to-Role Coverage Report",
+    "",
+    `Status: ${report.status}`,
+    `Routes Scanned: ${report.routeCount}`,
+    `Protected Routes: ${report.protectedCount}`,
+    `Public Routes: ${report.publicCount}`,
+    "",
+    "| Method | Route | Protected | Roles | Source |",
+    "| --- | --- | --- | --- | --- |",
+    ...report.routes.map((route) => `| ${route.method} | ${route.route} | ${route.protected ? "Yes" : "No"} | ${route.expandedRoles.join(", ") || "public"} | ${route.file} |`),
+  ];
+  if (report.blockers.length) lines.push("", "## Blockers", ...report.blockers.map((blocker) => `- ${blocker}`));
+  return lines.join("\n");
+}
+
 export function renderRoleMappingMatrix() {
   const rows = buildRoleMappingMatrix();
   return [
@@ -289,6 +527,12 @@ export function buildAuthRbacReadinessReport({ env = process.env } = {}) {
     bearerGuards,
     devHeaderLockdown,
     sessionLifecycle,
+    rolePolicyCoverage: {
+      status: buildRoleToPolicyCoverageMatrix().every((row) => row.coverageStatus === "covered") ? "PASS" : "NEEDS_REVIEW",
+      matrix: buildRoleToPolicyCoverageMatrix(),
+    },
+    adminAccessExceptions: buildAdminAccessExceptionMatrix(),
+    apiRouteCoverage: buildApiRouteToRoleCoverageReport(),
     jwtReadiness: {
       valid: jwtReadiness.valid,
       code: jwtReadiness.code,
@@ -328,6 +572,11 @@ if (resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1] || "")) 
   const command = process.argv[2] || "report";
   if (command === "json") console.log(JSON.stringify(buildAuthRbacReadinessReport(), null, 2));
   else if (command === "role-matrix") console.log(renderRoleMappingMatrix());
+  else if (command === "policy-matrix") console.log(renderRoleToPolicyCoverageMatrix());
+  else if (command === "cross-role-template") console.log(renderCrossRoleDenialTestTemplate());
+  else if (command === "tenant-isolation-template") console.log(renderTenantIsolationEvidenceTemplate());
+  else if (command === "admin-exceptions") console.log(renderAdminAccessExceptionMatrix());
+  else if (command === "api-route-coverage") console.log(renderApiRouteToRoleCoverageReport());
   else if (command === "supabase-checklist") console.log(renderSupabaseChecklist(buildSupabaseAuthConfigChecklist()));
   else if (command === "session-template") console.log(renderSessionLifecycleEvidenceTemplate());
   else renderReport(buildAuthRbacReadinessReport());

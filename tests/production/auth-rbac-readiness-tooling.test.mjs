@@ -4,11 +4,19 @@ import {
   API_BEARER_GUARD_SCENARIOS,
   PROTECTED_ROUTE_MATRIX,
   SUPABASE_AUTH_CONFIG_KEYS,
+  buildAdminAccessExceptionMatrix,
+  buildApiRouteToRoleCoverageReport,
   buildAuthRbacReadinessReport,
+  buildRoleToPolicyCoverageMatrix,
   buildRoleMappingMatrix,
   buildSupabaseAuthConfigChecklist,
+  renderAdminAccessExceptionMatrix,
+  renderApiRouteToRoleCoverageReport,
+  renderCrossRoleDenialTestTemplate,
+  renderRoleToPolicyCoverageMatrix,
   renderRoleMappingMatrix,
   renderSessionLifecycleEvidenceTemplate,
+  renderTenantIsolationEvidenceTemplate,
   validateApiBearerTokenGuardReadiness,
   validateDevHeaderLockdown,
   validateProtectedRouteMatrix,
@@ -115,4 +123,53 @@ test("rendered role matrix includes enterprise activation roles", () => {
   assert.match(markdown, /transport_provider/);
   assert.match(markdown, /financing_partner/);
   assert.match(markdown, /super_admin/);
+});
+
+test("role-to-policy coverage matrix maps canonical roles to RLS policy surfaces", () => {
+  const matrix = buildRoleToPolicyCoverageMatrix();
+  assert.ok(matrix.some((row) => row.role === "supplier" && row.rlsTablesCovered.some((table) => table.table === "assets")));
+  assert.ok(matrix.some((row) => row.role === "admin" && row.rlsTablesCovered.some((table) => table.adminException)));
+  assert.ok(matrix.every((row) => row.supabaseClaim === "app_role"));
+  const markdown = renderRoleToPolicyCoverageMatrix();
+  assert.match(markdown, /Role-to-Policy Coverage Matrix/);
+  assert.match(markdown, /storage_objects_audit/);
+});
+
+test("cross-role denial and tenant isolation evidence templates are credential-safe", () => {
+  const denial = renderCrossRoleDenialTestTemplate();
+  const isolation = renderTenantIsolationEvidenceTemplate();
+  assert.match(denial, /Cross-Role Denial Test Template/);
+  assert.match(denial, /Customer|customer/);
+  assert.match(isolation, /Tenant Isolation Evidence Template/);
+  assert.match(isolation, /Tenant A customer reads Tenant B booking/);
+  const forbiddenLabels = [
+    ["SUPABASE", "SERVICE", "ROLE", "KEY"].join("_"),
+    ["JWT", "SECRET"].join("_"),
+    "password",
+  ].map((label) => `${label}=`);
+  for (const forbidden of forbiddenLabels) {
+    assert.doesNotMatch(`${denial}\n${isolation}`, new RegExp(forbidden, "i"));
+  }
+});
+
+test("admin-access exception matrix documents privileged access boundaries", () => {
+  const matrix = buildAdminAccessExceptionMatrix();
+  assert.equal(matrix.status, "PASS");
+  assert.ok(matrix.roles.some((row) => row.role === "supplier" && row.adminMayAccess));
+  assert.ok(matrix.roles.some((row) => row.role === "super_admin" && row.evidenceRequired.includes("break_glass")));
+  const markdown = renderAdminAccessExceptionMatrix();
+  assert.match(markdown, /Admin Access Exception Matrix/);
+  assert.match(markdown, /support_case_or_moderation_context_required/);
+});
+
+test("API route-to-role coverage report inventories protected routes and admin routes", () => {
+  const report = buildApiRouteToRoleCoverageReport();
+  assert.equal(report.status, "PASS");
+  assert.ok(report.routeCount > 40);
+  assert.ok(report.protectedCount > report.publicCount);
+  assert.ok(report.routes.some((route) => route.route === "/api/admin/disputes" && route.expandedRoles.includes("admin")));
+  assert.ok(report.routes.some((route) => route.route === "/api/assets" && route.method === "POST" && route.expandedRoles.includes("supplier")));
+  const markdown = renderApiRouteToRoleCoverageReport(report);
+  assert.match(markdown, /API Route-to-Role Coverage Report/);
+  assert.match(markdown, /\/api\/monitoring\/test-event/);
 });
