@@ -4,11 +4,14 @@ import { join } from "node:path";
 import { test } from "node:test";
 import {
   REQUIRED_MIGRATIONS,
+  buildA4EvidenceManifest,
   buildMigrationDryRunChecklist,
   checkSecretPresence,
   renderA4EvidenceTemplate,
   renderA4EvidencePackage,
   renderReadinessReport,
+  scoreA4EvidencePackage,
+  validateEvidenceRedaction,
   validateA4EnvironmentConfig,
   validateProjectId,
   validateProjectIntake,
@@ -134,4 +137,38 @@ test("A4 evidence package generator covers all evidence categories without secre
   assert.match(packageText, /Production remains untouched/);
   assert.match(packageText, /SUPABASE_SERVICE_ROLE_KEY Absent/);
   assert.doesNotMatch(packageText, /eyJ|postgresql:\/\/|sb_service|actual-secret-value/i);
+});
+
+test("A4 evidence completeness scoring reports pending evidence without requiring credentials", () => {
+  const packageText = renderA4EvidencePackage({ intake: validIntake, generatedAt: "2026-06-16T00:00:00.000Z" });
+  const score = scoreA4EvidencePackage(packageText);
+  assert.equal(score.status, "INCOMPLETE");
+  assert.equal(score.sectionsPresent, 10);
+  assert.equal(score.sectionsRequired, 10);
+  assert.equal(score.redactionStatus, "PASS");
+  assert.ok(score.pendingEvidenceItems > 0);
+  assert.ok(score.blockers.some((blocker) => blocker.includes("evidence items remain pending")));
+});
+
+test("A4 redaction validator fails secret-like evidence while redacting samples", () => {
+  const keyLabel = ["SUPABASE", "SERVICE", "ROLE", "KEY"].join("_");
+  const redaction = validateEvidenceRedaction(`${keyLabel}=eyJaaaaaaaaaaaaaaaaaaaaaaaa.eyJbbbbbbbbbbbbbbbbbbbb`);
+  assert.equal(redaction.status, "FAIL");
+  assert.equal(redaction.findings.length, 1);
+  assert.match(redaction.findings[0].sample, /REDACTED/);
+  assert.doesNotMatch(JSON.stringify(redaction), /eyJaaaaaaaaaaaaaaaaaaaaaaaa\.eyJbbbbbbbbbbbbbbbbbbbb/);
+});
+
+test("A4 evidence manifest indexes package status and manual evidence still required", () => {
+  const packageText = renderA4EvidencePackage({ intake: validIntake, generatedAt: "2026-06-16T00:00:00.000Z" });
+  const manifest = buildA4EvidenceManifest({
+    packagePath: "artifacts/a4/a4-execution-verification-evidence-package.md",
+    packageContent: packageText,
+    generatedAt: "2026-06-16T00:00:00.000Z",
+  });
+  assert.equal(manifest.currentGate, "A4-01 Infrastructure Ownership Confirmation");
+  assert.equal(manifest.redactionStatus, "PASS");
+  assert.equal(manifest.sections.length, 10);
+  assert.ok(manifest.manualEvidenceStillRequired.some((item) => item.includes("Supabase Development")));
+  assert.doesNotMatch(JSON.stringify(manifest), /eyJ|postgresql:\/\/|sb_service/i);
 });

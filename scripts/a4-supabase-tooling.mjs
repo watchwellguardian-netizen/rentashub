@@ -1,5 +1,5 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
@@ -28,7 +28,19 @@ const SECRET_VALUE_PATTERNS = [
   /eyJ[a-zA-Z0-9_-]{20,}\.[a-zA-Z0-9_-]{20,}/,
   /postgres(?:ql)?:\/\/[^<\s]+/i,
   /sb_(?:service|anon)_[a-z0-9_]{12,}/i,
-  /service_role/i,
+];
+
+const EVIDENCE_SECTIONS = [
+  "A4-01 Infrastructure Ownership Confirmation",
+  "A4-02 Environment Provisioning Verification",
+  "A4-03 Migration Execution Evidence",
+  "A4-04 Persistence Certification Evidence",
+  "A4-04 RLS / RBAC Certification Evidence",
+  "A4-04 Supabase Auth Evidence",
+  "A4-04 Supabase Storage Evidence",
+  "A4-04 Backup / Restore Evidence",
+  "A4-04 Secrets Exposure Certification",
+  "A4-05 Execution Verification Decision",
 ];
 
 function hasOwn(env, key) {
@@ -42,6 +54,10 @@ function safeText(value = "") {
 function containsSecretLikeValue(value = "") {
   const text = safeText(value);
   return SECRET_VALUE_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+function countMatches(text, pattern) {
+  return Array.from(String(text).matchAll(pattern)).length;
 }
 
 export function validateProjectId(projectId = "") {
@@ -367,6 +383,127 @@ ${migrationRows}
 `;
 }
 
+export function validateEvidenceRedaction(content = "") {
+  const text = String(content);
+  const findings = SECRET_VALUE_PATTERNS.flatMap((pattern) => {
+    const matches = text.match(new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`)) || [];
+    return matches.map((match) => ({
+      type: "secret_like_value",
+      sample: `${match.slice(0, 6)}...REDACTED`,
+    }));
+  });
+
+  return {
+    status: findings.length ? "FAIL" : "PASS",
+    findings,
+    scannedCharacters: text.length,
+    note: "Findings are redacted and never print complete suspected secret values.",
+  };
+}
+
+export function scoreA4EvidencePackage(content = "") {
+  const text = String(content);
+  const redaction = validateEvidenceRedaction(text);
+  const sectionResults = EVIDENCE_SECTIONS.map((section) => ({
+    section,
+    present: text.includes(`## ${section}`),
+    pendingCount: countMatches(text, new RegExp(`${section}[\\s\\S]*?(?=\\n## |$)`, "g"))
+      ? countMatches((text.match(new RegExp(`## ${section}[\\s\\S]*?(?=\\n## |$)`)) || [""])[0], /\bPending\b/g)
+      : 0,
+  }));
+  const presentCount = sectionResults.filter((section) => section.present).length;
+  const totalPending = sectionResults.reduce((sum, section) => sum + section.pendingCount, 0);
+  const sectionScore = Math.round((presentCount / EVIDENCE_SECTIONS.length) * 100);
+  const completionPenalty = Math.min(60, totalPending);
+  const score = redaction.status === "PASS" ? Math.max(0, sectionScore - completionPenalty) : 0;
+
+  return {
+    status: score >= 90 && totalPending === 0 && redaction.status === "PASS" ? "PASS" : "INCOMPLETE",
+    score,
+    sectionScore,
+    sectionsPresent: presentCount,
+    sectionsRequired: EVIDENCE_SECTIONS.length,
+    pendingEvidenceItems: totalPending,
+    redactionStatus: redaction.status,
+    sections: sectionResults,
+    blockers: [
+      ...(presentCount === EVIDENCE_SECTIONS.length ? [] : ["Required evidence sections are missing."]),
+      ...(totalPending === 0 ? [] : [`${totalPending} evidence items remain pending.`]),
+      ...(redaction.status === "PASS" ? [] : ["Secret-like values were detected and must be removed."]),
+    ],
+  };
+}
+
+export function buildA4EvidenceManifest({
+  packagePath = "artifacts/a4/a4-execution-verification-evidence-package.md",
+  packageContent = "",
+  generatedAt = new Date().toISOString(),
+} = {}) {
+  const score = scoreA4EvidencePackage(packageContent);
+  return {
+    generatedAt,
+    classification: "RC-0.6A Infrastructure Activation Hold",
+    currentGate: "A4-01 Infrastructure Ownership Confirmation",
+    nextStateIfApproved: "RC-0.6B Infrastructure Certified",
+    packagePath,
+    packageStatus: score.status,
+    completenessScore: score.score,
+    redactionStatus: score.redactionStatus,
+    sections: score.sections.map((section) => ({
+      name: section.section,
+      present: section.present,
+      pendingEvidenceItems: section.pendingCount,
+    })),
+    blockers: score.blockers,
+    manualEvidenceStillRequired: [
+      "Supabase Development project name and ID",
+      "Supabase UAT/Staging project name and ID",
+      "Supabase Production project name and ID",
+      "Infrastructure, billing, and access owners",
+      "Secure secret storage confirmation",
+      "Development and UAT migration execution evidence",
+      "Persistence, RLS/RBAC, Auth, Storage, Backup/Restore, and secrets exposure evidence",
+    ],
+  };
+}
+
+export function renderA4EvidenceScore(score) {
+  return [
+    "# A4 Evidence Completeness Score",
+    "",
+    `Status: ${score.status}`,
+    `Score: ${score.score}`,
+    `Sections present: ${score.sectionsPresent}/${score.sectionsRequired}`,
+    `Pending evidence items: ${score.pendingEvidenceItems}`,
+    `Redaction status: ${score.redactionStatus}`,
+    "",
+    "## Sections",
+    "",
+    ...score.sections.map((section) => `- ${section.section}: ${section.present ? "PRESENT" : "MISSING"}; pending items: ${section.pendingCount}`),
+    "",
+    "## Blockers",
+    "",
+    ...(score.blockers.length ? score.blockers.map((blocker) => `- ${blocker}`) : ["- None."]),
+    "",
+  ].join("\n");
+}
+
+export function renderA4RedactionReport(result) {
+  return [
+    "# A4 Evidence Redaction Validation",
+    "",
+    `Status: ${result.status}`,
+    `Scanned characters: ${result.scannedCharacters}`,
+    "",
+    "## Findings",
+    "",
+    ...(result.findings.length ? result.findings.map((finding) => `- ${finding.type}: ${finding.sample}`) : ["- None."]),
+    "",
+    result.note,
+    "",
+  ].join("\n");
+}
+
 export function renderReadinessReport(result) {
   const lines = [
     "# A4 Supabase Credential-Readiness Report",
@@ -406,10 +543,13 @@ export function renderReadinessReport(result) {
 }
 
 function parseArgs(argv) {
-  const parsed = { command: argv[2] || "report", input: null, output: null };
+  const parsed = { command: argv[2] || "report", input: null, output: null, package: null, manifestOutput: null, format: "text" };
   for (let i = 3; i < argv.length; i += 1) {
     if (argv[i] === "--input") parsed.input = argv[++i];
     else if (argv[i] === "--output") parsed.output = argv[++i];
+    else if (argv[i] === "--package") parsed.package = argv[++i];
+    else if (argv[i] === "--manifest-output") parsed.manifestOutput = argv[++i];
+    else if (argv[i] === "--format") parsed.format = argv[++i];
   }
   return parsed;
 }
@@ -422,11 +562,18 @@ function loadIntake(inputPath) {
 
 function writeOrPrint(content, outputPath) {
   if (outputPath) {
-    writeFileSync(resolve(outputPath), content);
+    const absolute = resolve(outputPath);
+    mkdirSync(dirname(absolute), { recursive: true });
+    writeFileSync(absolute, content);
     console.log(`WROTE ${outputPath}`);
   } else {
     console.log(content);
   }
+}
+
+function loadPackageContent({ packagePath, fallbackContent }) {
+  if (!packagePath) return fallbackContent;
+  return readFileSync(resolve(packagePath), "utf8");
 }
 
 if (resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1] || "")) {
@@ -437,7 +584,24 @@ if (resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1] || "")) 
   if (args.command === "template") {
     writeOrPrint(renderA4EvidenceTemplate(), args.output);
   } else if (args.command === "evidence-package") {
-    writeOrPrint(renderA4EvidencePackage({ intake }), args.output);
+    const packageContent = renderA4EvidencePackage({ intake });
+    writeOrPrint(packageContent, args.output);
+    if (args.manifestOutput) {
+      writeOrPrint(JSON.stringify(buildA4EvidenceManifest({ packagePath: args.output || "stdout", packageContent }), null, 2), args.manifestOutput);
+    }
+  } else if (args.command === "evidence-score") {
+    const packageContent = loadPackageContent({ packagePath: args.package, fallbackContent: renderA4EvidencePackage({ intake }) });
+    const score = scoreA4EvidencePackage(packageContent);
+    writeOrPrint(args.format === "json" ? JSON.stringify(score, null, 2) : renderA4EvidenceScore(score), args.output);
+  } else if (args.command === "evidence-redaction") {
+    const packageContent = loadPackageContent({ packagePath: args.package, fallbackContent: renderA4EvidencePackage({ intake }) });
+    const redaction = validateEvidenceRedaction(packageContent);
+    writeOrPrint(args.format === "json" ? JSON.stringify(redaction, null, 2) : renderA4RedactionReport(redaction), args.output);
+    process.exitCode = redaction.status === "PASS" ? 0 : 1;
+  } else if (args.command === "evidence-manifest") {
+    const packagePath = args.package || args.input || "artifacts/a4/a4-execution-verification-evidence-package.md";
+    const packageContent = loadPackageContent({ packagePath: args.package || args.input, fallbackContent: renderA4EvidencePackage({ intake }) });
+    writeOrPrint(JSON.stringify(buildA4EvidenceManifest({ packagePath, packageContent }), null, 2), args.output);
   } else if (args.command === "validate") {
     console.log(JSON.stringify(result, null, 2));
     process.exitCode = result.status === "READY_FOR_A4_02_REVIEW" ? 0 : 1;
