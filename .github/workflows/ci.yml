@@ -37,6 +37,8 @@ jobs:
             command: npm run auth-rbac:readiness
           - name: compliance-readiness
             command: npm run compliance:readiness
+          - name: revenue-readiness
+            command: npm run revenue:readiness
           - name: secret-scan
             command: npm run security:scan
           - name: dependency-audit-plan

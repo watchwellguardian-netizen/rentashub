@@ -28,6 +28,7 @@ const requiredPaths = [
   "scripts/storage-readiness-tooling.mjs",
   "scripts/auth-rbac-readiness-tooling.mjs",
   "scripts/compliance-readiness-tooling.mjs",
+  "scripts/revenue-readiness-tooling.mjs",
   "scripts/release-candidate-tag-helper.mjs",
   "package.json",
 ];
