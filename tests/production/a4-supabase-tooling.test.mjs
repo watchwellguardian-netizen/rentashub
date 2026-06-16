@@ -7,6 +7,7 @@ import {
   buildMigrationDryRunChecklist,
   checkSecretPresence,
   renderA4EvidenceTemplate,
+  renderA4EvidencePackage,
   renderReadinessReport,
   validateA4EnvironmentConfig,
   validateProjectId,
@@ -106,4 +107,31 @@ test("template and report include A4 gates without exposing secret values", () =
   assert.match(report, /Secret Presence/);
   assert.match(report, /value not printed/);
   assert.doesNotMatch(report, /actual-secret-value|postgresql:\/\/user:pass/);
+});
+
+test("A4 evidence package generator covers all evidence categories without secrets", () => {
+  const packageText = renderA4EvidencePackage({ intake: validIntake, generatedAt: "2026-06-16T00:00:00.000Z" });
+  for (const heading of [
+    "A4-01 Infrastructure Ownership Confirmation",
+    "A4-02 Environment Provisioning Verification",
+    "A4-03 Migration Execution Evidence",
+    "A4-04 Persistence Certification Evidence",
+    "A4-04 RLS / RBAC Certification Evidence",
+    "A4-04 Supabase Auth Evidence",
+    "A4-04 Supabase Storage Evidence",
+    "A4-04 Backup / Restore Evidence",
+    "A4-04 Secrets Exposure Certification",
+    "A4-05 Execution Verification Decision",
+  ]) {
+    assert.match(packageText, new RegExp(heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  for (const role of ["Customer", "Supplier", "Dealer/Broker", "Inspector", "Transport Provider", "Financing Partner", "Admin"]) {
+    assert.match(packageText, new RegExp(role.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  for (const migration of REQUIRED_MIGRATIONS) {
+    assert.match(packageText, new RegExp(migration.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.match(packageText, /Production remains untouched/);
+  assert.match(packageText, /SUPABASE_SERVICE_ROLE_KEY Absent/);
+  assert.doesNotMatch(packageText, /eyJ|postgresql:\/\/|sb_service|actual-secret-value/i);
 });

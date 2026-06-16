@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -213,6 +213,160 @@ RC-0.6B Infrastructure Certified / Remain RC-0.6A
 `;
 }
 
+export function renderA4EvidencePackage({ intake = {}, generatedAt = new Date().toISOString() } = {}) {
+  const intakeResult = validateProjectIntake(intake);
+  const migrationChecklist = buildMigrationDryRunChecklist();
+  const environmentRows = ENVIRONMENTS.map((environment) => {
+    const item = intake[environment.key] || {};
+    return `| ${environment.label} | ${item.projectName || ""} | ${item.projectId || ""} | Pending | |`;
+  }).join("\n");
+  const ownerRows = [
+    ["Infrastructure Owner", intake.owners?.infrastructureOwner || ""],
+    ["Billing Owner", intake.owners?.billingOwner || ""],
+    ["Access Owner", intake.owners?.accessOwner || ""],
+  ].map(([role, owner]) => `| ${role} | ${owner} | Pending | |`).join("\n");
+  const migrationRows = migrationChecklist.migrations.flatMap((migration) => [
+    `| Development | ${migration.name} | ${migration.exists ? "Found" : "Missing"} | Pending | |`,
+    `| UAT/Staging | ${migration.name} | ${migration.exists ? "Found" : "Missing"} | Pending | |`,
+  ]).join("\n");
+
+  return `# A4 Execution Verification Evidence Package
+
+Generated: ${generatedAt}
+
+This package is an evidence collection template. It does not activate Supabase, run migrations, create credentials, certify production, or authorize closed beta. Do not include secrets, tokens, passwords, service-role keys, database URLs, JWT secrets, provider keys, customer private data, KYC documents, or screenshots containing credential material.
+
+## Package Status
+
+- Current classification: RC-0.6A Infrastructure Activation Hold
+- Current gate: A4-01 Infrastructure Ownership Confirmation
+- Intake format status: ${intakeResult.ready ? "A4-01 format ready" : "A4-01 evidence incomplete"}
+- Production migration status: HOLD
+- Next possible state after full evidence approval: RC-0.6B Infrastructure Certified
+
+## A4-01 Infrastructure Ownership Confirmation
+
+| Environment | Project Name | Project ID | Evidence Result | Notes |
+| --- | --- | --- | --- | --- |
+${environmentRows}
+
+| Owner Role | Owner | Evidence Result | Notes |
+| --- | --- | --- | --- |
+${ownerRows}
+
+### A4-01 Blockers
+
+${intakeResult.blockers.length ? intakeResult.blockers.map((blocker) => `- ${blocker}`).join("\n") : "- None identified from provided intake format."}
+
+## A4-02 Environment Provisioning Verification
+
+| Check | Development | UAT/Staging | Production | Evidence Location |
+| --- | --- | --- | --- | --- |
+| Project accessible | Pending | Pending | Pending | |
+| Secrets stored in approved secret store | Pending | Pending | Pending | |
+| Separate database confirmed | Pending | Pending | Pending | |
+| Separate auth configuration confirmed | Pending | Pending | Pending | |
+| Separate storage buckets confirmed | Pending | Pending | Pending | |
+| Environment variables mapped | Pending | Pending | Pending | |
+| Production isolated from migration execution | N/A | N/A | Pending | |
+
+## A4-03 Migration Execution Evidence
+
+Production must remain untouched until UAT signoff.
+
+| Environment | Migration | File Present Locally | Execution Result | Evidence Location |
+| --- | --- | --- | --- | --- |
+${migrationRows}
+| Production | 004-007 | Hold | Not executed | Production hold evidence |
+
+## A4-04 Persistence Certification Evidence
+
+| Role / Entity | Create | Read | Update | Delete | Soft Delete | Restore | Evidence Location |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Customer | Pending | Pending | Pending | Pending | Pending | Pending | |
+| Supplier | Pending | Pending | Pending | Pending | Pending | Pending | |
+| Dealer/Broker | Pending | Pending | Pending | Pending | Pending | Pending | |
+| Inspector | Pending | Pending | Pending | Pending | Pending | Pending | |
+| Transport Provider | Pending | Pending | Pending | Pending | Pending | Pending | |
+| Financing Partner | Pending | Pending | Pending | Pending | Pending | Pending | |
+| Admin | Pending | Pending | Pending | Pending | Pending | Pending | |
+
+## A4-04 RLS / RBAC Certification Evidence
+
+| Scenario | Expected Result | Actual Result | Evidence Location |
+| --- | --- | --- | --- |
+| Customer cannot access supplier records | Denied | Pending | |
+| Supplier cannot access dealer records | Denied | Pending | |
+| Dealer cannot access admin records | Denied | Pending | |
+| Cross-tenant access denied | Denied | Pending | |
+| Admin access works through approved role | Allowed | Pending | |
+
+## A4-04 Supabase Auth Evidence
+
+| Flow | Development | UAT/Staging | Evidence Location |
+| --- | --- | --- | --- |
+| Registration | Pending | Pending | |
+| Login | Pending | Pending | |
+| Logout | Pending | Pending | |
+| Password reset | Pending | Pending | |
+| Email verification | Pending | Pending | |
+| Session refresh | Pending | Pending | |
+| Session revocation | Pending | Pending | |
+
+## A4-04 Supabase Storage Evidence
+
+| Bucket | Visibility | Upload | Download | Signed URL | Unauthorized Access Denied | Evidence Location |
+| --- | --- | --- | --- | --- | --- | --- |
+| public-assets | Public | Pending | Pending | N/A / Pending | Pending | |
+| supplier-logos | Public or signed | Pending | Pending | Pending | Pending | |
+| private-verification | Private | Pending | Pending | Pending | Pending | |
+| private-inspections | Private | Pending | Pending | Pending | Pending | |
+| private-claims | Private | Pending | Pending | Pending | Pending | |
+| private-disputes | Private | Pending | Pending | Pending | Pending | |
+
+## A4-04 Backup / Restore Evidence
+
+| Check | Development | UAT/Staging | Evidence Location |
+| --- | --- | --- | --- |
+| Backup created | Pending | Pending | |
+| Restore executed | Pending | Pending | |
+| Restored data integrity verified | Pending | Pending | |
+| RPO documented | Pending | Pending | |
+| RTO documented | Pending | Pending | |
+
+## A4-04 Secrets Exposure Certification
+
+| Location | SUPABASE_SERVICE_ROLE_KEY Absent | Other Secret Values Absent | Evidence Location |
+| --- | --- | --- | --- |
+| Source control | Pending | Pending | |
+| Frontend bundle | Pending | Pending | |
+| ZIP artifacts | Pending | Pending | |
+| Documentation | Pending | Pending | |
+| Logs | Pending | Pending | |
+| Chat/screenshots | Pending | Pending | |
+
+## A4-05 Execution Verification Decision
+
+| Decision Item | Result |
+| --- | --- |
+| Environment evidence complete | Pending |
+| Migration evidence complete | Pending |
+| Persistence evidence complete | Pending |
+| RLS/RBAC evidence complete | Pending |
+| Auth evidence complete | Pending |
+| Storage evidence complete | Pending |
+| Backup/restore evidence complete | Pending |
+| Secrets exposure certification complete | Pending |
+| Recommendation | PASS to RC-0.6B / FAIL remain RC-0.6A |
+
+## Final Notes
+
+- No secrets are required in this package.
+- Project IDs are allowed; keys, passwords, tokens, URLs containing credentials, and service-role keys are not allowed.
+- Production remains untouched until UAT signoff and explicit release approval.
+`;
+}
+
 export function renderReadinessReport(result) {
   const lines = [
     "# A4 Supabase Credential-Readiness Report",
@@ -282,6 +436,8 @@ if (resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1] || "")) 
 
   if (args.command === "template") {
     writeOrPrint(renderA4EvidenceTemplate(), args.output);
+  } else if (args.command === "evidence-package") {
+    writeOrPrint(renderA4EvidencePackage({ intake }), args.output);
   } else if (args.command === "validate") {
     console.log(JSON.stringify(result, null, 2));
     process.exitCode = result.status === "READY_FOR_A4_02_REVIEW" ? 0 : 1;
