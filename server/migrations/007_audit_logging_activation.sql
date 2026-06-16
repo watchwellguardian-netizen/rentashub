@@ -2,6 +2,9 @@
 -- Strengthens audit log records for enterprise review. This does not activate
 -- a live SIEM, external log drain, compliance-certified immutable ledger, or
 -- legal archive.
+-- Production hold: do not apply to production until Development and UAT execution,
+-- backup/restore evidence, rollback evidence, audit export review, and release
+-- approval are complete.
 
 ALTER TABLE public.audit_logs ADD COLUMN IF NOT EXISTS event_id text;
 ALTER TABLE public.audit_logs ADD COLUMN IF NOT EXISTS category text NOT NULL DEFAULT 'system';

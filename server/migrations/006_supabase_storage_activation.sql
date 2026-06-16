@@ -5,6 +5,8 @@
 -- Production hold: do not apply to production until Development and UAT execution,
 -- bucket policy evidence, storage access denial evidence, backup/restore evidence,
 -- and release approval are complete.
+-- Rollback prerequisite: review bucket metadata rollback, backup restore evidence,
+-- and storage policy rollback signoff before any production promotion.
 
 CREATE TABLE IF NOT EXISTS public.storage_bucket_policies (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
