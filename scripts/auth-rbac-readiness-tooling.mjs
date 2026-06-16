@@ -16,6 +16,14 @@ import { getSupabaseAuthActivationPlan, validateSupabaseJwtReadiness } from "../
 const PLACEHOLDER_PATTERNS = [/^$/, /placeholder/i, /change/i, /your[-_]?/i, /example/i, /<[^>]+>/];
 const root = process.cwd();
 const routesDir = join(root, "server", "src", "routes");
+const AUTH_EVIDENCE_SCAN_PATHS = [
+  "server/src/middleware/auth.js",
+  "server/src/middleware/rateLimiter.js",
+  "src/lib/adapters/apiAuthHeaders.js",
+  "src/lib/adapters/authAdapter.js",
+  "server/src/auth/supabaseAuthReadiness.js",
+  "server/src/auth/supabaseAuthService.js",
+];
 
 export const SUPABASE_AUTH_CONFIG_KEYS = [
   "AUTH_PROVIDER",
@@ -502,6 +510,201 @@ Do not include access tokens, refresh tokens, service role keys, JWT secrets, pa
 `;
 }
 
+export function renderPasswordResetTestChecklist() {
+  return `# Password Reset Test Checklist
+
+Do not include passwords, reset tokens, magic links, JWTs, screenshots containing credentials, or Supabase service credentials.
+
+## Configuration Evidence
+
+| Item | Development | UAT | Notes |
+| --- | --- | --- | --- |
+| Password reset enabled in Supabase | Pending | Pending | Record setting only, not secrets. |
+| Redirect URL configured for environment | Pending | Pending | Record hostname only. |
+| Email template reviewed | Pending | Pending | No private user data. |
+| Reset token expiry confirmed | Pending | Pending | Record TTL only. |
+
+## Flow Evidence
+
+| Step | Expected Result | Development | UAT |
+| --- | --- | --- | --- |
+| Request reset for valid user | Controlled success response | Pending | Pending |
+| Request reset for unknown user | No account enumeration | Pending | Pending |
+| Open reset link | User reaches controlled reset screen | Pending | Pending |
+| Submit weak password | Friendly validation error | Pending | Pending |
+| Submit valid password | Password changed | Pending | Pending |
+| Reuse reset token | Denied | Pending | Pending |
+| Old password login | Denied | Pending | Pending |
+| New password login | Allowed | Pending | Pending |
+
+## Decision
+
+- Result: PASS / FAIL
+- Blockers:
+- Next action:
+`;
+}
+
+export function renderEmailVerificationTestChecklist() {
+  return `# Email Verification Test Checklist
+
+Do not include email verification tokens, JWTs, service keys, passwords, or screenshots containing credentials.
+
+## Configuration Evidence
+
+| Item | Development | UAT | Notes |
+| --- | --- | --- | --- |
+| Email verification required | Pending | Pending | AUTH_REQUIRE_EMAIL_VERIFICATION expected true before live activation. |
+| Site URL configured | Pending | Pending | Record hostname only. |
+| Redirect allowlist configured | Pending | Pending | Record hostname only. |
+| Email template reviewed | Pending | Pending | No private user data. |
+
+## Flow Evidence
+
+| Step | Expected Result | Development | UAT |
+| --- | --- | --- | --- |
+| Register new user | Verification email queued/sent | Pending | Pending |
+| Login before verification | Denied or limited based on approved policy | Pending | Pending |
+| Open verification link | Email marked verified | Pending | Pending |
+| Reuse verification link | Controlled response | Pending | Pending |
+| Expired verification link | Controlled error | Pending | Pending |
+| Login after verification | Allowed | Pending | Pending |
+
+## Decision
+
+- Result: PASS / FAIL
+- Blockers:
+- Next action:
+`;
+}
+
+export function buildMfaReadinessEvidencePackage(env = process.env) {
+  const provider = env.SECURITY_MFA_PROVIDER || "not_configured";
+  const sessionCookiePolicy = env.SECURITY_SESSION_COOKIE_POLICY || "not_configured";
+  const refreshRotation = env.SECURITY_REFRESH_TOKEN_ROTATION || env.AUTH_REFRESH_TOKEN_ROTATION || "not_configured";
+  const sessionRevocation = env.SECURITY_SESSION_REVOCATION || "not_configured";
+  const checks = [
+    { id: "mfa_provider_selected", status: hasRealValue(provider) ? "present" : "missing", evidenceRequired: "Provider selection and owner approval" },
+    { id: "admin_mfa_required", status: "manual_evidence_required", evidenceRequired: "Admin MFA enrollment test in Development and UAT" },
+    { id: "privileged_role_mfa_required", status: "manual_evidence_required", evidenceRequired: "Supplier/admin/dealer privileged workflow MFA policy" },
+    { id: "session_cookie_policy", status: hasRealValue(sessionCookiePolicy) ? "present" : "missing", evidenceRequired: "Secure, HttpOnly, SameSite policy evidence" },
+    { id: "refresh_token_rotation", status: hasRealValue(refreshRotation) ? "present" : "missing", evidenceRequired: "Refresh rotation setting and reuse-denial evidence" },
+    { id: "session_revocation", status: hasRealValue(sessionRevocation) ? "present" : "missing", evidenceRequired: "Session revocation test evidence" },
+    { id: "recovery_codes_or_backup_factor", status: "manual_evidence_required", evidenceRequired: "Backup factor policy or recovery procedure" },
+    { id: "mfa_audit_events", status: "manual_evidence_required", evidenceRequired: "MFA enrollment/challenge audit event evidence" },
+  ];
+  const blockers = checks
+    .filter((check) => check.status !== "present")
+    .map((check) => `${check.id}: ${check.evidenceRequired}`);
+  return {
+    status: blockers.length ? "NEEDS_CREDENTIALS_OR_MANUAL_EVIDENCE" : "CREDENTIAL_READY",
+    providerStatus: hasRealValue(provider) ? "present" : "missing_or_placeholder",
+    liveMfaActivated: false,
+    valuePrinted: false,
+    checks,
+    blockers,
+  };
+}
+
+export function renderMfaReadinessEvidencePackage(env = process.env) {
+  const report = buildMfaReadinessEvidencePackage(env);
+  const lines = [
+    "# MFA Readiness Evidence Package",
+    "",
+    `Status: ${report.status}`,
+    "Live MFA Activated: NO",
+    "",
+    "Do not include MFA secrets, QR codes, recovery codes, bearer tokens, JWTs, passwords, or screenshots containing credentials.",
+    "",
+    "| Evidence Item | Status | Evidence Required |",
+    "| --- | --- | --- |",
+    ...report.checks.map((check) => `| ${check.id} | ${check.status} | ${check.evidenceRequired} |`),
+  ];
+  if (report.blockers.length) lines.push("", "## Blockers", ...report.blockers.map((blocker) => `- ${blocker}`));
+  return lines.join("\n");
+}
+
+export function scanDevHeaderLockdownEvidence({ env = process.env, paths = AUTH_EVIDENCE_SCAN_PATHS } = {}) {
+  const sourceChecks = paths.map((path) => {
+    const fullPath = join(root, path);
+    const exists = existsSync(fullPath);
+    const text = exists ? readFileSync(fullPath, "utf8") : "";
+    return {
+      path,
+      exists,
+      referencesDevRoleHeader: /x-user-role/i.test(text),
+      referencesDevUserHeader: /x-user-id/i.test(text),
+      referencesProductionLock: /AUTH_DISABLE_DEV_HEADERS_IN_PRODUCTION|NODE_ENV\s*={0,2}\s*["']production["']|production/i.test(text),
+      valuePrinted: false,
+    };
+  });
+  const lockdown = validateDevHeaderLockdown(env);
+  const backendAuth = sourceChecks.find((check) => check.path.endsWith("middleware/auth.js"));
+  const frontendAdapter = sourceChecks.find((check) => check.path.endsWith("apiAuthHeaders.js"));
+  const blockers = [];
+  if (!backendAuth?.exists) blockers.push("Backend auth middleware must exist.");
+  if (!backendAuth?.referencesProductionLock) blockers.push("Backend auth middleware must reference production dev-header lockdown.");
+  if (!backendAuth?.referencesDevRoleHeader || !backendAuth?.referencesDevUserHeader) blockers.push("Backend auth middleware must explicitly inventory dev auth headers.");
+  if (!frontendAdapter?.exists) blockers.push("Frontend API auth header adapter must exist.");
+  if (!frontendAdapter?.referencesDevRoleHeader || !frontendAdapter?.referencesDevUserHeader) blockers.push("Frontend API auth header adapter must inventory dev headers for lockdown review.");
+  blockers.push(...lockdown.blockers);
+  return {
+    status: blockers.length ? "FAIL" : "PASS",
+    devHeadersDisabledInProduction: lockdown.devHeadersDisabledInProduction,
+    productionSafe: lockdown.productionSafe,
+    liveAuthActivated: false,
+    valuePrinted: false,
+    sourceChecks,
+    blockers,
+  };
+}
+
+export function buildAuthEvidenceAutomationReport({ env = process.env } = {}) {
+  const sessionLifecycle = validateSessionLifecycleReadiness(env);
+  const mfaEvidence = buildMfaReadinessEvidencePackage(env);
+  const devHeaderScanner = scanDevHeaderLockdownEvidence({ env });
+  const blockers = [
+    ...sessionLifecycle.blockers,
+    ...mfaEvidence.blockers,
+    ...devHeaderScanner.blockers,
+  ];
+  return {
+    status: blockers.length ? "NEEDS_CREDENTIALS_OR_MANUAL_EVIDENCE" : "CREDENTIAL_READY",
+    generatedAt: new Date().toISOString(),
+    liveAuthActivated: false,
+    valuePrinted: false,
+    templates: {
+      sessionLifecycle: renderSessionLifecycleEvidenceTemplate(),
+      passwordReset: renderPasswordResetTestChecklist(),
+      emailVerification: renderEmailVerificationTestChecklist(),
+      mfaReadiness: renderMfaReadinessEvidencePackage(env),
+    },
+    sessionLifecycle,
+    mfaEvidence,
+    devHeaderScanner,
+    blockers,
+  };
+}
+
+export function renderAuthEvidenceAutomationReport(report = buildAuthEvidenceAutomationReport()) {
+  const lines = [
+    "# Auth Evidence Automation Report",
+    "",
+    `Status: ${report.status}`,
+    `Generated At: ${report.generatedAt}`,
+    "Live Auth Activated: NO",
+    "",
+    "## Checks",
+    `- Session lifecycle evidence: ${report.sessionLifecycle.status}`,
+    `- MFA readiness evidence: ${report.mfaEvidence.status}`,
+    `- Dev-header lockdown scanner: ${report.devHeaderScanner.status}`,
+    "- Password reset checklist: GENERATED",
+    "- Email verification checklist: GENERATED",
+  ];
+  if (report.blockers.length) lines.push("", "## Blockers", ...report.blockers.map((blocker) => `- ${blocker}`));
+  return lines.join("\n");
+}
+
 export function buildAuthRbacReadinessReport({ env = process.env } = {}) {
   const roleMapping = validateRoleMappingMatrix();
   const supabaseConfig = buildSupabaseAuthConfigChecklist(env);
@@ -527,6 +730,11 @@ export function buildAuthRbacReadinessReport({ env = process.env } = {}) {
     bearerGuards,
     devHeaderLockdown,
     sessionLifecycle,
+    authEvidenceAutomation: {
+      status: buildAuthEvidenceAutomationReport({ env }).status,
+      liveAuthActivated: false,
+      valuePrinted: false,
+    },
     rolePolicyCoverage: {
       status: buildRoleToPolicyCoverageMatrix().every((row) => row.coverageStatus === "covered") ? "PASS" : "NEEDS_REVIEW",
       matrix: buildRoleToPolicyCoverageMatrix(),
@@ -579,5 +787,10 @@ if (resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1] || "")) 
   else if (command === "api-route-coverage") console.log(renderApiRouteToRoleCoverageReport());
   else if (command === "supabase-checklist") console.log(renderSupabaseChecklist(buildSupabaseAuthConfigChecklist()));
   else if (command === "session-template") console.log(renderSessionLifecycleEvidenceTemplate());
+  else if (command === "password-reset-checklist") console.log(renderPasswordResetTestChecklist());
+  else if (command === "email-verification-checklist") console.log(renderEmailVerificationTestChecklist());
+  else if (command === "mfa-evidence-package") console.log(renderMfaReadinessEvidencePackage());
+  else if (command === "dev-header-scan") console.log(JSON.stringify(scanDevHeaderLockdownEvidence(), null, 2));
+  else if (command === "auth-evidence-report") console.log(renderAuthEvidenceAutomationReport());
   else renderReport(buildAuthRbacReadinessReport());
 }

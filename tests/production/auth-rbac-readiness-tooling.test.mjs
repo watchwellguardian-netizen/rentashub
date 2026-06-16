@@ -6,17 +6,24 @@ import {
   SUPABASE_AUTH_CONFIG_KEYS,
   buildAdminAccessExceptionMatrix,
   buildApiRouteToRoleCoverageReport,
+  buildAuthEvidenceAutomationReport,
   buildAuthRbacReadinessReport,
+  buildMfaReadinessEvidencePackage,
   buildRoleToPolicyCoverageMatrix,
   buildRoleMappingMatrix,
   buildSupabaseAuthConfigChecklist,
   renderAdminAccessExceptionMatrix,
   renderApiRouteToRoleCoverageReport,
   renderCrossRoleDenialTestTemplate,
+  renderAuthEvidenceAutomationReport,
+  renderEmailVerificationTestChecklist,
+  renderMfaReadinessEvidencePackage,
+  renderPasswordResetTestChecklist,
   renderRoleToPolicyCoverageMatrix,
   renderRoleMappingMatrix,
   renderSessionLifecycleEvidenceTemplate,
   renderTenantIsolationEvidenceTemplate,
+  scanDevHeaderLockdownEvidence,
   validateApiBearerTokenGuardReadiness,
   validateDevHeaderLockdown,
   validateProtectedRouteMatrix,
@@ -172,4 +179,67 @@ test("API route-to-role coverage report inventories protected routes and admin r
   const markdown = renderApiRouteToRoleCoverageReport(report);
   assert.match(markdown, /API Route-to-Role Coverage Report/);
   assert.match(markdown, /\/api\/monitoring\/test-event/);
+});
+
+test("password reset and email verification checklist generators are credential-safe", () => {
+  const passwordReset = renderPasswordResetTestChecklist();
+  const emailVerification = renderEmailVerificationTestChecklist();
+  assert.match(passwordReset, /Password Reset Test Checklist/);
+  assert.match(passwordReset, /No account enumeration/);
+  assert.match(emailVerification, /Email Verification Test Checklist/);
+  assert.match(emailVerification, /Login before verification/);
+  const forbiddenLabels = [
+    "token",
+    "password",
+    ["SUPABASE", "SERVICE", "ROLE", "KEY"].join("_"),
+    ["JWT", "SECRET"].join("_"),
+  ].map((label) => `${label}=`);
+  for (const forbidden of forbiddenLabels) {
+    assert.doesNotMatch(`${passwordReset}\n${emailVerification}`, new RegExp(forbidden, "i"));
+  }
+});
+
+test("MFA readiness evidence package remains provider-ready and does not activate MFA", () => {
+  const report = buildMfaReadinessEvidencePackage({
+    SECURITY_MFA_PROVIDER: "supabase-mfa",
+    SECURITY_SESSION_COOKIE_POLICY: "secure-httponly-samesite",
+    SECURITY_REFRESH_TOKEN_ROTATION: "enabled",
+    SECURITY_SESSION_REVOCATION: "enabled",
+  });
+  assert.equal(report.liveMfaActivated, false);
+  assert.equal(report.valuePrinted, false);
+  assert.ok(report.checks.some((check) => check.id === "admin_mfa_required"));
+  assert.ok(report.blockers.some((blocker) => /evidence|policy|procedure/i.test(blocker)));
+
+  const markdown = renderMfaReadinessEvidencePackage();
+  assert.match(markdown, /MFA Readiness Evidence Package/);
+  assert.match(markdown, /Live MFA Activated: NO/);
+});
+
+test("dev-header lockdown evidence scanner inventories source locations and production safety", () => {
+  const safe = scanDevHeaderLockdownEvidence({ env: { NODE_ENV: "production", AUTH_DISABLE_DEV_HEADERS_IN_PRODUCTION: "true" } });
+  assert.equal(safe.status, "PASS");
+  assert.equal(safe.productionSafe, true);
+  assert.equal(safe.valuePrinted, false);
+  assert.ok(safe.sourceChecks.some((check) => check.path.endsWith("middleware/auth.js") && check.referencesProductionLock));
+  assert.ok(safe.sourceChecks.some((check) => check.path.endsWith("apiAuthHeaders.js") && check.referencesDevRoleHeader));
+
+  const unsafe = scanDevHeaderLockdownEvidence({ env: { NODE_ENV: "production", AUTH_DISABLE_DEV_HEADERS_IN_PRODUCTION: "false" } });
+  assert.equal(unsafe.status, "FAIL");
+  assert.ok(unsafe.blockers.some((blocker) => /must be true/.test(blocker)));
+});
+
+test("auth evidence automation report combines session password email MFA and dev-header evidence", () => {
+  const report = buildAuthEvidenceAutomationReport({ env: shapedEnv });
+  assert.equal(report.liveAuthActivated, false);
+  assert.equal(report.valuePrinted, false);
+  assert.equal(report.devHeaderScanner.status, "PASS");
+  assert.match(report.templates.sessionLifecycle, /Session Lifecycle Evidence/);
+  assert.match(report.templates.passwordReset, /Password Reset Test Checklist/);
+  assert.match(report.templates.emailVerification, /Email Verification Test Checklist/);
+  assert.match(report.templates.mfaReadiness, /MFA Readiness Evidence Package/);
+
+  const rendered = renderAuthEvidenceAutomationReport(report);
+  assert.match(rendered, /Auth Evidence Automation Report/);
+  assert.match(rendered, /Live Auth Activated: NO/);
 });
