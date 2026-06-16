@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import {
   REQUIRED_MIGRATIONS,
+  buildA4EvidencePackageData,
   buildA4EvidenceManifest,
   buildMigrationDryRunChecklist,
   checkSecretPresence,
@@ -137,6 +138,22 @@ test("A4 evidence package generator covers all evidence categories without secre
   assert.match(packageText, /Production remains untouched/);
   assert.match(packageText, /SUPABASE_SERVICE_ROLE_KEY Absent/);
   assert.doesNotMatch(packageText, /eyJ|postgresql:\/\/|sb_service|actual-secret-value/i);
+});
+
+test("A4 evidence package JSON model covers all evidence categories without secrets", () => {
+  const packageData = buildA4EvidencePackageData({ intake: validIntake, generatedAt: "2026-06-16T00:00:00.000Z" });
+  assert.equal(packageData.currentGate, "A4-01 Infrastructure Ownership Confirmation");
+  assert.equal(packageData.a4_01.environments.length, 3);
+  assert.equal(packageData.a4_02.checks.length, 7);
+  assert.equal(packageData.a4_03.migrations.length, REQUIRED_MIGRATIONS.length);
+  assert.equal(packageData.a4_04.persistence.length, 7);
+  assert.equal(packageData.a4_04.rlsRbac.length, 5);
+  assert.equal(packageData.a4_04.auth.length, 7);
+  assert.equal(packageData.a4_04.storage.length, 6);
+  assert.equal(packageData.a4_04.backupRestore.length, 5);
+  assert.equal(packageData.a4_04.secretsExposure.length, 6);
+  assert.equal(packageData.a4_05.decisionItems.length, 8);
+  assert.doesNotMatch(JSON.stringify(packageData), /eyJ|postgresql:\/\/|sb_service|actual-secret-value/i);
 });
 
 test("A4 evidence completeness scoring reports pending evidence without requiring credentials", () => {

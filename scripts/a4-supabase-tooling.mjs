@@ -43,6 +43,25 @@ const EVIDENCE_SECTIONS = [
   "A4-05 Execution Verification Decision",
 ];
 
+const EVIDENCE_ROLES = [
+  "Customer",
+  "Supplier",
+  "Dealer/Broker",
+  "Inspector",
+  "Transport Provider",
+  "Financing Partner",
+  "Admin",
+];
+
+const STORAGE_BUCKETS = [
+  { name: "public-assets", visibility: "Public" },
+  { name: "supplier-logos", visibility: "Public or signed" },
+  { name: "private-verification", visibility: "Private" },
+  { name: "private-inspections", visibility: "Private" },
+  { name: "private-claims", visibility: "Private" },
+  { name: "private-disputes", visibility: "Private" },
+];
+
 function hasOwn(env, key) {
   return Object.prototype.hasOwnProperty.call(env, key);
 }
@@ -230,20 +249,18 @@ RC-0.6B Infrastructure Certified / Remain RC-0.6A
 }
 
 export function renderA4EvidencePackage({ intake = {}, generatedAt = new Date().toISOString() } = {}) {
-  const intakeResult = validateProjectIntake(intake);
-  const migrationChecklist = buildMigrationDryRunChecklist();
-  const environmentRows = ENVIRONMENTS.map((environment) => {
-    const item = intake[environment.key] || {};
-    return `| ${environment.label} | ${item.projectName || ""} | ${item.projectId || ""} | Pending | |`;
+  const packageData = buildA4EvidencePackageData({ intake, generatedAt });
+  const intakeResult = packageData.intake;
+  const migrationChecklist = packageData.migrationChecklist;
+  const environmentRows = packageData.a4_01.environments.map((item) => {
+    return `| ${item.label} | ${item.projectName || ""} | ${item.projectId || ""} | Pending | |`;
   }).join("\n");
-  const ownerRows = [
-    ["Infrastructure Owner", intake.owners?.infrastructureOwner || ""],
-    ["Billing Owner", intake.owners?.billingOwner || ""],
-    ["Access Owner", intake.owners?.accessOwner || ""],
-  ].map(([role, owner]) => `| ${role} | ${owner} | Pending | |`).join("\n");
-  const migrationRows = migrationChecklist.migrations.flatMap((migration) => [
-    `| Development | ${migration.name} | ${migration.exists ? "Found" : "Missing"} | Pending | |`,
-    `| UAT/Staging | ${migration.name} | ${migration.exists ? "Found" : "Missing"} | Pending | |`,
+  const ownerRows = packageData.a4_01.owners.map((item) => {
+    return `| ${item.label} | ${item.owner || ""} | Pending | |`;
+  }).join("\n");
+  const migrationRows = packageData.a4_03.migrations.flatMap((migration) => [
+    `| Development | ${migration.name} | ${migration.filePresent ? "Found" : "Missing"} | Pending | |`,
+    `| UAT/Staging | ${migration.name} | ${migration.filePresent ? "Found" : "Missing"} | Pending | |`,
   ]).join("\n");
 
   return `# A4 Execution Verification Evidence Package
@@ -254,11 +271,11 @@ This package is an evidence collection template. It does not activate Supabase, 
 
 ## Package Status
 
-- Current classification: RC-0.6A Infrastructure Activation Hold
-- Current gate: A4-01 Infrastructure Ownership Confirmation
+- Current classification: ${packageData.classification}
+- Current gate: ${packageData.currentGate}
 - Intake format status: ${intakeResult.ready ? "A4-01 format ready" : "A4-01 evidence incomplete"}
 - Production migration status: HOLD
-- Next possible state after full evidence approval: RC-0.6B Infrastructure Certified
+- Next possible state after full evidence approval: ${packageData.nextStateIfApproved}
 
 ## A4-01 Infrastructure Ownership Confirmation
 
@@ -278,13 +295,7 @@ ${intakeResult.blockers.length ? intakeResult.blockers.map((blocker) => `- ${blo
 
 | Check | Development | UAT/Staging | Production | Evidence Location |
 | --- | --- | --- | --- | --- |
-| Project accessible | Pending | Pending | Pending | |
-| Secrets stored in approved secret store | Pending | Pending | Pending | |
-| Separate database confirmed | Pending | Pending | Pending | |
-| Separate auth configuration confirmed | Pending | Pending | Pending | |
-| Separate storage buckets confirmed | Pending | Pending | Pending | |
-| Environment variables mapped | Pending | Pending | Pending | |
-| Production isolated from migration execution | N/A | N/A | Pending | |
+${packageData.a4_02.checks.map((check) => `| ${check.check} | ${check.development} | ${check.uat} | ${check.production} | |`).join("\n")}
 
 ## A4-03 Migration Execution Evidence
 
@@ -299,80 +310,43 @@ ${migrationRows}
 
 | Role / Entity | Create | Read | Update | Delete | Soft Delete | Restore | Evidence Location |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Customer | Pending | Pending | Pending | Pending | Pending | Pending | |
-| Supplier | Pending | Pending | Pending | Pending | Pending | Pending | |
-| Dealer/Broker | Pending | Pending | Pending | Pending | Pending | Pending | |
-| Inspector | Pending | Pending | Pending | Pending | Pending | Pending | |
-| Transport Provider | Pending | Pending | Pending | Pending | Pending | Pending | |
-| Financing Partner | Pending | Pending | Pending | Pending | Pending | Pending | |
-| Admin | Pending | Pending | Pending | Pending | Pending | Pending | |
+${packageData.a4_04.persistence.map((item) => `| ${item.entity} | ${item.create} | ${item.read} | ${item.update} | ${item.delete} | ${item.softDelete} | ${item.restore} | |`).join("\n")}
 
 ## A4-04 RLS / RBAC Certification Evidence
 
 | Scenario | Expected Result | Actual Result | Evidence Location |
 | --- | --- | --- | --- |
-| Customer cannot access supplier records | Denied | Pending | |
-| Supplier cannot access dealer records | Denied | Pending | |
-| Dealer cannot access admin records | Denied | Pending | |
-| Cross-tenant access denied | Denied | Pending | |
-| Admin access works through approved role | Allowed | Pending | |
+${packageData.a4_04.rlsRbac.map((item) => `| ${item.scenario} | ${item.expectedResult} | ${item.actualResult} | |`).join("\n")}
 
 ## A4-04 Supabase Auth Evidence
 
 | Flow | Development | UAT/Staging | Evidence Location |
 | --- | --- | --- | --- |
-| Registration | Pending | Pending | |
-| Login | Pending | Pending | |
-| Logout | Pending | Pending | |
-| Password reset | Pending | Pending | |
-| Email verification | Pending | Pending | |
-| Session refresh | Pending | Pending | |
-| Session revocation | Pending | Pending | |
+${packageData.a4_04.auth.map((item) => `| ${item.flow} | ${item.development} | ${item.uat} | |`).join("\n")}
 
 ## A4-04 Supabase Storage Evidence
 
 | Bucket | Visibility | Upload | Download | Signed URL | Unauthorized Access Denied | Evidence Location |
 | --- | --- | --- | --- | --- | --- | --- |
-| public-assets | Public | Pending | Pending | N/A / Pending | Pending | |
-| supplier-logos | Public or signed | Pending | Pending | Pending | Pending | |
-| private-verification | Private | Pending | Pending | Pending | Pending | |
-| private-inspections | Private | Pending | Pending | Pending | Pending | |
-| private-claims | Private | Pending | Pending | Pending | Pending | |
-| private-disputes | Private | Pending | Pending | Pending | Pending | |
+${packageData.a4_04.storage.map((item) => `| ${item.bucket} | ${item.visibility} | ${item.upload} | ${item.download} | ${item.signedUrl} | ${item.unauthorizedAccessDenied} | |`).join("\n")}
 
 ## A4-04 Backup / Restore Evidence
 
 | Check | Development | UAT/Staging | Evidence Location |
 | --- | --- | --- | --- |
-| Backup created | Pending | Pending | |
-| Restore executed | Pending | Pending | |
-| Restored data integrity verified | Pending | Pending | |
-| RPO documented | Pending | Pending | |
-| RTO documented | Pending | Pending | |
+${packageData.a4_04.backupRestore.map((item) => `| ${item.check} | ${item.development} | ${item.uat} | |`).join("\n")}
 
 ## A4-04 Secrets Exposure Certification
 
 | Location | SUPABASE_SERVICE_ROLE_KEY Absent | Other Secret Values Absent | Evidence Location |
 | --- | --- | --- | --- |
-| Source control | Pending | Pending | |
-| Frontend bundle | Pending | Pending | |
-| ZIP artifacts | Pending | Pending | |
-| Documentation | Pending | Pending | |
-| Logs | Pending | Pending | |
-| Chat/screenshots | Pending | Pending | |
+${packageData.a4_04.secretsExposure.map((item) => `| ${item.location} | ${item.serviceRoleKeyAbsent} | ${item.otherSecretValuesAbsent} | |`).join("\n")}
 
 ## A4-05 Execution Verification Decision
 
 | Decision Item | Result |
 | --- | --- |
-| Environment evidence complete | Pending |
-| Migration evidence complete | Pending |
-| Persistence evidence complete | Pending |
-| RLS/RBAC evidence complete | Pending |
-| Auth evidence complete | Pending |
-| Storage evidence complete | Pending |
-| Backup/restore evidence complete | Pending |
-| Secrets exposure certification complete | Pending |
+${packageData.a4_05.decisionItems.map((item) => `| ${item.item} | ${item.result} |`).join("\n")}
 | Recommendation | PASS to RC-0.6B / FAIL remain RC-0.6A |
 
 ## Final Notes
@@ -381,6 +355,114 @@ ${migrationRows}
 - Project IDs are allowed; keys, passwords, tokens, URLs containing credentials, and service-role keys are not allowed.
 - Production remains untouched until UAT signoff and explicit release approval.
 `;
+}
+
+export function buildA4EvidencePackageData({ intake = {}, generatedAt = new Date().toISOString() } = {}) {
+  const intakeResult = validateProjectIntake(intake);
+  const migrationChecklist = buildMigrationDryRunChecklist();
+  return {
+    generatedAt,
+    classification: "RC-0.6A Infrastructure Activation Hold",
+    currentGate: "A4-01 Infrastructure Ownership Confirmation",
+    nextStateIfApproved: "RC-0.6B Infrastructure Certified",
+    warning: "Do not include secrets, tokens, passwords, service-role keys, database URLs, JWT secrets, provider keys, private customer data, KYC documents, or screenshots containing credential material.",
+    intake: intakeResult,
+    migrationChecklist,
+    a4_01: {
+      environments: ENVIRONMENTS.map((environment) => {
+    const item = intake[environment.key] || {};
+        return {
+          key: environment.key,
+          label: environment.label,
+          projectName: item.projectName || "",
+          projectId: item.projectId || "",
+          evidenceResult: "Pending",
+          notes: "",
+        };
+      }),
+      owners: [
+        { key: "infrastructureOwner", label: "Infrastructure Owner", owner: intake.owners?.infrastructureOwner || "", evidenceResult: "Pending", notes: "" },
+        { key: "billingOwner", label: "Billing Owner", owner: intake.owners?.billingOwner || "", evidenceResult: "Pending", notes: "" },
+        { key: "accessOwner", label: "Access Owner", owner: intake.owners?.accessOwner || "", evidenceResult: "Pending", notes: "" },
+      ],
+      blockers: intakeResult.blockers,
+    },
+    a4_02: {
+      checks: [
+        { check: "Project accessible", development: "Pending", uat: "Pending", production: "Pending" },
+        { check: "Secrets stored in approved secret store", development: "Pending", uat: "Pending", production: "Pending" },
+        { check: "Separate database confirmed", development: "Pending", uat: "Pending", production: "Pending" },
+        { check: "Separate auth configuration confirmed", development: "Pending", uat: "Pending", production: "Pending" },
+        { check: "Separate storage buckets confirmed", development: "Pending", uat: "Pending", production: "Pending" },
+        { check: "Environment variables mapped", development: "Pending", uat: "Pending", production: "Pending" },
+        { check: "Production isolated from migration execution", development: "N/A", uat: "N/A", production: "Pending" },
+      ],
+    },
+    a4_03: {
+      productionHold: true,
+      migrations: migrationChecklist.migrations.map((migration) => ({
+        name: migration.name,
+        filePresent: migration.exists,
+        developmentResult: "Pending",
+        uatResult: "Pending",
+        productionResult: "Not executed",
+      })),
+    },
+    a4_04: {
+      persistence: EVIDENCE_ROLES.map((entity) => ({
+        entity,
+        create: "Pending",
+        read: "Pending",
+        update: "Pending",
+        delete: "Pending",
+        softDelete: "Pending",
+        restore: "Pending",
+      })),
+      rlsRbac: [
+        { scenario: "Customer cannot access supplier records", expectedResult: "Denied", actualResult: "Pending" },
+        { scenario: "Supplier cannot access dealer records", expectedResult: "Denied", actualResult: "Pending" },
+        { scenario: "Dealer cannot access admin records", expectedResult: "Denied", actualResult: "Pending" },
+        { scenario: "Cross-tenant access denied", expectedResult: "Denied", actualResult: "Pending" },
+        { scenario: "Admin access works through approved role", expectedResult: "Allowed", actualResult: "Pending" },
+      ],
+      auth: ["Registration", "Login", "Logout", "Password reset", "Email verification", "Session refresh", "Session revocation"].map((flow) => ({
+        flow,
+        development: "Pending",
+        uat: "Pending",
+      })),
+      storage: STORAGE_BUCKETS.map((bucket) => ({
+        bucket: bucket.name,
+        visibility: bucket.visibility,
+        upload: "Pending",
+        download: "Pending",
+        signedUrl: bucket.name === "public-assets" ? "N/A / Pending" : "Pending",
+        unauthorizedAccessDenied: "Pending",
+      })),
+      backupRestore: ["Backup created", "Restore executed", "Restored data integrity verified", "RPO documented", "RTO documented"].map((check) => ({
+        check,
+        development: "Pending",
+        uat: "Pending",
+      })),
+      secretsExposure: ["Source control", "Frontend bundle", "ZIP artifacts", "Documentation", "Logs", "Chat/screenshots"].map((location) => ({
+        location,
+        serviceRoleKeyAbsent: "Pending",
+        otherSecretValuesAbsent: "Pending",
+      })),
+    },
+    a4_05: {
+      decisionItems: [
+        "Environment evidence complete",
+        "Migration evidence complete",
+        "Persistence evidence complete",
+        "RLS/RBAC evidence complete",
+        "Auth evidence complete",
+        "Storage evidence complete",
+        "Backup/restore evidence complete",
+        "Secrets exposure certification complete",
+      ].map((item) => ({ item, result: "Pending" })),
+      recommendation: "PASS to RC-0.6B / FAIL remain RC-0.6A",
+    },
+  };
 }
 
 export function validateEvidenceRedaction(content = "") {
@@ -576,6 +658,19 @@ function loadPackageContent({ packagePath, fallbackContent }) {
   return readFileSync(resolve(packagePath), "utf8");
 }
 
+function timestampSlug(date = new Date()) {
+  return date.toISOString().replace(/[:.]/g, "-");
+}
+
+function buildTimestampedEvidencePaths({ generatedAt = new Date(), outputDir = "artifacts/a4" } = {}) {
+  const slug = timestampSlug(generatedAt);
+  return {
+    markdown: join(outputDir, `a4-evidence-package-${slug}.md`),
+    json: join(outputDir, `a4-evidence-package-${slug}.json`),
+    manifest: join(outputDir, `a4-evidence-manifest-${slug}.json`),
+  };
+}
+
 if (resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1] || "")) {
   const args = parseArgs(process.argv);
   const intake = loadIntake(args.input);
@@ -585,10 +680,22 @@ if (resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1] || "")) 
     writeOrPrint(renderA4EvidenceTemplate(), args.output);
   } else if (args.command === "evidence-package") {
     const packageContent = renderA4EvidencePackage({ intake });
-    writeOrPrint(packageContent, args.output);
+    const outputContent = args.format === "json"
+      ? JSON.stringify(buildA4EvidencePackageData({ intake }), null, 2)
+      : packageContent;
+    writeOrPrint(outputContent, args.output);
     if (args.manifestOutput) {
       writeOrPrint(JSON.stringify(buildA4EvidenceManifest({ packagePath: args.output || "stdout", packageContent }), null, 2), args.manifestOutput);
     }
+  } else if (args.command === "evidence-bundle") {
+    const generatedAt = new Date();
+    const paths = buildTimestampedEvidencePaths({ generatedAt });
+    const packageContent = renderA4EvidencePackage({ intake, generatedAt: generatedAt.toISOString() });
+    const packageData = buildA4EvidencePackageData({ intake, generatedAt: generatedAt.toISOString() });
+    const manifest = buildA4EvidenceManifest({ packagePath: paths.markdown, packageContent, generatedAt: generatedAt.toISOString() });
+    writeOrPrint(packageContent, paths.markdown);
+    writeOrPrint(JSON.stringify(packageData, null, 2), paths.json);
+    writeOrPrint(JSON.stringify(manifest, null, 2), paths.manifest);
   } else if (args.command === "evidence-score") {
     const packageContent = loadPackageContent({ packagePath: args.package, fallbackContent: renderA4EvidencePackage({ intake }) });
     const score = scoreA4EvidencePackage(packageContent);

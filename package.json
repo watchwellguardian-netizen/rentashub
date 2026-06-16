@@ -15,6 +15,7 @@
     "a4:validate": "node scripts/a4-supabase-tooling.mjs validate",
     "a4:template": "node scripts/a4-supabase-tooling.mjs template",
     "a4:evidence-package": "node scripts/a4-supabase-tooling.mjs evidence-package",
+    "a4:evidence-bundle": "node scripts/a4-supabase-tooling.mjs evidence-bundle",
     "a4:evidence-score": "node scripts/a4-supabase-tooling.mjs evidence-score",
     "a4:evidence-redaction": "node scripts/a4-supabase-tooling.mjs evidence-redaction",
     "a4:evidence-manifest": "node scripts/a4-supabase-tooling.mjs evidence-manifest",
