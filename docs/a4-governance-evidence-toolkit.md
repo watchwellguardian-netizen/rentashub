@@ -69,6 +69,42 @@ Run static RLS/RBAC SQL analysis:
 npm run a4:governance:rls-rbac
 ```
 
+Score A4-02 environment evidence templates:
+
+```bash
+npm run a4:governance:a4-02-score
+```
+
+Generate the A4-03 migration evidence checklist:
+
+```bash
+npm run a4:governance:a4-03-checklist
+```
+
+Generate the A4-04 infrastructure certification evidence index:
+
+```bash
+npm run a4:governance:a4-04-index
+```
+
+Generate the A4-05 final infrastructure review report:
+
+```bash
+npm run a4:governance:a4-05-report
+```
+
+Check Supabase project references across local docs and config-like files:
+
+```bash
+npm run a4:governance:project-refs
+```
+
+Verify generated reports do not expose credential-like values:
+
+```bash
+npm run a4:governance:redaction
+```
+
 ## A4-01 Still Requires Real Supabase Project IDs
 
 A4-01 cannot pass with planned names, placeholder IDs, pending IDs, screenshots with secrets, or statements that projects will be created later.

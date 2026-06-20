@@ -1320,6 +1320,24 @@
 - Clean install risk remains CI-pending: local sandbox still lacks a normal working npm clean-install path, and GitHub Actions or another proper Node/npm environment must confirm clean install.
 # RentasHub Verification Log
 
+## A4 Supabase Evidence Automation Expansion - 2026-06-20
+
+- Scope: Credential-readiness evidence automation only; no Supabase connection, MCP setup, secrets, migration execution, Auth test, Storage test, backup/restore, or RLS enforcement proof occurred.
+- Added duplicate project ID detection for A4-01 submissions.
+- Added A4-02 environment evidence completeness scorer.
+- Added A4-03 migration evidence checklist generator.
+- Added A4-04 infrastructure certification evidence index.
+- Added A4-05 final infrastructure review report generator.
+- Added Supabase project reference consistency checker across local docs/config-like files.
+- Added Supabase credential redaction verifier for generated reports.
+- Focused A4 evidence automation tests: Passed, 17/17.
+- A4-02 score command: Passed as report generation; status remains blocked pending manual evidence.
+- A4-03 checklist command: Passed as checklist generation.
+- A4-04 index command: Passed as index generation; status remains blocked pending manual evidence.
+- A4-05 report command: Passed as report generation; recommendation remains no-go/remain RC-0.6A.
+- Redaction verifier: Passed.
+- Remaining blocker: A4-01 requires actual Supabase Development, UAT/Staging, and Production project IDs.
+
 ## A4-02 Environment Provisioning Readiness Pack - 2026-06-18
 
 - Scope: Credential-readiness tooling only; no Supabase connection, `.env` loading, secret printing, real environment provisioning, or A4-02 approval occurred.

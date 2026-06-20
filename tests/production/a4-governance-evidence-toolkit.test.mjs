@@ -6,12 +6,19 @@ import { test } from "node:test";
 import {
   checkMigrationReadiness,
   checkRlsRbacSqlStaticReadiness,
+  checkSupabaseProjectReferenceConsistency,
+  detectDuplicateProjectIds,
   generateA4EvidenceManifest,
+  generateA403MigrationEvidenceChecklist,
+  buildA404InfrastructureCertificationEvidenceIndex,
+  buildA405FinalInfrastructureReviewReport,
   parseA4EvidenceInput,
   scanGovernanceSecrets,
+  scoreA402EnvironmentEvidence,
   scoreA4GovernanceEvidence,
   validateA4EvidenceIntake,
   validateSupabaseProjectId,
+  verifySupabaseCredentialRedactionForReports,
 } from "../../scripts/a4-governance-evidence-toolkit.mjs";
 
 const completeA401 = {
@@ -50,6 +57,25 @@ test("A4-01 intake validator rejects placeholder and secret-like project IDs", (
   assert.equal(validateSupabaseProjectId("pending creation").code, "placeholder_project_id");
   assert.equal(validateSupabaseProjectId("https://project.supabase.co").code, "url_not_project_id");
   assert.equal(validateSupabaseProjectId("postgresql://user:pass@host/db").code, "secret_like_project_id");
+});
+
+test("A4-01 duplicate environment project ID detector blocks reused refs", () => {
+  const result = detectDuplicateProjectIds({
+    developmentProjectId: "abcdefghijklmnopqrst",
+    uatProjectId: "abcdefghijklmnopqrst",
+    productionProjectId: "cdefghijklmnopqrstuv",
+  });
+  assert.equal(result.status, "FAIL");
+  assert.ok(result.duplicates.some((duplicate) => duplicate.fields.includes("developmentProjectId") && duplicate.fields.includes("uatProjectId")));
+
+  const intake = validateA4EvidenceIntake({
+    parsed: {
+      ...completeA401,
+      uatProjectId: completeA401.developmentProjectId,
+    },
+  });
+  assert.equal(intake.status, "FAIL");
+  assert.ok(intake.blockers.some((blocker) => /same project ID/.test(blocker)));
 });
 
 test("A4-01 accepted owners without real project IDs remain partial in scoring", () => {
@@ -132,6 +158,42 @@ test("manifest generation writes an evidence manifest without secrets", () => {
   }
 });
 
+test("A4-02 environment evidence scorer keeps provisioning blocked without filled evidence", () => {
+  const score = scoreA402EnvironmentEvidence();
+  assert.equal(score.status, "BLOCKED");
+  assert.equal(score.liveProvisioningClaimed, false);
+  assert.equal(score.valuesPrinted, false);
+  assert.equal(score.templates.length, 3);
+  assert.ok(score.blockers.some((blocker) => /pending|not-submitted|blocked/i.test(blocker)));
+});
+
+test("A4-03 migration evidence checklist covers development UAT rollback and production hold", () => {
+  const checklist = generateA403MigrationEvidenceChecklist();
+  assert.equal(checklist.status, "GENERATED");
+  assert.equal(checklist.liveDatabaseTouched, false);
+  assert.equal(checklist.databaseUrlRequired, false);
+  assert.equal(checklist.migrations.length, 8);
+  assert.equal(checklist.rollbackEvidence.length, 4);
+  assert.match(checklist.productionHold.requiredEvidence, /Production untouched/);
+});
+
+test("A4-04 infrastructure certification evidence index remains blocked pending manual evidence", () => {
+  const index = buildA404InfrastructureCertificationEvidenceIndex();
+  assert.equal(index.status, "BLOCKED_PENDING_MANUAL_EVIDENCE");
+  assert.equal(index.liveInfrastructureClaimed, false);
+  assert.ok(index.sections.some((section) => /Supabase Auth lifecycle/.test(section.section)));
+  assert.ok(index.blockers.some((blocker) => /Backup\/restore/.test(blocker)));
+});
+
+test("A4-05 final infrastructure review report remains no-go without full evidence", () => {
+  const report = buildA405FinalInfrastructureReviewReport({ a401: completeA401 });
+  assert.equal(report.status, "NO_GO_REMAIN_RC_0_6A");
+  assert.equal(report.liveInfrastructureClaimed, false);
+  assert.equal(report.a401Status, "PASS");
+  assert.ok(report.blockers.some((blocker) => /A4-02/.test(blocker)));
+  assert.equal(report.nextAuthorizedGate, "A4-01 Infrastructure Ownership Confirmation Submitted");
+});
+
 test("migration readiness works without requiring a live DATABASE_URL", () => {
   const result = checkMigrationReadiness();
   assert.equal(result.liveDatabaseTouched, false);
@@ -144,6 +206,40 @@ test("RLS/RBAC static analyzer reports SQL coverage without claiming live enforc
   assert.equal(result.liveRlsClaimed, false);
   assert.ok(["PASS", "NEEDS_REVIEW"].includes(result.status));
   assert.ok(result.referenceCoverage.some((item) => item.reference === "tenant"));
+});
+
+test("Supabase project reference consistency checker is static and reports refs without connecting", () => {
+  const temp = mkdtempSync(join(tmpdir(), "rentashub-project-refs-"));
+  try {
+    const docsDir = join(temp, "docs");
+    mkdirSync(docsDir, { recursive: true });
+    writeFileSync(join(docsDir, "supabase.md"), "Project URL: https://abcdefghijklmnopqrst.supabase.co\nMCP: project_ref=abcdefghijklmnopqrst");
+    const result = checkSupabaseProjectReferenceConsistency({
+      root: temp,
+      expectedProjectIds: ["abcdefghijklmnopqrst"],
+    });
+    assert.equal(result.status, "PASS");
+    assert.equal(result.liveConnectionAttempted, false);
+    assert.deepEqual(result.uniqueRefs, ["abcdefghijklmnopqrst"]);
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+});
+
+test("Supabase credential redaction verifier catches unredacted report values", () => {
+  const serviceRoleLabel = ["SUPABASE", "SERVICE", "ROLE", "KEY"].join("_");
+  const serviceRoleValue = ["sb", "service", "supersecretvalue12345"].join("_");
+  const failed = verifySupabaseCredentialRedactionForReports({
+    contents: [`${serviceRoleLabel}=${serviceRoleValue}`],
+  });
+  assert.equal(failed.status, "FAIL");
+  assert.equal(failed.valuesPrinted, false);
+  assert.doesNotMatch(JSON.stringify(failed), new RegExp(serviceRoleValue));
+
+  const passed = verifySupabaseCredentialRedactionForReports({
+    contents: ["No credential values included. SUPABASE_SERVICE_ROLE_KEY: REDACTED"],
+  });
+  assert.equal(passed.status, "PASS");
 });
 
 test("governance secret scanner can scan fixture roots and redact values", () => {

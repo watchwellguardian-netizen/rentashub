@@ -38,6 +38,35 @@ const A4_01_REQUIRED_FIELDS = [
   { key: "productionProjectId", label: "Production Project ID", projectId: true },
 ];
 
+const PROJECT_ID_KEYS = ["developmentProjectId", "uatProjectId", "productionProjectId"];
+const ENVIRONMENT_TEMPLATE_PATHS = [
+  "docs/a4-02-development-environment-template.md",
+  "docs/a4-02-staging-environment-template.md",
+  "docs/a4-02-production-environment-template.md",
+];
+const A4_02_REQUIRED_EVIDENCE_TERMS = [
+  "Supabase project name",
+  "Supabase project ID",
+  "Environment owner",
+  "Access owner",
+  "Billing owner",
+  "Database status",
+  "Auth status",
+  "Storage status",
+  "Backup status",
+  "storage location",
+  "/api/health/readiness",
+  "Sign-Off",
+];
+const A4_04_CERTIFICATION_SECTIONS = [
+  "Persistence CRUD validation",
+  "RLS/RBAC denial and admin access validation",
+  "Supabase Auth lifecycle validation",
+  "Storage upload/download/signed URL validation",
+  "Backup and restore validation",
+  "Secrets exposure certification",
+];
+
 const SCAN_DIRECTORIES = ["src", "server", "docs", "tests", "scripts", "dist"];
 const TEXT_EXTENSIONS = new Set([".css", ".env", ".example", ".html", ".js", ".json", ".log", ".md", ".mjs", ".sql", ".svg", ".ts", ".tsx", ".txt", ".xml", ".yml"]);
 
@@ -157,10 +186,33 @@ export function parseA4EvidenceInput(content = "") {
   }
 }
 
+export function detectDuplicateProjectIds(parsed = {}) {
+  const projectIds = PROJECT_ID_KEYS
+    .map((key) => ({ key, value: String(parsed[key] || "").trim() }))
+    .filter((item) => item.value && !isPlaceholder(item.value));
+  const duplicates = [];
+  for (let index = 0; index < projectIds.length; index += 1) {
+    for (let compare = index + 1; compare < projectIds.length; compare += 1) {
+      if (projectIds[index].value.toLowerCase() === projectIds[compare].value.toLowerCase()) {
+        duplicates.push({
+          projectId: projectIds[index].value,
+          fields: [projectIds[index].key, projectIds[compare].key],
+          message: `${projectIds[index].key} and ${projectIds[compare].key} use the same project ID.`,
+        });
+      }
+    }
+  }
+  return {
+    status: duplicates.length ? "FAIL" : "PASS",
+    duplicates,
+  };
+}
+
 export function validateA4EvidenceIntake({ content = "", parsed = null, source = "input" } = {}) {
   const data = parsed || parseA4EvidenceInput(content);
   const findings = [];
   const secretFindings = collectSecretFindings(content || JSON.stringify(data), source);
+  const duplicateProjectIds = detectDuplicateProjectIds(data);
   for (const field of A4_01_REQUIRED_FIELDS) {
     const value = String(data[field.key] || "").trim();
     if (!value) findings.push({ field: field.key, severity: "high", message: `${field.label} is missing.` });
@@ -173,11 +225,15 @@ export function validateA4EvidenceIntake({ content = "", parsed = null, source =
   for (const finding of secretFindings) {
     findings.push({ field: "secrets", severity: finding.severity, message: `${finding.type} detected in ${finding.source}:${finding.line}.` });
   }
+  for (const duplicate of duplicateProjectIds.duplicates) {
+    findings.push({ field: "projectIds", severity: "high", message: duplicate.message, code: "duplicate_project_id" });
+  }
   const blockers = findings.map((finding) => `${finding.field}: ${finding.message}`);
   return {
     status: blockers.length ? "FAIL" : "PASS",
     gate: "A4-01 Infrastructure Ownership Confirmation",
     noSecretsDetected: secretFindings.length === 0,
+    duplicateProjectIds,
     fields: A4_01_REQUIRED_FIELDS.map((field) => ({
       key: field.key,
       label: field.label,
@@ -189,6 +245,159 @@ export function validateA4EvidenceIntake({ content = "", parsed = null, source =
     blockers,
     nextAuthorizedGate: blockers.length ? "A4-01 Infrastructure Ownership Confirmation Submitted" : "A4-02 Environment Provisioning Verification",
     note: "Static evidence intake only. No Supabase API calls, secret reads, or live activation occurred.",
+  };
+}
+
+export function scoreA402EnvironmentEvidence({ root = ROOT } = {}) {
+  const templates = ENVIRONMENT_TEMPLATE_PATHS.map((path) => {
+    const absolute = join(root, path);
+    const exists = existsSync(absolute);
+    const text = exists ? readFileSync(absolute, "utf8") : "";
+    const missingTerms = A4_02_REQUIRED_EVIDENCE_TERMS.filter((term) => !new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(text));
+    const pendingMarkers = (text.match(/\b(Pending|Not submitted|Blocked)\b/gi) || []).length;
+    const secretFindings = collectSecretFindings(text, path);
+    const score = exists ? Math.max(0, Math.round(((A4_02_REQUIRED_EVIDENCE_TERMS.length - missingTerms.length) / A4_02_REQUIRED_EVIDENCE_TERMS.length) * 100) - Math.min(60, pendingMarkers * 5)) : 0;
+    return {
+      path,
+      exists,
+      score,
+      missingTerms,
+      pendingMarkers,
+      redactionStatus: secretFindings.length ? "FAIL" : "PASS",
+      status: exists && !missingTerms.length && !secretFindings.length && pendingMarkers === 0 ? "PASS" : exists && !missingTerms.length && !secretFindings.length ? "PARTIAL" : "FAIL",
+    };
+  });
+  const blockers = templates.flatMap((template) => [
+    ...(template.exists ? [] : [`${template.path} is missing.`]),
+    ...template.missingTerms.map((term) => `${template.path} missing ${term}.`),
+    ...(template.redactionStatus === "PASS" ? [] : [`${template.path} contains secret-like values.`]),
+    ...(template.pendingMarkers ? [`${template.path} has ${template.pendingMarkers} pending/not-submitted/blocked markers.`] : []),
+  ]);
+  const averageScore = Math.round(templates.reduce((sum, template) => sum + template.score, 0) / templates.length);
+  return {
+    status: blockers.length ? "BLOCKED" : "PASS",
+    score: averageScore,
+    liveProvisioningClaimed: false,
+    valuesPrinted: false,
+    templates,
+    blockers,
+    nextAuthorizedGate: "A4-01 Infrastructure Ownership Confirmation Submitted",
+    note: "Scores A4-02 evidence templates only. Real environment provisioning still requires manual evidence after A4-01 passes.",
+  };
+}
+
+export function generateA403MigrationEvidenceChecklist() {
+  return {
+    status: "GENERATED",
+    liveDatabaseTouched: false,
+    databaseUrlRequired: false,
+    migrations: REQUIRED_MIGRATIONS.flatMap((migration) => [
+      { environment: "Development", migration, requiredEvidence: `${migration} execution result: PASS / FAIL`, status: "Pending" },
+      { environment: "UAT/Staging", migration, requiredEvidence: `${migration} execution result: PASS / FAIL`, status: "Pending" },
+    ]),
+    productionHold: {
+      requiredEvidence: "Production untouched until UAT signoff",
+      status: "Pending",
+    },
+    rollbackEvidence: REQUIRED_MIGRATIONS.map((migration) => ({
+      migration,
+      requiredEvidence: "Rollback notes reviewed and linked",
+      status: "Pending",
+    })),
+  };
+}
+
+export function buildA404InfrastructureCertificationEvidenceIndex() {
+  return {
+    status: "BLOCKED_PENDING_MANUAL_EVIDENCE",
+    liveInfrastructureClaimed: false,
+    sections: A4_04_CERTIFICATION_SECTIONS.map((section) => ({
+      section,
+      requiredEvidence: "Manual execution evidence required",
+      status: "Pending",
+    })),
+    blockers: [
+      "Persistence CRUD evidence is missing.",
+      "RLS/RBAC enforcement evidence is missing.",
+      "Supabase Auth lifecycle evidence is missing.",
+      "Storage access evidence is missing.",
+      "Backup/restore evidence is missing.",
+      "Secrets exposure certification evidence is missing.",
+    ],
+  };
+}
+
+export function buildA405FinalInfrastructureReviewReport({ a401 = null } = {}) {
+  const intake = a401 ? validateA4EvidenceIntake({ parsed: a401 }) : validateA4EvidenceIntake();
+  const a402 = scoreA402EnvironmentEvidence();
+  const a403 = generateA403MigrationEvidenceChecklist();
+  const a404 = buildA404InfrastructureCertificationEvidenceIndex();
+  const blockers = [
+    ...intake.blockers.map((blocker) => `A4-01: ${blocker}`),
+    ...a402.blockers.map((blocker) => `A4-02: ${blocker}`),
+    ...a404.blockers.map((blocker) => `A4-04: ${blocker}`),
+    "A4-03 migration execution evidence is pending.",
+  ];
+  return {
+    status: blockers.length ? "NO_GO_REMAIN_RC_0_6A" : "PASS_READY_FOR_RC_0_6B_REVIEW",
+    liveInfrastructureClaimed: false,
+    a401Status: intake.status,
+    a402Status: a402.status,
+    a403Status: a403.status,
+    a404Status: a404.status,
+    blockers,
+    recommendation: blockers.length ? "Remain RC-0.6A. Submit missing operational evidence." : "Promote only after release governance approval.",
+    nextAuthorizedGate: blockers.length ? "A4-01 Infrastructure Ownership Confirmation Submitted" : "RC-0.6B Infrastructure Certified review",
+  };
+}
+
+function extractSupabaseProjectRefs(text = "") {
+  const patterns = [
+    /https:\/\/([a-z0-9]{8,64})\.supabase\.co/gi,
+    /db\.([a-z0-9]{8,64})\.supabase\.co/gi,
+    /project_ref=([a-z0-9]{8,64})/gi,
+    /--project-ref\s+([a-z0-9]{8,64})/gi,
+  ];
+  return patterns.flatMap((pattern) => Array.from(String(text).matchAll(pattern)).map((match) => match[1]));
+}
+
+export function checkSupabaseProjectReferenceConsistency({ root = ROOT, expectedProjectIds = [] } = {}) {
+  const files = scanFileList(root).filter((file) => /\.(md|mjs|js|json|ts|tsx|txt|env|example|yml)$/i.test(file));
+  const references = files.flatMap((file) => {
+    const text = readFileSync(join(root, file), "utf8");
+    return extractSupabaseProjectRefs(text).map((projectRef) => ({ file, projectRef }));
+  });
+  const uniqueRefs = Array.from(new Set(references.map((item) => item.projectRef)));
+  const expected = expectedProjectIds.filter(Boolean).map((id) => String(id).trim()).filter((id) => !isPlaceholder(id));
+  const unexpectedRefs = expected.length ? uniqueRefs.filter((ref) => !expected.includes(ref)) : [];
+  const missingExpectedRefs = expected.filter((id) => !uniqueRefs.includes(id));
+  return {
+    status: unexpectedRefs.length || missingExpectedRefs.length ? "NEEDS_REVIEW" : "PASS",
+    references,
+    uniqueRefs,
+    expectedProjectIds: expected,
+    unexpectedRefs,
+    missingExpectedRefs,
+    liveConnectionAttempted: false,
+    note: "Static reference consistency check only. Does not verify project existence or credentials.",
+  };
+}
+
+export function verifySupabaseCredentialRedactionForReports({ contents = [], root = ROOT } = {}) {
+  const candidateContents = contents.length ? contents : [
+    existsSync(join(root, "docs", "a4-evidence-manifest.md")) ? readFileSync(join(root, "docs", "a4-evidence-manifest.md"), "utf8") : "",
+    renderScore(scoreA4GovernanceEvidence()),
+  ];
+  const findings = candidateContents.flatMap((content, index) => [
+    ...collectSecretFindings(content, `report-${index + 1}`),
+    ...validateEvidenceRedaction(content).findings.map((finding) => ({ source: `report-${index + 1}`, line: 0, type: finding.type, severity: "high", sample: "REDACTED" })),
+  ]);
+  return {
+    status: findings.length ? "FAIL" : "PASS",
+    reportsChecked: candidateContents.length,
+    findings,
+    valuesPrinted: false,
+    note: "Verifies generated report text for credential-like material. Secret values are never printed.",
   };
 }
 
@@ -296,6 +505,122 @@ function renderIntake(result) {
     "",
     result.note,
     "",
+  ].join("\n");
+}
+
+function renderA402Score(result) {
+  return [
+    "# A4-02 Environment Evidence Completeness Score",
+    "",
+    `Status: ${result.status}`,
+    `Score: ${result.score}`,
+    `Live provisioning claimed: ${result.liveProvisioningClaimed ? "YES" : "NO"}`,
+    `Values printed: ${result.valuesPrinted ? "YES" : "NO"}`,
+    "",
+    "## Templates",
+    "",
+    ...result.templates.map((template) => `- ${template.path}: ${template.status}; score ${template.score}; pending markers ${template.pendingMarkers}`),
+    "",
+    "## Blockers",
+    "",
+    ...(result.blockers.length ? result.blockers.map((blocker) => `- ${blocker}`) : ["- None."]),
+    "",
+    `Next authorized gate: ${result.nextAuthorizedGate}`,
+    "",
+    result.note,
+  ].join("\n");
+}
+
+function renderA403Checklist(result) {
+  return [
+    "# A4-03 Migration Evidence Checklist",
+    "",
+    `Status: ${result.status}`,
+    `Live database touched: ${result.liveDatabaseTouched ? "YES" : "NO"}`,
+    `DATABASE_URL required: ${result.databaseUrlRequired ? "YES" : "NO"}`,
+    "",
+    "## Migration Evidence",
+    "",
+    ...result.migrations.map((item) => `- ${item.environment}: ${item.migration} - ${item.requiredEvidence} (${item.status})`),
+    "",
+    "## Rollback Evidence",
+    "",
+    ...result.rollbackEvidence.map((item) => `- ${item.migration}: ${item.requiredEvidence} (${item.status})`),
+    "",
+    `Production hold: ${result.productionHold.requiredEvidence} (${result.productionHold.status})`,
+  ].join("\n");
+}
+
+function renderA404Index(result) {
+  return [
+    "# A4-04 Infrastructure Certification Evidence Index",
+    "",
+    `Status: ${result.status}`,
+    `Live infrastructure claimed: ${result.liveInfrastructureClaimed ? "YES" : "NO"}`,
+    "",
+    "## Sections",
+    "",
+    ...result.sections.map((section) => `- ${section.section}: ${section.status}; ${section.requiredEvidence}`),
+    "",
+    "## Blockers",
+    "",
+    ...result.blockers.map((blocker) => `- ${blocker}`),
+  ].join("\n");
+}
+
+function renderA405Report(result) {
+  return [
+    "# A4-05 Final Infrastructure Review Report",
+    "",
+    `Status: ${result.status}`,
+    `Live infrastructure claimed: ${result.liveInfrastructureClaimed ? "YES" : "NO"}`,
+    `A4-01: ${result.a401Status}`,
+    `A4-02: ${result.a402Status}`,
+    `A4-03: ${result.a403Status}`,
+    `A4-04: ${result.a404Status}`,
+    "",
+    "## Blockers",
+    "",
+    ...(result.blockers.length ? result.blockers.map((blocker) => `- ${blocker}`) : ["- None."]),
+    "",
+    `Recommendation: ${result.recommendation}`,
+    `Next authorized gate: ${result.nextAuthorizedGate}`,
+  ].join("\n");
+}
+
+function renderProjectReferenceConsistency(result) {
+  return [
+    "# Supabase Project Reference Consistency Report",
+    "",
+    `Status: ${result.status}`,
+    `Live connection attempted: ${result.liveConnectionAttempted ? "YES" : "NO"}`,
+    "",
+    "## Unique Project References",
+    "",
+    ...(result.uniqueRefs.length ? result.uniqueRefs.map((ref) => `- ${ref}`) : ["- None found."]),
+    "",
+    "## Findings",
+    "",
+    ...(result.unexpectedRefs.length ? result.unexpectedRefs.map((ref) => `- Unexpected reference: ${ref}`) : ["- No unexpected refs based on supplied expected IDs."]),
+    ...(result.missingExpectedRefs.length ? result.missingExpectedRefs.map((ref) => `- Missing expected reference: ${ref}`) : []),
+    "",
+    result.note,
+  ].join("\n");
+}
+
+function renderRedactionVerification(result) {
+  return [
+    "# Supabase Credential Redaction Verification",
+    "",
+    `Status: ${result.status}`,
+    `Reports checked: ${result.reportsChecked}`,
+    `Values printed: ${result.valuesPrinted ? "YES" : "NO"}`,
+    "",
+    "## Findings",
+    "",
+    ...(result.findings.length ? result.findings.map((finding) => `- ${finding.source}:${finding.line} ${finding.type} ${finding.severity}`) : ["- None."]),
+    "",
+    result.note,
   ].join("\n");
 }
 
@@ -483,11 +808,37 @@ if (resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1] || "")) 
   } else if (args.command === "rls-rbac") {
     result = checkRlsRbacSqlStaticReadiness();
     rendered = args.json ? JSON.stringify(result, null, 2) : renderRlsRbacStaticReport(result);
+  } else if (args.command === "a4-02-score") {
+    result = scoreA402EnvironmentEvidence();
+    rendered = args.json ? JSON.stringify(result, null, 2) : renderA402Score(result);
+  } else if (args.command === "a4-03-checklist") {
+    result = generateA403MigrationEvidenceChecklist();
+    rendered = args.json ? JSON.stringify(result, null, 2) : renderA403Checklist(result);
+  } else if (args.command === "a4-04-index") {
+    result = buildA404InfrastructureCertificationEvidenceIndex();
+    rendered = args.json ? JSON.stringify(result, null, 2) : renderA404Index(result);
+  } else if (args.command === "a4-05-report") {
+    result = buildA405FinalInfrastructureReviewReport();
+    rendered = args.json ? JSON.stringify(result, null, 2) : renderA405Report(result);
+  } else if (args.command === "project-refs") {
+    result = checkSupabaseProjectReferenceConsistency();
+    rendered = args.json ? JSON.stringify(result, null, 2) : renderProjectReferenceConsistency(result);
+  } else if (args.command === "redaction") {
+    result = verifySupabaseCredentialRedactionForReports();
+    rendered = args.json ? JSON.stringify(result, null, 2) : renderRedactionVerification(result);
   } else {
     result = scoreA4GovernanceEvidence({ content });
     rendered = args.json ? JSON.stringify(result, null, 2) : renderScore(result);
   }
   if (args.command === "manifest") console.log(rendered);
   else printOrWrite(rendered, args.output);
-  process.exitCode = result.status === "PASS" ? 0 : args.command === "score" ? 0 : 1;
+  const reportOnlyCommands = new Set([
+    "score",
+    "a4-02-score",
+    "a4-03-checklist",
+    "a4-04-index",
+    "a4-05-report",
+    "project-refs",
+  ]);
+  process.exitCode = result.status === "PASS" || reportOnlyCommands.has(args.command) ? 0 : 1;
 }
