@@ -31,6 +31,7 @@ Only the following work is authorized:
 - A3-Y - Repository Consolidation, Technical Debt Elimination, Performance Hardening, and Core Rental Vertical-Slice Readiness, as a non-production engineering stage on the backlog branch.
 - Accelerated Full-Feature Delivery Programme Phase 0, as a provider-independent implementation mobilization stage.
 - ACCEL-P1-001 - Local PostgreSQL/Supabase Execution & Core Rental Infrastructure, as a non-production local-only execution-readiness stage on the backlog branch.
+- ACCEL-P1-002 - Executable Local Database, RLS, Storage, and Core Rental Persistence validation, as a non-production local-only execution gate on the backlog branch.
 
 The next valid production-gate submission must be infrastructure ownership evidence, not secrets.
 
@@ -43,6 +44,8 @@ Accelerated delivery work may proceed in parallel with A4-01 only when it is pro
 A4-01 remains mandatory but does not freeze provider-independent implementation work.
 
 ACCEL-P1-001 work may proceed only against local/provider-independent execution paths. It may add local Supabase scaffolding, static migration parity checks, local command guards, and backend contracts. It must not run linked Supabase commands, touch production, load real credentials, or claim A4 evidence completion.
+
+ACCEL-P1-002 work may proceed only against disposable local Supabase CLI or disposable local PostgreSQL execution environments. If Supabase CLI, Docker, or psql are unavailable, the batch must report BLOCKED rather than simulate PostgreSQL execution or claim RLS enforcement.
 
 ## Parallel Provider-Independent Implementation Stage
 

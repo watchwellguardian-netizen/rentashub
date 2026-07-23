@@ -21,6 +21,8 @@
     "foundation:local:json": "node scripts/local-foundation-evidence.mjs json",
     "accel:p1:local-supabase": "node scripts/accel-p1-local-supabase-evidence.mjs report",
     "accel:p1:local-supabase:json": "node scripts/accel-p1-local-supabase-evidence.mjs json",
+    "accel:p1:db-validation": "node scripts/accel-p1-executable-db-validation.mjs report",
+    "accel:p1:db-validation:json": "node scripts/accel-p1-executable-db-validation.mjs json",
     "a4:supabase": "node scripts/a4-supabase-tooling.mjs report",
     "a4:validate": "node scripts/a4-supabase-tooling.mjs validate",
     "a4:template": "node scripts/a4-supabase-tooling.mjs template",
