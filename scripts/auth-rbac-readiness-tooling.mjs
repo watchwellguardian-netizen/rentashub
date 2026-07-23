@@ -13,7 +13,7 @@ import {
 } from "../server/src/auth/rbacPolicy.js";
 import { getSupabaseAuthActivationPlan, validateSupabaseJwtReadiness } from "../server/src/auth/supabaseAuthService.js";
 
-const PLACEHOLDER_PATTERNS = [/^$/, /placeholder/i, /change/i, /your[-_]?/i, /example/i, /<[^>]+>/];
+const PLACEHOLDER_PATTERNS = [/^$/, /^none$/i, /^not[-_]?configured$/i, /placeholder/i, /change/i, /your[-_]?/i, /example/i, /<[^>]+>/];
 const root = process.cwd();
 const routesDir = join(root, "server", "src", "routes");
 const AUTH_EVIDENCE_SCAN_PATHS = [
@@ -510,6 +510,70 @@ Do not include access tokens, refresh tokens, service role keys, JWT secrets, pa
 `;
 }
 
+export function renderLiveAuthEvidenceCollectionTemplate() {
+  return `# Live Auth Evidence Collection Template
+
+Credential-readiness form only. Do not include access tokens, refresh tokens, passwords, reset links, verification links, JWTs, service credentials, or screenshots containing credentials.
+
+## Environment
+
+- Environment: Development / UAT
+- Supabase Project Name:
+- Supabase Project ID:
+- Auth Evidence Owner:
+- Test Date:
+- Evidence Repository/Folder:
+
+## Required Live Auth Evidence
+
+| Control | Required Evidence | Development Status | UAT Status | Evidence Location |
+| --- | --- | --- | --- | --- |
+| Registration | New user can register with approved role mapping | Pending | Pending |  |
+| Login | Registered verified user can login | Pending | Pending |  |
+| Logout | Active session can logout cleanly | Pending | Pending |  |
+| Password Reset | Reset request, reset completion, old password denial, new password login | Pending | Pending |  |
+| Email Verification | Verification email sent, link processed, user marked verified | Pending | Pending |  |
+| MFA Readiness | MFA policy, challenge readiness, recovery procedure, audit trail | Pending | Pending |  |
+| Session Refresh | Session refresh succeeds without exposing tokens | Pending | Pending |  |
+| Session Expiration | Expired session denied | Pending | Pending |  |
+| Session Revocation | Revoked session denied and audit event recorded where supported | Pending | Pending |  |
+| Role Claim Mapping | Supabase claim maps to RentasHub role | Pending | Pending |  |
+
+## Decision
+
+- Result: PASS / FAIL
+- Blockers:
+- Remediation Owner:
+- Next Gate:
+`;
+}
+
+export function renderSupabaseAuthConfigurationEvidenceChecklist(env = process.env) {
+  const checklist = buildSupabaseAuthConfigChecklist(env);
+  return `# Supabase Auth Configuration Evidence Checklist
+
+Credential-readiness checklist only. Record secret storage locations and status; do not record secret values.
+
+Status: ${checklist.status}
+
+| Configuration Item | Required State | Evidence Required | Status |
+| --- | --- | --- | --- |
+${checklist.checks.map((check) => `| ${check.key} | ${check.requiredValue} | Secure secret store reference or settings screenshot without values | ${check.status} |`).join("\n")}
+
+## Required Sign-Off
+
+- Auth configuration owner:
+- Security reviewer:
+- Dev environment reviewed:
+- UAT environment reviewed:
+- Production values stored but not activated:
+
+## Blockers
+
+${checklist.blockers.length ? checklist.blockers.map((blocker) => `- ${blocker}`).join("\n") : "- None detected in supplied environment shape."}
+`;
+}
+
 export function renderPasswordResetTestChecklist() {
   return `# Password Reset Test Checklist
 
@@ -545,6 +609,10 @@ Do not include passwords, reset tokens, magic links, JWTs, screenshots containin
 `;
 }
 
+export function renderPasswordResetEvidenceForm() {
+  return renderPasswordResetTestChecklist().replace("# Password Reset Test Checklist", "# Password Reset Evidence Form");
+}
+
 export function renderEmailVerificationTestChecklist() {
   return `# Email Verification Test Checklist
 
@@ -576,6 +644,10 @@ Do not include email verification tokens, JWTs, service keys, passwords, or scre
 - Blockers:
 - Next action:
 `;
+}
+
+export function renderEmailVerificationEvidenceForm() {
+  return renderEmailVerificationTestChecklist().replace("# Email Verification Test Checklist", "# Email Verification Evidence Form");
 }
 
 export function buildMfaReadinessEvidencePackage(env = process.env) {
@@ -622,6 +694,162 @@ export function renderMfaReadinessEvidencePackage(env = process.env) {
   ];
   if (report.blockers.length) lines.push("", "## Blockers", ...report.blockers.map((blocker) => `- ${blocker}`));
   return lines.join("\n");
+}
+
+export function renderMfaReadinessEvidenceForm(env = process.env) {
+  return renderMfaReadinessEvidencePackage(env).replace("# MFA Readiness Evidence Package", "# MFA Readiness Evidence Form");
+}
+
+export function renderSessionLifecycleEvidenceForm() {
+  return renderSessionLifecycleEvidenceTemplate().replace("# Supabase Auth Session Lifecycle Evidence Template", "# Session Lifecycle Evidence Form");
+}
+
+export function renderSessionRevocationEvidenceChecklist() {
+  return `# Session Revocation Evidence Checklist
+
+Credential-readiness checklist only. Do not include bearer tokens, refresh tokens, JWTs, cookies, passwords, service credentials, or screenshots containing credentials.
+
+## Environment
+
+- Environment: Development / UAT
+- Supabase Project Name:
+- Supabase Project ID:
+- Evidence Owner:
+- Test Date:
+
+## Revocation Scenarios
+
+| Scenario | Expected Result | Development Status | UAT Status | Evidence Location |
+| --- | --- | --- | --- | --- |
+| User logout revokes active session | Session can no longer access protected routes | Pending | Pending |  |
+| Admin revokes user session | User is forced to re-authenticate | Pending | Pending |  |
+| Password reset revokes existing sessions | Old sessions denied after reset | Pending | Pending |  |
+| MFA enrollment change revokes privileged sessions where policy requires | Privileged session re-challenge required | Pending | Pending |  |
+| Refresh token reuse attempt | Reuse denied and logged where supported | Pending | Pending |  |
+| Expired session access | Protected route returns 401/controlled denial | Pending | Pending |  |
+
+## Audit Evidence
+
+- Revocation audit event captured:
+- Actor recorded:
+- Target user recorded:
+- Reason recorded:
+- Timestamp recorded:
+- No token value stored in logs:
+
+## Decision
+
+- Result: PASS / FAIL
+- Blockers:
+- Next action:
+`;
+}
+
+export function buildRoleToRouteCoverageReport() {
+  const routeMatrix = validateProtectedRouteMatrix();
+  const roles = ["customer", "supplier", "dealer", "broker", "inspector", "transport_provider", "financing_partner", "admin"];
+  const coverage = roles.map((role) => {
+    const normalized = normalizeRole(role);
+    const routes = routeMatrix.routes
+      .filter((route) => route.expandedRoles.includes(normalized) || route.allowedRoles.includes(role))
+      .map((route) => ({ route: route.route, purpose: route.purpose }));
+    return {
+      role,
+      normalizedRole: normalized,
+      routeCount: routes.length,
+      routes,
+      status: routes.length ? "covered" : "needs_review",
+    };
+  });
+  const blockers = coverage.filter((row) => row.status !== "covered").map((row) => `${row.role} has no protected route coverage.`);
+  return {
+    status: blockers.length ? "REVIEW_REQUIRED" : "PASS",
+    coverage,
+    blockers,
+  };
+}
+
+export function renderRoleToRouteCoverageReport(report = buildRoleToRouteCoverageReport()) {
+  return [
+    "# Role-to-Route Coverage Report",
+    "",
+    `Status: ${report.status}`,
+    "",
+    "| Role | Normalized Role | Route Count | Protected Routes | Status |",
+    "| --- | --- | ---: | --- | --- |",
+    ...report.coverage.map((row) => `| ${row.role} | ${row.normalizedRole} | ${row.routeCount} | ${row.routes.map((item) => item.route).join(", ") || "-"} | ${row.status} |`),
+    ...(report.blockers.length ? ["", "## Blockers", ...report.blockers.map((blocker) => `- ${blocker}`)] : []),
+  ].join("\n");
+}
+
+export function buildApiRouteAuthGuardCoverageMatrix() {
+  const report = buildApiRouteToRoleCoverageReport();
+  return {
+    ...report,
+    matrixType: "api_route_auth_guard_coverage",
+    guardSummary: {
+      protectedRoutes: report.protectedCount,
+      publicRoutes: report.publicCount,
+      mutationRoutesWithoutProtection: report.routes.filter((route) => ["POST", "PATCH", "PUT", "DELETE"].includes(route.method) && !route.protected && !route.route.includes("/auth/")).length,
+      adminRoutesProtected: report.routes.filter((route) => route.route.includes("/admin")).every((route) => route.expandedRoles.includes("admin")),
+    },
+  };
+}
+
+export function renderApiRouteAuthGuardCoverageMatrix(matrix = buildApiRouteAuthGuardCoverageMatrix()) {
+  const lines = [
+    "# API Route Auth Guard Coverage Matrix",
+    "",
+    `Status: ${matrix.status}`,
+    `Protected Routes: ${matrix.guardSummary.protectedRoutes}`,
+    `Public Routes: ${matrix.guardSummary.publicRoutes}`,
+    `Mutation Routes Without Protection: ${matrix.guardSummary.mutationRoutesWithoutProtection}`,
+    `Admin Routes Protected: ${matrix.guardSummary.adminRoutesProtected ? "Yes" : "No"}`,
+    "",
+    "| Method | Route | Guard Present | Roles | Source |",
+    "| --- | --- | --- | --- | --- |",
+    ...matrix.routes.map((route) => `| ${route.method} | ${route.route} | ${route.protected ? "Yes" : "No"} | ${route.expandedRoles.join(", ") || "public"} | ${route.file} |`),
+  ];
+  if (matrix.blockers.length) lines.push("", "## Blockers", ...matrix.blockers.map((blocker) => `- ${blocker}`));
+  return lines.join("\n");
+}
+
+export function renderDevHeaderLockdownFinalCertificationChecklist(env = process.env) {
+  const scan = scanDevHeaderLockdownEvidence({ env });
+  return `# Dev Header Lockdown Final Certification Checklist
+
+Credential-readiness checklist only. Do not include bearer tokens, development auth header values, JWTs, passwords, or screenshots containing credentials.
+
+Status: ${scan.status}
+
+## Required Certification Items
+
+| Item | Expected State | Status |
+| --- | --- | --- |
+| Development auth headers inventoried | x-user-role and x-user-id source references reviewed | ${scan.sourceChecks.some((check) => check.referencesDevRoleHeader && check.referencesDevUserHeader) ? "present" : "missing"} |
+| Backend production lock present | Backend middleware references production lock | ${scan.sourceChecks.some((check) => check.path.endsWith("middleware/auth.js") && check.referencesProductionLock) ? "present" : "missing"} |
+| Production lock enabled | AUTH_DISABLE_DEV_HEADERS_IN_PRODUCTION true in production | ${scan.productionSafe ? "present" : "missing"} |
+| Bearer token preferred for production writes | API guard matrix validates bearer-token scenarios | ${validateApiBearerTokenGuardReadiness().status === "PASS" ? "present" : "missing"} |
+| Dev headers excluded from production evidence | No header values recorded in reports | present |
+
+## Source Inventory
+
+| Source | Exists | Dev Role Header | Dev User Header | Production Lock Reference |
+| --- | --- | --- | --- | --- |
+${scan.sourceChecks.map((check) => `| ${check.path} | ${check.exists ? "Yes" : "No"} | ${check.referencesDevRoleHeader ? "Yes" : "No"} | ${check.referencesDevUserHeader ? "Yes" : "No"} | ${check.referencesProductionLock ? "Yes" : "No"} |`).join("\n")}
+
+## Blockers
+
+${scan.blockers.length ? scan.blockers.map((blocker) => `- ${blocker}`).join("\n") : "- None detected by static certification scanner."}
+
+## Sign-Off
+
+- Security reviewer:
+- Backend reviewer:
+- Frontend reviewer:
+- UAT evidence location:
+- Production promotion approved: No / Yes
+`;
 }
 
 export function scanDevHeaderLockdownEvidence({ env = process.env, paths = AUTH_EVIDENCE_SCAN_PATHS } = {}) {
@@ -780,17 +1008,27 @@ if (resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1] || "")) 
   const command = process.argv[2] || "report";
   if (command === "json") console.log(JSON.stringify(buildAuthRbacReadinessReport(), null, 2));
   else if (command === "role-matrix") console.log(renderRoleMappingMatrix());
+  else if (command === "live-auth-template") console.log(renderLiveAuthEvidenceCollectionTemplate());
+  else if (command === "supabase-config-evidence") console.log(renderSupabaseAuthConfigurationEvidenceChecklist());
   else if (command === "policy-matrix") console.log(renderRoleToPolicyCoverageMatrix());
   else if (command === "cross-role-template") console.log(renderCrossRoleDenialTestTemplate());
   else if (command === "tenant-isolation-template") console.log(renderTenantIsolationEvidenceTemplate());
   else if (command === "admin-exceptions") console.log(renderAdminAccessExceptionMatrix());
   else if (command === "api-route-coverage") console.log(renderApiRouteToRoleCoverageReport());
+  else if (command === "role-route-coverage") console.log(renderRoleToRouteCoverageReport());
+  else if (command === "api-auth-guard-matrix") console.log(renderApiRouteAuthGuardCoverageMatrix());
   else if (command === "supabase-checklist") console.log(renderSupabaseChecklist(buildSupabaseAuthConfigChecklist()));
   else if (command === "session-template") console.log(renderSessionLifecycleEvidenceTemplate());
+  else if (command === "session-form") console.log(renderSessionLifecycleEvidenceForm());
+  else if (command === "session-revocation-checklist") console.log(renderSessionRevocationEvidenceChecklist());
   else if (command === "password-reset-checklist") console.log(renderPasswordResetTestChecklist());
+  else if (command === "password-reset-form") console.log(renderPasswordResetEvidenceForm());
   else if (command === "email-verification-checklist") console.log(renderEmailVerificationTestChecklist());
+  else if (command === "email-verification-form") console.log(renderEmailVerificationEvidenceForm());
   else if (command === "mfa-evidence-package") console.log(renderMfaReadinessEvidencePackage());
+  else if (command === "mfa-evidence-form") console.log(renderMfaReadinessEvidenceForm());
   else if (command === "dev-header-scan") console.log(JSON.stringify(scanDevHeaderLockdownEvidence(), null, 2));
+  else if (command === "dev-header-final-checklist") console.log(renderDevHeaderLockdownFinalCertificationChecklist());
   else if (command === "auth-evidence-report") console.log(renderAuthEvidenceAutomationReport());
   else renderReport(buildAuthRbacReadinessReport());
 }

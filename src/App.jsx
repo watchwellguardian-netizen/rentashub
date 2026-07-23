@@ -1,55 +1,136 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./state/AuthContext.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import AppShell from "./components/AppShell.jsx";
 import GlobalBrandMark from "./components/GlobalBrandMark.jsx";
-import Login from "./pages/Login.jsx";
-import LandingPage from "./pages/LandingPage.jsx";
-import CustomerDashboard from "./pages/CustomerDashboard.jsx";
-import SupplierDashboard from "./pages/SupplierDashboard.jsx";
-import ListAsset from "./pages/ListAsset.jsx";
-import MyListings from "./pages/MyListings.jsx";
-import AssetDetail from "./pages/AssetDetail.jsx";
-import EditAsset from "./pages/EditAsset.jsx";
-import BookingRequest from "./pages/BookingRequest.jsx";
-import BookingDetail from "./pages/BookingDetail.jsx";
-import CustomerBookings from "./pages/CustomerBookings.jsx";
-import SupplierRentalRequests from "./pages/SupplierRentalRequests.jsx";
-import InspectionForm from "./pages/InspectionForm.jsx";
-import InspectionDetail from "./pages/InspectionDetail.jsx";
-import BookingPayment from "./pages/BookingPayment.jsx";
-import PaymentsPage from "./pages/PaymentsPage.jsx";
-import WalletPage from "./pages/WalletPage.jsx";
-import EarningsPage from "./pages/EarningsPage.jsx";
-import PayoutsPage from "./pages/PayoutsPage.jsx";
-import TransactionDetail from "./pages/TransactionDetail.jsx";
-import MessagesPage from "./pages/MessagesPage.jsx";
-import NotificationsPage from "./pages/NotificationsPage.jsx";
-import SupplierProfile from "./pages/SupplierProfile.jsx";
-import SupplierProfileEdit from "./pages/SupplierProfileEdit.jsx";
-import VerificationPage from "./pages/VerificationPage.jsx";
-import VerificationStatus from "./pages/VerificationStatus.jsx";
-import { AdminBookings, AdminCompliance, AdminDashboard, AdminListings, AdminMessages, AdminPayments, AdminReports, AdminRevenue, AdminSettings, AdminUsers, AdminVerifications } from "./pages/AdminCenter.jsx";
-import { AdminReviews } from "./pages/AdminCenter.jsx";
-import ReviewForm from "./pages/ReviewForm.jsx";
-import { AssetReviewsPage, ReviewsPage, SupplierReviewsPage } from "./pages/ReviewsPage.jsx";
-import MarketplaceSearch from "./pages/MarketplaceSearch.jsx";
-import CategoryPage from "./pages/CategoryPage.jsx";
-import CategoryProductPage from "./pages/CategoryProductPage.jsx";
-import ModulePlaceholder from "./pages/ModulePlaceholder.jsx";
-import { MarketplaceLanding, TradeRequestPage, WantedPage } from "./pages/ExchangeMarketplace.jsx";
-import MarketplaceOffer from "./pages/MarketplaceOffer.jsx";
-import BrokerageLeads from "./pages/BrokerageLeads.jsx";
-import { AdminRiskPage, AssetTrustPage, CustomerTrustPage, SupplierTrustPage, TrustOverview } from "./pages/TrustCenter.jsx";
-import { AdminAiListingRecommendationsPage, AdminAiValuationAuditPage, AiBrokerAssistantPage, AiHome, AiListingAssistantPage, AiMarketInsightsPage, AiRentalAdvisorPage, AiSearchPage, AiValuationEnginePage } from "./pages/AiAssistant.jsx";
-import { AdminClaimsPage, AssetProtectionPage, BookingProtectionPage, ClaimDetailPage, ClaimsPage, NewClaimPage, ProtectionOverview, ProtectionPlansPage } from "./pages/ProtectionPages.jsx";
-import { AdminDisputesPage, DisputeDetailPage, DisputesPage, NewDisputePage } from "./pages/DisputePages.jsx";
-import { AdminAuctionPage, AuctionBidPage, AuctionCategoryPage, AuctionDetail, AuctionDisputePage, AuctionDocumentLibraryPage, AuctionEscrowLedgerPage, AuctionNotificationAuditPage, AuctionParishPage, AuctionStaticPage, AuctionSupportPage, AuctionsLanding, BuyerAuctionPage, DealerAuctionPage, SupplierAuctionPage } from "./pages/AuctionPages.jsx";
-import { AdminInspectorsPage, AuctionInspectionRequestPage, InspectorRegistrationPage, InspectorsDashboardPage, InspectorsDirectoryPage } from "./pages/InspectionMarketplacePages.jsx";
-import { AdminTransportProvidersPage, AuctionTransportRequestPage, TransportDashboardPage, TransportDirectoryPage, TransportRegistrationPage } from "./pages/TransportMarketplacePages.jsx";
-import { AdminFinancingPartnersPage, AuctionFinancingRequestPage, FinancingDashboardPage, FinancingDirectoryPage, FinancingProductsPage, FinancingRegistrationPage } from "./pages/FinancingMarketplacePages.jsx";
-import { AdminAuctionAnalyticsPage, DealerAuctionAnalyticsPage, SupplierAuctionAnalyticsPage } from "./pages/AuctionAnalyticsPages.jsx";
-import { AdminAuctionDocumentsPage, AuctionDocumentEnginePage, BuyerAuctionDocumentsPage, SupplierAuctionDocumentsPage } from "./pages/AuctionDocumentEnginePages.jsx";
+
+const lazyPage = (loader, exportName = "default") =>
+  lazy(() => loader().then((module) => ({ default: module[exportName] })));
+
+const Login = lazyPage(() => import("./pages/Login.jsx"));
+const LandingPage = lazyPage(() => import("./pages/LandingPage.jsx"));
+const CustomerDashboard = lazyPage(() => import("./pages/CustomerDashboard.jsx"));
+const SupplierDashboard = lazyPage(() => import("./pages/SupplierDashboard.jsx"));
+const ListAsset = lazyPage(() => import("./pages/ListAsset.jsx"));
+const MyListings = lazyPage(() => import("./pages/MyListings.jsx"));
+const AssetDetail = lazyPage(() => import("./pages/AssetDetail.jsx"));
+const EditAsset = lazyPage(() => import("./pages/EditAsset.jsx"));
+const BookingRequest = lazyPage(() => import("./pages/BookingRequest.jsx"));
+const BookingDetail = lazyPage(() => import("./pages/BookingDetail.jsx"));
+const CustomerBookings = lazyPage(() => import("./pages/CustomerBookings.jsx"));
+const SupplierRentalRequests = lazyPage(() => import("./pages/SupplierRentalRequests.jsx"));
+const InspectionForm = lazyPage(() => import("./pages/InspectionForm.jsx"));
+const InspectionDetail = lazyPage(() => import("./pages/InspectionDetail.jsx"));
+const BookingPayment = lazyPage(() => import("./pages/BookingPayment.jsx"));
+const PaymentsPage = lazyPage(() => import("./pages/PaymentsPage.jsx"));
+const WalletPage = lazyPage(() => import("./pages/WalletPage.jsx"));
+const EarningsPage = lazyPage(() => import("./pages/EarningsPage.jsx"));
+const PayoutsPage = lazyPage(() => import("./pages/PayoutsPage.jsx"));
+const TransactionDetail = lazyPage(() => import("./pages/TransactionDetail.jsx"));
+const MessagesPage = lazyPage(() => import("./pages/MessagesPage.jsx"));
+const NotificationsPage = lazyPage(() => import("./pages/NotificationsPage.jsx"));
+const SupplierProfile = lazyPage(() => import("./pages/SupplierProfile.jsx"));
+const SupplierProfileEdit = lazyPage(() => import("./pages/SupplierProfileEdit.jsx"));
+const VerificationPage = lazyPage(() => import("./pages/VerificationPage.jsx"));
+const VerificationStatus = lazyPage(() => import("./pages/VerificationStatus.jsx"));
+const AdminBookings = lazyPage(() => import("./pages/AdminCenter.jsx"), "AdminBookings");
+const AdminCompliance = lazyPage(() => import("./pages/AdminCenter.jsx"), "AdminCompliance");
+const AdminDashboard = lazyPage(() => import("./pages/AdminCenter.jsx"), "AdminDashboard");
+const AdminListings = lazyPage(() => import("./pages/AdminCenter.jsx"), "AdminListings");
+const AdminMessages = lazyPage(() => import("./pages/AdminCenter.jsx"), "AdminMessages");
+const AdminPayments = lazyPage(() => import("./pages/AdminCenter.jsx"), "AdminPayments");
+const AdminReports = lazyPage(() => import("./pages/AdminCenter.jsx"), "AdminReports");
+const AdminRevenue = lazyPage(() => import("./pages/AdminCenter.jsx"), "AdminRevenue");
+const AdminReviews = lazyPage(() => import("./pages/AdminCenter.jsx"), "AdminReviews");
+const AdminSettings = lazyPage(() => import("./pages/AdminCenter.jsx"), "AdminSettings");
+const AdminUsers = lazyPage(() => import("./pages/AdminCenter.jsx"), "AdminUsers");
+const AdminVerifications = lazyPage(() => import("./pages/AdminCenter.jsx"), "AdminVerifications");
+const ReviewForm = lazyPage(() => import("./pages/ReviewForm.jsx"));
+const AssetReviewsPage = lazyPage(() => import("./pages/ReviewsPage.jsx"), "AssetReviewsPage");
+const ReviewsPage = lazyPage(() => import("./pages/ReviewsPage.jsx"), "ReviewsPage");
+const SupplierReviewsPage = lazyPage(() => import("./pages/ReviewsPage.jsx"), "SupplierReviewsPage");
+const MarketplaceSearch = lazyPage(() => import("./pages/MarketplaceSearch.jsx"));
+const CategoryPage = lazyPage(() => import("./pages/CategoryPage.jsx"));
+const CategoryProductPage = lazyPage(() => import("./pages/CategoryProductPage.jsx"));
+const ModulePlaceholder = lazyPage(() => import("./pages/ModulePlaceholder.jsx"));
+const MarketplaceLanding = lazyPage(() => import("./pages/ExchangeMarketplace.jsx"), "MarketplaceLanding");
+const TradeRequestPage = lazyPage(() => import("./pages/ExchangeMarketplace.jsx"), "TradeRequestPage");
+const WantedPage = lazyPage(() => import("./pages/ExchangeMarketplace.jsx"), "WantedPage");
+const MarketplaceOffer = lazyPage(() => import("./pages/MarketplaceOffer.jsx"));
+const BrokerageLeads = lazyPage(() => import("./pages/BrokerageLeads.jsx"));
+const AdminRiskPage = lazyPage(() => import("./pages/TrustCenter.jsx"), "AdminRiskPage");
+const AssetTrustPage = lazyPage(() => import("./pages/TrustCenter.jsx"), "AssetTrustPage");
+const CustomerTrustPage = lazyPage(() => import("./pages/TrustCenter.jsx"), "CustomerTrustPage");
+const SupplierTrustPage = lazyPage(() => import("./pages/TrustCenter.jsx"), "SupplierTrustPage");
+const TrustOverview = lazyPage(() => import("./pages/TrustCenter.jsx"), "TrustOverview");
+const AdminAiListingRecommendationsPage = lazyPage(() => import("./pages/AiAssistant.jsx"), "AdminAiListingRecommendationsPage");
+const AdminAiValuationAuditPage = lazyPage(() => import("./pages/AiAssistant.jsx"), "AdminAiValuationAuditPage");
+const AiBrokerAssistantPage = lazyPage(() => import("./pages/AiAssistant.jsx"), "AiBrokerAssistantPage");
+const AiHome = lazyPage(() => import("./pages/AiAssistant.jsx"), "AiHome");
+const AiListingAssistantPage = lazyPage(() => import("./pages/AiAssistant.jsx"), "AiListingAssistantPage");
+const AiMarketInsightsPage = lazyPage(() => import("./pages/AiAssistant.jsx"), "AiMarketInsightsPage");
+const AiRentalAdvisorPage = lazyPage(() => import("./pages/AiAssistant.jsx"), "AiRentalAdvisorPage");
+const AiSearchPage = lazyPage(() => import("./pages/AiAssistant.jsx"), "AiSearchPage");
+const AiValuationEnginePage = lazyPage(() => import("./pages/AiAssistant.jsx"), "AiValuationEnginePage");
+const AdminClaimsPage = lazyPage(() => import("./pages/ProtectionPages.jsx"), "AdminClaimsPage");
+const AssetProtectionPage = lazyPage(() => import("./pages/ProtectionPages.jsx"), "AssetProtectionPage");
+const BookingProtectionPage = lazyPage(() => import("./pages/ProtectionPages.jsx"), "BookingProtectionPage");
+const ClaimDetailPage = lazyPage(() => import("./pages/ProtectionPages.jsx"), "ClaimDetailPage");
+const ClaimsPage = lazyPage(() => import("./pages/ProtectionPages.jsx"), "ClaimsPage");
+const NewClaimPage = lazyPage(() => import("./pages/ProtectionPages.jsx"), "NewClaimPage");
+const ProtectionOverview = lazyPage(() => import("./pages/ProtectionPages.jsx"), "ProtectionOverview");
+const ProtectionPlansPage = lazyPage(() => import("./pages/ProtectionPages.jsx"), "ProtectionPlansPage");
+const AdminDisputesPage = lazyPage(() => import("./pages/DisputePages.jsx"), "AdminDisputesPage");
+const DisputeDetailPage = lazyPage(() => import("./pages/DisputePages.jsx"), "DisputeDetailPage");
+const DisputesPage = lazyPage(() => import("./pages/DisputePages.jsx"), "DisputesPage");
+const NewDisputePage = lazyPage(() => import("./pages/DisputePages.jsx"), "NewDisputePage");
+const AdminAuctionPage = lazyPage(() => import("./pages/AuctionPages.jsx"), "AdminAuctionPage");
+const AuctionBidPage = lazyPage(() => import("./pages/AuctionPages.jsx"), "AuctionBidPage");
+const AuctionCategoryPage = lazyPage(() => import("./pages/AuctionPages.jsx"), "AuctionCategoryPage");
+const AuctionDetail = lazyPage(() => import("./pages/AuctionPages.jsx"), "AuctionDetail");
+const AuctionDisputePage = lazyPage(() => import("./pages/AuctionPages.jsx"), "AuctionDisputePage");
+const AuctionDocumentLibraryPage = lazyPage(() => import("./pages/AuctionPages.jsx"), "AuctionDocumentLibraryPage");
+const AuctionEscrowLedgerPage = lazyPage(() => import("./pages/AuctionPages.jsx"), "AuctionEscrowLedgerPage");
+const AuctionNotificationAuditPage = lazyPage(() => import("./pages/AuctionPages.jsx"), "AuctionNotificationAuditPage");
+const AuctionParishPage = lazyPage(() => import("./pages/AuctionPages.jsx"), "AuctionParishPage");
+const AuctionStaticPage = lazyPage(() => import("./pages/AuctionPages.jsx"), "AuctionStaticPage");
+const AuctionSupportPage = lazyPage(() => import("./pages/AuctionPages.jsx"), "AuctionSupportPage");
+const AuctionsLanding = lazyPage(() => import("./pages/AuctionPages.jsx"), "AuctionsLanding");
+const BuyerAuctionPage = lazyPage(() => import("./pages/AuctionPages.jsx"), "BuyerAuctionPage");
+const DealerAuctionPage = lazyPage(() => import("./pages/AuctionPages.jsx"), "DealerAuctionPage");
+const SupplierAuctionPage = lazyPage(() => import("./pages/AuctionPages.jsx"), "SupplierAuctionPage");
+const AdminInspectorsPage = lazyPage(() => import("./pages/InspectionMarketplacePages.jsx"), "AdminInspectorsPage");
+const AuctionInspectionRequestPage = lazyPage(() => import("./pages/InspectionMarketplacePages.jsx"), "AuctionInspectionRequestPage");
+const InspectorRegistrationPage = lazyPage(() => import("./pages/InspectionMarketplacePages.jsx"), "InspectorRegistrationPage");
+const InspectorsDashboardPage = lazyPage(() => import("./pages/InspectionMarketplacePages.jsx"), "InspectorsDashboardPage");
+const InspectorsDirectoryPage = lazyPage(() => import("./pages/InspectionMarketplacePages.jsx"), "InspectorsDirectoryPage");
+const AdminTransportProvidersPage = lazyPage(() => import("./pages/TransportMarketplacePages.jsx"), "AdminTransportProvidersPage");
+const AuctionTransportRequestPage = lazyPage(() => import("./pages/TransportMarketplacePages.jsx"), "AuctionTransportRequestPage");
+const TransportDashboardPage = lazyPage(() => import("./pages/TransportMarketplacePages.jsx"), "TransportDashboardPage");
+const TransportDirectoryPage = lazyPage(() => import("./pages/TransportMarketplacePages.jsx"), "TransportDirectoryPage");
+const TransportRegistrationPage = lazyPage(() => import("./pages/TransportMarketplacePages.jsx"), "TransportRegistrationPage");
+const AdminFinancingPartnersPage = lazyPage(() => import("./pages/FinancingMarketplacePages.jsx"), "AdminFinancingPartnersPage");
+const AuctionFinancingRequestPage = lazyPage(() => import("./pages/FinancingMarketplacePages.jsx"), "AuctionFinancingRequestPage");
+const FinancingDashboardPage = lazyPage(() => import("./pages/FinancingMarketplacePages.jsx"), "FinancingDashboardPage");
+const FinancingDirectoryPage = lazyPage(() => import("./pages/FinancingMarketplacePages.jsx"), "FinancingDirectoryPage");
+const FinancingProductsPage = lazyPage(() => import("./pages/FinancingMarketplacePages.jsx"), "FinancingProductsPage");
+const FinancingRegistrationPage = lazyPage(() => import("./pages/FinancingMarketplacePages.jsx"), "FinancingRegistrationPage");
+const AdminAuctionAnalyticsPage = lazyPage(() => import("./pages/AuctionAnalyticsPages.jsx"), "AdminAuctionAnalyticsPage");
+const DealerAuctionAnalyticsPage = lazyPage(() => import("./pages/AuctionAnalyticsPages.jsx"), "DealerAuctionAnalyticsPage");
+const SupplierAuctionAnalyticsPage = lazyPage(() => import("./pages/AuctionAnalyticsPages.jsx"), "SupplierAuctionAnalyticsPage");
+const AdminAuctionDocumentsPage = lazyPage(() => import("./pages/AuctionDocumentEnginePages.jsx"), "AdminAuctionDocumentsPage");
+const AuctionDocumentEnginePage = lazyPage(() => import("./pages/AuctionDocumentEnginePages.jsx"), "AuctionDocumentEnginePage");
+const BuyerAuctionDocumentsPage = lazyPage(() => import("./pages/AuctionDocumentEnginePages.jsx"), "BuyerAuctionDocumentsPage");
+const SupplierAuctionDocumentsPage = lazyPage(() => import("./pages/AuctionDocumentEnginePages.jsx"), "SupplierAuctionDocumentsPage");
+const AdminSystemStatusPage = lazyPage(() => import("./pages/AiStudioConsolidationPages.jsx"), "AdminSystemStatusPage");
+const DocumentationPage = lazyPage(() => import("./pages/AiStudioConsolidationPages.jsx"), "DocumentationPage");
+const RoleAwareAiAssistantPage = lazyPage(() => import("./pages/AiStudioConsolidationPages.jsx"), "RoleAwareAiAssistantPage");
+const WorkflowGuidesPage = lazyPage(() => import("./pages/AiStudioConsolidationPages.jsx"), "WorkflowGuidesPage");
+
+function RouteFallback() {
+  return <div className="page-shell">Loading RentasHub...</div>;
+}
 
 function DashboardRedirect() {
   const { user } = useAuth();
@@ -64,8 +145,9 @@ export default function App() {
   return (
     <>
       <GlobalBrandMark />
-      <Routes>
-        <Route path="/login" element={<Login />} />
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
         <Route path="/" element={<LandingPage />} />
         <Route path="/search" element={<MarketplaceSearch />} />
         <Route path="/assets" element={<MarketplaceSearch />} />
@@ -103,6 +185,8 @@ export default function App() {
         <Route path="/ai/rental-advisor" element={<AiRentalAdvisorPage />} />
         <Route path="/ai/broker-assistant" element={<AiBrokerAssistantPage />} />
         <Route path="/ai/market-insights" element={<AiMarketInsightsPage />} />
+        <Route path="/documentation" element={<DocumentationPage />} />
+        <Route path="/workflows" element={<WorkflowGuidesPage />} />
         <Route path="/trust" element={<TrustOverview />} />
         <Route path="/trust/supplier/:supplierId" element={<SupplierTrustPage />} />
         <Route path="/trust/asset/:assetId" element={<AssetTrustPage />} />
@@ -124,6 +208,7 @@ export default function App() {
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="/ai-help" element={<AiHome />} />
+            <Route path="/ai-assistant" element={<RoleAwareAiAssistantPage />} />
             <Route path="/inspectors/register" element={<InspectorRegistrationPage />} />
             <Route path="/inspectors/bookings" element={<InspectorsDashboardPage view="bookings" />} />
             <Route path="/inspectors/reports" element={<InspectorsDashboardPage view="reports" />} />
@@ -253,6 +338,7 @@ export default function App() {
             <Route path="/admin/notifications" element={<NotificationsPage scope="admin" />} />
             <Route path="/admin/ai-listing-recommendations" element={<AdminAiListingRecommendationsPage />} />
             <Route path="/admin/ai-valuations" element={<AdminAiValuationAuditPage />} />
+            <Route path="/admin/system-status" element={<AdminSystemStatusPage />} />
             <Route path="/admin/auction-approvals" element={<AdminAuctionPage view="approvals" />} />
             <Route path="/admin/auction-compliance" element={<AdminAuctionPage view="compliance" />} />
             <Route path="/admin/kyc-review" element={<AdminAuctionPage view="kyc" />} />
@@ -266,8 +352,9 @@ export default function App() {
             <Route path="/admin/auction-settings" element={<AdminAuctionPage view="settings" />} />
           </Route>
         </Route>
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </Suspense>
     </>
   );
 }

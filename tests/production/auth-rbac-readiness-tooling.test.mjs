@@ -5,10 +5,12 @@ import {
   PROTECTED_ROUTE_MATRIX,
   SUPABASE_AUTH_CONFIG_KEYS,
   buildAdminAccessExceptionMatrix,
+  buildApiRouteAuthGuardCoverageMatrix,
   buildApiRouteToRoleCoverageReport,
   buildAuthEvidenceAutomationReport,
   buildAuthRbacReadinessReport,
   buildMfaReadinessEvidencePackage,
+  buildRoleToRouteCoverageReport,
   buildRoleToPolicyCoverageMatrix,
   buildRoleMappingMatrix,
   buildSupabaseAuthConfigChecklist,
@@ -16,11 +18,21 @@ import {
   renderApiRouteToRoleCoverageReport,
   renderCrossRoleDenialTestTemplate,
   renderAuthEvidenceAutomationReport,
+  renderApiRouteAuthGuardCoverageMatrix,
   renderEmailVerificationTestChecklist,
+  renderEmailVerificationEvidenceForm,
+  renderDevHeaderLockdownFinalCertificationChecklist,
+  renderLiveAuthEvidenceCollectionTemplate,
   renderMfaReadinessEvidencePackage,
+  renderMfaReadinessEvidenceForm,
+  renderPasswordResetEvidenceForm,
   renderPasswordResetTestChecklist,
+  renderRoleToRouteCoverageReport,
+  renderSessionLifecycleEvidenceForm,
+  renderSessionRevocationEvidenceChecklist,
   renderRoleToPolicyCoverageMatrix,
   renderRoleMappingMatrix,
+  renderSupabaseAuthConfigurationEvidenceChecklist,
   renderSessionLifecycleEvidenceTemplate,
   renderTenantIsolationEvidenceTemplate,
   scanDevHeaderLockdownEvidence,
@@ -242,4 +254,65 @@ test("auth evidence automation report combines session password email MFA and de
   const rendered = renderAuthEvidenceAutomationReport(report);
   assert.match(rendered, /Auth Evidence Automation Report/);
   assert.match(rendered, /Live Auth Activated: NO/);
+});
+
+test("live-auth evidence template and Supabase config evidence checklist are credential-safe", () => {
+  const liveAuth = renderLiveAuthEvidenceCollectionTemplate();
+  const configEvidence = renderSupabaseAuthConfigurationEvidenceChecklist({ AUTH_PROVIDER: "supabase" });
+  assert.match(liveAuth, /Live Auth Evidence Collection Template/);
+  assert.match(liveAuth, /Registration/);
+  assert.match(liveAuth, /Session Revocation/);
+  assert.match(configEvidence, /Supabase Auth Configuration Evidence Checklist/);
+  assert.match(configEvidence, /SUPABASE_URL/);
+  assert.match(configEvidence, /Secure secret store reference/);
+  assert.doesNotMatch(`${liveAuth}\n${configEvidence}`, /postgresql:\/\/|sb_secret_|eyJ/i);
+});
+
+test("password reset email verification MFA and session evidence forms are generated", () => {
+  const passwordReset = renderPasswordResetEvidenceForm();
+  const emailVerification = renderEmailVerificationEvidenceForm();
+  const mfa = renderMfaReadinessEvidenceForm();
+  const session = renderSessionLifecycleEvidenceForm();
+  const revocation = renderSessionRevocationEvidenceChecklist();
+  assert.match(passwordReset, /Password Reset Evidence Form/);
+  assert.match(emailVerification, /Email Verification Evidence Form/);
+  assert.match(mfa, /MFA Readiness Evidence Form/);
+  assert.match(session, /Session Lifecycle Evidence Form/);
+  assert.match(revocation, /Session Revocation Evidence Checklist/);
+  assert.match(revocation, /Admin revokes user session/);
+  assert.doesNotMatch(`${passwordReset}\n${emailVerification}\n${mfa}\n${session}\n${revocation}`, /=[A-Za-z0-9_-]{20,}/);
+});
+
+test("role-to-route coverage report maps roles to protected frontend routes", () => {
+  const report = buildRoleToRouteCoverageReport();
+  assert.equal(report.status, "REVIEW_REQUIRED");
+  assert.ok(report.coverage.some((row) => row.role === "customer" && row.routes.some((route) => route.route === "/customer-dashboard")));
+  assert.ok(report.coverage.some((row) => row.role === "supplier" && row.routes.some((route) => route.route === "/supplier-dashboard")));
+  assert.ok(report.coverage.some((row) => row.role === "admin" && row.routes.some((route) => route.route === "/admin")));
+  assert.ok(report.blockers.some((blocker) => /inspector/.test(blocker)));
+  const markdown = renderRoleToRouteCoverageReport(report);
+  assert.match(markdown, /Role-to-Route Coverage Report/);
+  assert.match(markdown, /\/brokerage\/leads/);
+});
+
+test("API auth guard coverage matrix reports protected mutations and admin guards", () => {
+  const matrix = buildApiRouteAuthGuardCoverageMatrix();
+  assert.equal(matrix.status, "PASS");
+  assert.equal(matrix.guardSummary.mutationRoutesWithoutProtection, 0);
+  assert.equal(matrix.guardSummary.adminRoutesProtected, true);
+  assert.ok(matrix.routes.some((route) => route.route === "/api/assets" && route.method === "POST" && route.protected));
+  const markdown = renderApiRouteAuthGuardCoverageMatrix(matrix);
+  assert.match(markdown, /API Route Auth Guard Coverage Matrix/);
+  assert.match(markdown, /Mutation Routes Without Protection: 0/);
+});
+
+test("dev-header lockdown final certification checklist remains evidence-only", () => {
+  const checklist = renderDevHeaderLockdownFinalCertificationChecklist({
+    NODE_ENV: "production",
+    AUTH_DISABLE_DEV_HEADERS_IN_PRODUCTION: "true",
+  });
+  assert.match(checklist, /Dev Header Lockdown Final Certification Checklist/);
+  assert.match(checklist, /Production lock enabled/);
+  assert.match(checklist, /Backend middleware references production lock/);
+  assert.doesNotMatch(checklist, /x-user-role:\s*\w/i);
 });

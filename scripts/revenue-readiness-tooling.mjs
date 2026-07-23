@@ -314,6 +314,221 @@ export function renderTaxGctConfigurationMatrix() {
   ].join("\n");
 }
 
+export function renderPaymentProviderEvidenceIntakeTemplate() {
+  return `# Payment Provider Evidence Intake Template
+
+Do not include payment secret keys, webhook secrets, access tokens, bank credentials, card data, customer payment data, or screenshots containing credentials.
+
+## Provider Intake
+
+- Environment: Development / UAT
+- Provider: Stripe / WiPay / Lynk / NCB / Other
+- Provider account owner:
+- Payment operations owner:
+- Compliance owner:
+- Date:
+
+## Credential Storage Evidence
+
+| Evidence Item | Status | Evidence Location | Notes |
+| --- | --- | --- | --- |
+| Public key stored in approved frontend/public env location where applicable | Pending |  | Do not paste value. |
+| Secret key stored in backend-only secret manager | Pending |  | Do not paste value. |
+| Webhook signing secret stored in backend-only secret manager | Pending |  | Do not paste value. |
+| Sandbox mode confirmed | Pending |  | No live keys. |
+| Provider dashboard access owner assigned | Pending |  | Role/name only. |
+| Provider terms/compliance review complete | Pending |  | Manual review required. |
+
+## Decision
+
+- Result: PASS / FAIL
+- Missing evidence:
+- Next action:
+`;
+}
+
+export function renderSandboxReadinessChecklist(provider = "stripe", env = process.env) {
+  const report = buildSandboxReadinessChecklist(provider, env);
+  const title = report.provider === "wipay" ? "WiPay Sandbox Readiness Checklist" : "Stripe Sandbox Readiness Checklist";
+  return [
+    `# ${title}`,
+    "",
+    "Do not include secret keys, webhook secrets, access tokens, card data, bank credentials, or screenshots containing credentials.",
+    "",
+    `Status: ${report.status}`,
+    `Provider: ${report.provider}`,
+    `Live Payments Active: ${report.livePaymentsActive ? "YES" : "NO"}`,
+    "",
+    "| Checklist Item | Status | Evidence Location |",
+    "| --- | --- | --- |",
+    ...report.rows.map((row) => `| ${row.item} | ${row.status} |  |`),
+    ...(report.blockers.length ? ["", "## Blockers", ...report.blockers.map((blocker) => `- ${blocker}`)] : []),
+  ].join("\n");
+}
+
+export function renderWebhookVerificationEvidenceTemplate() {
+  return [
+    "# Webhook Verification Evidence Template",
+    "",
+    "Do not include webhook secrets, raw signatures, provider secret keys, card data, payment tokens, or screenshots containing credentials.",
+    "",
+    "| Provider | Event | Mock Payload Test | Signature Verification | Expected Action | Evidence Location |",
+    "| --- | --- | --- | --- | --- | --- |",
+    ...MOCK_WEBHOOK_PAYLOADS.map((row) => `| ${row.provider} | ${row.eventType} | Pending | Pending provider secret | ${row.expectedAction} |  |`),
+    "",
+    "## Required Live/Sandbox Evidence",
+    "- Webhook endpoint registered in provider sandbox.",
+    "- Signing secret stored in backend-only secret manager.",
+    "- Valid signature accepted.",
+    "- Invalid signature rejected.",
+    "- Idempotency handling tested.",
+    "- Audit event recorded.",
+  ].join("\n");
+}
+
+export function renderRefundEvidenceChecklist() {
+  return `# Refund Evidence Checklist
+
+Do not include payment secret keys, webhook secrets, card data, bank details, provider tokens, or screenshots containing credentials.
+
+| Evidence Item | Development | UAT | Notes |
+| --- | --- | --- | --- |
+| Refund policy approved | Pending | Pending | Reference policy only. |
+| Refund eligibility state machine reviewed | Pending | Pending | No live money movement. |
+| Sandbox refund request created | Pending | Pending | Provider reference only. |
+| Sandbox refund webhook received | Pending | Pending | Event ID only. |
+| Ledger/audit entry created | Pending | Pending | Internal record ID only. |
+| Customer-facing status updated | Pending | Pending | Screenshot without private data. |
+| Failed refund handling tested | Pending | Pending | Status only. |
+`;
+}
+
+export function renderChargebackEvidenceChecklist() {
+  return `# Chargeback Evidence Checklist
+
+Do not include payment secret keys, webhook secrets, card data, bank details, dispute documents, provider tokens, or screenshots containing credentials.
+
+| Evidence Item | Development | UAT | Notes |
+| --- | --- | --- | --- |
+| Chargeback/dispute owner assigned | Pending | Pending | Role/name only. |
+| Provider dispute event received | Pending | Pending | Event ID only. |
+| Response deadline captured | Pending | Pending | Date only. |
+| Evidence intake path verified | Pending | Pending | No private documents in this checklist. |
+| Ledger/audit status updated | Pending | Pending | Internal record ID only. |
+| Customer/supplier notification placeholder reviewed | Pending | Pending | No live notifications required. |
+| Chargeback loss/accounting treatment reviewed | Pending | Pending | Finance policy reference. |
+`;
+}
+
+export function renderPayoutEvidenceChecklist() {
+  const report = buildPayoutReadinessChecklist();
+  return [
+    "# Payout Evidence Checklist",
+    "",
+    "Do not include bank details, payout provider secrets, account numbers, routing numbers, tokens, or screenshots containing credentials.",
+    "",
+    `Status: ${report.status}`,
+    `Live Payout Active: ${report.livePayoutActive ? "YES" : "NO"}`,
+    "",
+    "| Evidence Item | Development | UAT | Notes |",
+    "| --- | --- | --- | --- |",
+    "| Payout policy approved | Pending | Pending | Policy reference only. |",
+    "| Supplier payout eligibility reviewed | Pending | Pending | No live bank transfer. |",
+    "| Sandbox payout configured | Pending | Pending | Provider reference only. |",
+    "| Simulated payout harness passed | Pending | Pending | Tooling evidence. |",
+    "| Reconciliation owner assigned | Pending | Pending | Owner only. |",
+    "| Failed payout workflow reviewed | Pending | Pending | Status only. |",
+    ...(report.blockers.length ? ["", "## Blockers", ...report.blockers.map((blocker) => `- ${blocker}`)] : []),
+  ].join("\n");
+}
+
+export function renderSettlementEvidenceChecklist() {
+  return [
+    "# Settlement Evidence Checklist",
+    "",
+    "Do not include bank credentials, account numbers, settlement provider secrets, payment keys, or screenshots containing credentials.",
+    "",
+    "| Settlement Step | Evidence Required | Status | Evidence Location |",
+    "| --- | --- | --- | --- |",
+    ...SETTLEMENT_WORKFLOW_STEPS.map((step) => `| ${step} | Policy, owner, audit event, reconciliation proof | Pending |  |`),
+    "",
+    "## Required Evidence",
+    "- Settlement currency approved.",
+    "- Cutoff schedule approved.",
+    "- Reconciliation report reviewed.",
+    "- Exception handling documented.",
+    "- No live settlement performed until provider approval.",
+  ].join("\n");
+}
+
+export function renderTaxGctReadinessChecklist() {
+  const report = buildTaxGctConfigurationMatrix();
+  return [
+    "# Tax/GCT Readiness Checklist",
+    "",
+    "Do not include tax account credentials, payment credentials, private invoices, bank data, or screenshots containing credentials.",
+    "",
+    `Status: ${report.status}`,
+    `Tax Advisor Approval Required: ${report.taxAdvisorApprovalRequired ? "YES" : "NO"}`,
+    `Live Tax Filing Active: ${report.liveTaxFilingActive ? "YES" : "NO"}`,
+    "",
+    "| Item | Taxable | Tax | Policy Required | Status |",
+    "| --- | --- | --- | --- | --- |",
+    ...TAX_GCT_CONFIGURATION_MATRIX.map((row) => `| ${row.item} | ${row.taxable} | ${row.tax} | ${row.policyRequired} | Pending |`),
+    ...(report.blockers.length ? ["", "## Blockers", ...report.blockers.map((blocker) => `- ${blocker}`)] : []),
+  ].join("\n");
+}
+
+export function buildRevenueLaunchBlockerReport({ env = process.env } = {}) {
+  const readiness = buildRevenueReadinessToolingReport({ env });
+  const manualEvidence = [
+    "Payment provider sandbox account and credential storage evidence",
+    "Stripe sandbox payment/refund/webhook evidence",
+    "WiPay sandbox payment/refund/webhook evidence",
+    "Webhook signature verification evidence",
+    "Refund sandbox evidence",
+    "Chargeback/dispute evidence workflow",
+    "Payout sandbox evidence",
+    "Settlement and reconciliation evidence",
+    "Tax/GCT advisor approval",
+    "Revenue operations signoff",
+  ];
+  const blockers = [
+    ...readiness.blockers,
+    ...manualEvidence.map((item) => `Manual evidence required: ${item}`),
+  ];
+  return {
+    status: "BLOCKED",
+    generatedAt: new Date().toISOString(),
+    realMoneyMovementActive: false,
+    livePaymentsActive: false,
+    livePayoutsActive: false,
+    liveSettlementActive: false,
+    valuePrinted: false,
+    blockers: [...new Set(blockers)],
+    nextGate: "A4-01 Infrastructure Ownership Confirmation Submitted; E2 Revenue Sandbox Activation remains blocked until A4 passes.",
+  };
+}
+
+export function renderRevenueLaunchBlockerReport(report = buildRevenueLaunchBlockerReport()) {
+  return [
+    "# Revenue Launch Blocker Report",
+    "",
+    `Status: ${report.status}`,
+    `Generated At: ${report.generatedAt}`,
+    `Real Money Movement Active: ${report.realMoneyMovementActive ? "YES" : "NO"}`,
+    `Live Payments Active: ${report.livePaymentsActive ? "YES" : "NO"}`,
+    `Live Payouts Active: ${report.livePayoutsActive ? "YES" : "NO"}`,
+    `Live Settlement Active: ${report.liveSettlementActive ? "YES" : "NO"}`,
+    "",
+    "## Blockers",
+    ...report.blockers.map((blocker) => `- ${blocker}`),
+    "",
+    "## Next Gate",
+    report.nextGate,
+  ].join("\n");
+}
+
 export function renderRevenueEvidencePackageTemplate() {
   return `# Revenue Evidence Package Template
 
@@ -431,5 +646,15 @@ if (resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1] || "")) 
   else if (command === "tax-gct-matrix") console.log(renderTaxGctConfigurationMatrix());
   else if (command === "evidence-template") console.log(renderRevenueEvidencePackageTemplate());
   else if (command === "webhook-tests") console.log(JSON.stringify(runWebhookReadinessTests(), null, 2));
+  else if (command === "provider-intake-template") console.log(renderPaymentProviderEvidenceIntakeTemplate());
+  else if (command === "stripe-sandbox-checklist") console.log(renderSandboxReadinessChecklist("stripe"));
+  else if (command === "wipay-sandbox-checklist") console.log(renderSandboxReadinessChecklist("wipay"));
+  else if (command === "webhook-evidence-template") console.log(renderWebhookVerificationEvidenceTemplate());
+  else if (command === "refund-checklist") console.log(renderRefundEvidenceChecklist());
+  else if (command === "chargeback-checklist") console.log(renderChargebackEvidenceChecklist());
+  else if (command === "payout-checklist") console.log(renderPayoutEvidenceChecklist());
+  else if (command === "settlement-checklist") console.log(renderSettlementEvidenceChecklist());
+  else if (command === "tax-gct-checklist") console.log(renderTaxGctReadinessChecklist());
+  else if (command === "launch-blockers") console.log(renderRevenueLaunchBlockerReport());
   else renderReport(buildRevenueReadinessToolingReport());
 }

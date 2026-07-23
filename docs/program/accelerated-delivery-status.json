@@ -1,0 +1,31 @@
+{
+  "platform": "RentasHub Marketplace",
+  "classification": "RC-0.6A",
+  "state": "Infrastructure Activation Hold",
+  "currentGate": "A4-01 Infrastructure Ownership Confirmation",
+  "nextAuthorizedGate": "A4-01 Infrastructure Ownership Confirmation Submitted",
+  "productionReady": false,
+  "providerActivation": false,
+  "workstreams": [
+    { "id": "ws1", "domain": "Core platform foundation", "totalFeatures": 14, "complete": 6, "partial": 5, "notStarted": 1, "blocked": 2, "owner": "platform-engineering", "currentGate": "Local foundation evidence" },
+    { "id": "ws2", "domain": "Rental marketplace", "totalFeatures": 12, "complete": 5, "partial": 5, "notStarted": 1, "blocked": 1, "owner": "marketplace-engineering", "currentGate": "Awaiting shared foundation" },
+    { "id": "ws3", "domain": "Financial platform", "totalFeatures": 12, "complete": 1, "partial": 5, "notStarted": 2, "blocked": 4, "owner": "financial-engineering", "currentGate": "Provider-independent state engines only" },
+    { "id": "ws4", "domain": "Asset commerce", "totalFeatures": 10, "complete": 3, "partial": 4, "notStarted": 2, "blocked": 1, "owner": "commerce-engineering", "currentGate": "Awaiting shared foundation" },
+    { "id": "ws5", "domain": "Auctions and recovery", "totalFeatures": 14, "complete": 3, "partial": 5, "notStarted": 3, "blocked": 3, "owner": "auction-engineering", "currentGate": "Simulation-safe only" },
+    { "id": "ws6", "domain": "Trust, operations, and ecosystem services", "totalFeatures": 16, "complete": 5, "partial": 7, "notStarted": 2, "blocked": 2, "owner": "operations-engineering", "currentGate": "Provider-independent readiness" }
+  ],
+  "metrics": {
+    "totalRequirements": 78,
+    "completedRequirements": 24,
+    "acceptedTests": 730,
+    "failingTests": 0,
+    "openP0Defects": 11,
+    "openP1Defects": 5,
+    "databaseMigrationStatus": "migrations_001_007_apply_in_memory_not_live_executed",
+    "providerActivationStatus": "blocked_pending_a4_and_provider_credentials",
+    "environmentStatus": "local_build_passes_live_environments_not_certified",
+    "closedBetaCompletion": 44,
+    "paidPilotCompletion": 24,
+    "productionCompletion": 19
+  }
+}

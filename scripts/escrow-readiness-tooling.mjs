@@ -281,6 +281,253 @@ ${LEGAL_TRUST_ACCOUNT_READINESS_CHECKLIST.map((row) => `| ${row.item} |  | Pendi
 `;
 }
 
+export function renderEscrowProviderIntakeTemplate() {
+  return `# Escrow Provider Intake Template
+
+Do not include escrow API keys, webhook secrets, bank credentials, trust account credentials, service-role keys, access tokens, or screenshots containing credentials.
+
+## Provider Intake
+
+- Environment: Development / UAT
+- Provider: Stripe Connect / WiPay / Lynk / NCB / Manual Deposit Hold / Legal Trust Account
+- Operations owner:
+- Legal owner:
+- Dispute owner:
+- Date:
+
+| Intake Item | Required Env/Policy | Status | Evidence Location |
+| --- | --- | --- | --- |
+${ESCROW_PROVIDER_INTAKE_CHECKLIST.map((row) => `| ${row.item} | ${row.envKey} | Pending |  |`).join("\n")}
+
+## Decision
+
+- Result: PASS / FAIL
+- Missing evidence:
+- Next action:
+`;
+}
+
+export function renderLegalTrustAccountEvidenceChecklist() {
+  return `# Legal Trust Account Evidence Checklist
+
+Do not include bank credentials, account numbers, trust account access credentials, API keys, tokens, or screenshots containing credentials.
+
+| Evidence Item | Development | UAT | Production Hold | Notes |
+| --- | --- | --- | --- | --- |
+${LEGAL_TRUST_ACCOUNT_READINESS_CHECKLIST.map((row) => `| ${row.item} | Pending | Pending | Pending | ${row.envKey} |`).join("\n")}
+| Legal counsel approval | Pending | Pending | Pending | Manual signoff required. |
+| Trust account operating procedure | Pending | Pending | Pending | Policy reference only. |
+| Dual-control release authority | Pending | Pending | Pending | Names/roles only, no credentials. |
+| Reconciliation evidence path | Pending | Pending | Pending | Report reference only. |
+
+Live legal escrow remains inactive until legal review, bank/trust setup, compliance approval, and operational controls pass.
+`;
+}
+
+export function renderDepositHoldReleaseEvidenceChecklist() {
+  return [
+    "# Deposit Hold/Release Evidence Checklist",
+    "",
+    "Do not include payment keys, escrow API keys, bank credentials, customer financial data, or screenshots containing credentials.",
+    "",
+    "| Workflow | Expected State | Evidence Required | Status |",
+    "| --- | --- | --- | --- |",
+    "| Deposit draft created | draft | Booking, asset, amount, currency, audit event | Pending |",
+    "| Deposit hold requested | pending / held | Provider sandbox reference or placeholder evidence | Pending |",
+    "| Deposit hold confirmed | held | Ledger record, audit event, no live funds if placeholder | Pending |",
+    "| Full release requested | released | Release policy, actor, audit event | Pending |",
+    "| Partial release requested | partially_released | Amount split, reason, approval evidence | Pending |",
+    "| Terminal release verified | released | No further transitions allowed | Pending |",
+    "",
+    "## Approved State Machine",
+    ...Object.entries(DEPOSIT_STATE_MACHINE).map(([state, transitions]) => `- ${state}: ${transitions.join(", ") || "terminal"}`),
+  ].join("\n");
+}
+
+export function renderPartialReleaseEvidenceTemplate() {
+  return `# Partial Release Evidence Template
+
+Do not include escrow API keys, payment credentials, bank credentials, private financial details, or screenshots containing credentials.
+
+## Partial Release
+
+- Environment: Development / UAT
+- Escrow/deposit record ID:
+- Booking ID:
+- Asset ID:
+- Original deposit amount:
+- Release amount:
+- Remaining amount:
+- Currency:
+- Requested by:
+- Approved by:
+- Reason:
+- Policy reference:
+
+## Evidence
+
+| Evidence Item | Status | Evidence Location |
+| --- | --- | --- |
+| Original held ledger entry exists | Pending |  |
+| Partial release transition allowed | Pending |  |
+| Remaining balance calculated correctly | Pending |  |
+| Customer/supplier visibility reviewed | Pending |  |
+| Audit event recorded | Pending |  |
+| No live funds moved unless provider sandbox evidence is attached | Pending |  |
+
+## Decision
+
+- Result: PASS / FAIL
+- Blockers:
+- Next action:
+`;
+}
+
+export function renderRefundEvidenceTemplate() {
+  return `# Escrow Refund Evidence Template
+
+Do not include payment credentials, escrow API keys, bank details, customer financial data, or screenshots containing credentials.
+
+## Refund
+
+- Environment: Development / UAT
+- Escrow/deposit record ID:
+- Booking ID:
+- Asset ID:
+- Refund amount:
+- Currency:
+- Refund reason:
+- Requested by:
+- Approved by:
+- Policy reference:
+
+## Evidence
+
+| Evidence Item | Status | Evidence Location |
+| --- | --- | --- |
+| Held/disputed ledger entry exists | Pending |  |
+| Refund transition allowed | Pending |  |
+| Refund amount <= available balance | Pending |  |
+| Customer notification path reviewed | Pending |  |
+| Audit event recorded | Pending |  |
+| No live funds moved unless provider sandbox evidence is attached | Pending |  |
+
+## Decision
+
+- Result: PASS / FAIL
+- Blockers:
+- Next action:
+`;
+}
+
+export function renderDisputeEvidenceTemplate() {
+  return `# Escrow Dispute Evidence Template
+
+Do not include payment credentials, escrow API keys, bank details, legal privileged documents, private evidence files, or screenshots containing credentials.
+
+## Dispute
+
+- Environment: Development / UAT
+- Escrow/deposit record ID:
+- Booking ID:
+- Asset ID:
+- Dispute amount:
+- Currency:
+- Opened by:
+- Dispute reason:
+- Evidence package reference:
+- Dispute owner:
+- Policy reference:
+
+## Evidence
+
+| Evidence Item | Status | Evidence Location |
+| --- | --- | --- |
+| Held/pending ledger entry exists | Pending |  |
+| Dispute transition allowed | Pending |  |
+| Evidence stored in private bucket/reference | Pending |  |
+| Admin/dispute owner review path verified | Pending |  |
+| Release/refund/partial release paths remain controlled | Pending |  |
+| Audit event recorded | Pending |  |
+| No legal escrow decision claimed without approval | Pending |  |
+
+## Decision
+
+- Result: PASS / FAIL
+- Blockers:
+- Next action:
+`;
+}
+
+export function renderEscrowLedgerEvidenceChecklist() {
+  return [
+    "# Escrow Ledger Evidence Checklist",
+    "",
+    "Do not include escrow API keys, bank credentials, payment secrets, customer financial data, or screenshots containing credentials.",
+    "",
+    "| Evidence Item | Development | UAT | Notes |",
+    "| --- | --- | --- | --- |",
+    "| Ledger record has unique ID | Pending | Pending | Internal record ID only. |",
+    "| Booking, asset, customer, supplier IDs present | Pending | Pending | IDs only, no private data. |",
+    "| Deposit type supported | Pending | Pending | security/damage/property/etc. |",
+    "| Amount and currency valid | Pending | Pending | No bank data. |",
+    "| State is valid | Pending | Pending | Must match approved state machine. |",
+    "| Transition audit event recorded | Pending | Pending | Audit event ID only. |",
+    "| Reconciliation reference recorded | Pending | Pending | Report reference only. |",
+    "| Live funds flag remains accurate | Pending | Pending | Must not claim live funds when placeholder. |",
+    "",
+    "## Static Validation Scenarios",
+    ...ESCROW_LEDGER_VALIDATION_SCENARIOS.map((row) => `- ${row.id}: ${row.depositType}, ${row.amount} ${row.currency}, ${row.status}, live funds ${row.liveFundsProcessed ? "YES" : "NO"}`),
+  ].join("\n");
+}
+
+export function buildEscrowLaunchBlockerReport({ env = process.env } = {}) {
+  const readiness = buildEscrowReadinessToolingReport({ env });
+  const manualEvidence = [
+    "Escrow provider selected and legally approved",
+    "Legal trust account evidence and operating procedure",
+    "Deposit hold sandbox/legal evidence",
+    "Release and partial release evidence",
+    "Refund evidence",
+    "Dispute workflow evidence",
+    "Escrow ledger reconciliation evidence",
+    "Escrow legal/compliance signoff",
+    "No live funds movement certification until provider/legal controls pass",
+  ];
+  const blockers = [
+    ...readiness.blockers,
+    ...manualEvidence.map((item) => `Manual evidence required: ${item}`),
+  ];
+  return {
+    status: "BLOCKED",
+    generatedAt: new Date().toISOString(),
+    liveEscrowActive: false,
+    liveFundsProcessed: false,
+    legalEscrowClaim: false,
+    valuePrinted: false,
+    blockers: unique(blockers),
+    nextGate: "A4-01 Infrastructure Ownership Confirmation Submitted; Escrow activation remains blocked until A4 and legal/provider evidence pass.",
+  };
+}
+
+export function renderEscrowLaunchBlockerReport(report = buildEscrowLaunchBlockerReport()) {
+  return [
+    "# Escrow Launch Blocker Report",
+    "",
+    `Status: ${report.status}`,
+    `Generated At: ${report.generatedAt}`,
+    `Live Escrow Active: ${report.liveEscrowActive ? "YES" : "NO"}`,
+    `Live Funds Processed: ${report.liveFundsProcessed ? "YES" : "NO"}`,
+    `Legal Escrow Claim: ${report.legalEscrowClaim ? "YES" : "NO"}`,
+    "",
+    "## Blockers",
+    ...report.blockers.map((blocker) => `- ${blocker}`),
+    "",
+    "## Next Gate",
+    report.nextGate,
+  ].join("\n");
+}
+
 export function buildEscrowReadinessToolingReport({ env = process.env } = {}) {
   const providerIntake = validateEscrowProviderIntake(env);
   const stateMachine = validateDepositStateMachine();
@@ -335,5 +582,13 @@ if (resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1] || "")) 
   else if (command === "placeholder-workflows") console.log(JSON.stringify(validateReleaseRefundDisputePlaceholders(), null, 2));
   else if (command === "legal-trust-checklist") console.log(JSON.stringify(buildLegalTrustAccountReadinessChecklist(), null, 2));
   else if (command === "evidence-template") console.log(renderEscrowEvidenceTemplate());
+  else if (command === "provider-intake-template") console.log(renderEscrowProviderIntakeTemplate());
+  else if (command === "legal-trust-evidence") console.log(renderLegalTrustAccountEvidenceChecklist());
+  else if (command === "deposit-hold-release-checklist") console.log(renderDepositHoldReleaseEvidenceChecklist());
+  else if (command === "partial-release-template") console.log(renderPartialReleaseEvidenceTemplate());
+  else if (command === "refund-template") console.log(renderRefundEvidenceTemplate());
+  else if (command === "dispute-template") console.log(renderDisputeEvidenceTemplate());
+  else if (command === "ledger-evidence-checklist") console.log(renderEscrowLedgerEvidenceChecklist());
+  else if (command === "launch-blockers") console.log(renderEscrowLaunchBlockerReport());
   else renderReport(buildEscrowReadinessToolingReport());
 }

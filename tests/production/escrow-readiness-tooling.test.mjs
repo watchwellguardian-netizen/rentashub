@@ -6,8 +6,17 @@ import {
   ESCROW_PROVIDER_INTAKE_CHECKLIST,
   LEGAL_TRUST_ACCOUNT_READINESS_CHECKLIST,
   buildEscrowReadinessToolingReport,
+  buildEscrowLaunchBlockerReport,
   buildLegalTrustAccountReadinessChecklist,
+  renderDepositHoldReleaseEvidenceChecklist,
+  renderDisputeEvidenceTemplate,
   renderEscrowEvidenceTemplate,
+  renderEscrowLedgerEvidenceChecklist,
+  renderEscrowLaunchBlockerReport,
+  renderEscrowProviderIntakeTemplate,
+  renderLegalTrustAccountEvidenceChecklist,
+  renderPartialReleaseEvidenceTemplate,
+  renderRefundEvidenceTemplate,
   validateDepositStateMachine,
   validateEscrowLedger,
   validateEscrowProviderIntake,
@@ -28,6 +37,15 @@ const shapedEscrowEnv = {
   LEGAL_TRUST_ACCOUNT_POLICY_URL: "https://escrow.rentashub.test/trust-account-policy",
   DEPOSIT_RECONCILIATION_OWNER: "Reconciliation Owner",
 };
+
+function assertCredentialSafe(markdown) {
+  assert.doesNotMatch(markdown, /ESCROW_API_KEY\s*=/i);
+  assert.doesNotMatch(markdown, /SUPABASE_SERVICE_ROLE_KEY\s*=/i);
+  assert.doesNotMatch(markdown, /STRIPE_SECRET_KEY\s*=/i);
+  assert.doesNotMatch(markdown, /WIPAY_API_KEY\s*=/i);
+  assert.doesNotMatch(markdown, /postgresql:\/\//i);
+  assert.doesNotMatch(markdown, /sk_live_/i);
+}
 
 test("escrow provider intake checklist rejects missing and placeholder inputs", () => {
   assert.ok(ESCROW_PROVIDER_INTAKE_CHECKLIST.some((row) => row.envKey === "ESCROW_PROVIDER"));
@@ -127,4 +145,61 @@ test("escrow readiness tooling report is credential-ready only and blocks manual
   assert.equal(shaped.liveEscrowActive, false);
   assert.equal(shaped.liveFundsProcessed, false);
   assert.equal(shaped.legalEscrowClaim, false);
+});
+
+test("escrow provider intake and legal trust evidence templates are credential-safe", () => {
+  const provider = renderEscrowProviderIntakeTemplate();
+  const legal = renderLegalTrustAccountEvidenceChecklist();
+  assert.match(provider, /Escrow Provider Intake Template/);
+  assert.match(provider, /Provider: Stripe Connect \/ WiPay \/ Lynk/);
+  assert.match(provider, /ESCROW_PROVIDER/);
+  assert.match(legal, /Legal Trust Account Evidence Checklist/);
+  assert.match(legal, /Dual-control release authority/);
+  assert.match(legal, /Live legal escrow remains inactive/);
+  assertCredentialSafe(provider);
+  assertCredentialSafe(legal);
+});
+
+test("deposit hold release partial refund and dispute templates cover controlled workflows", () => {
+  const holdRelease = renderDepositHoldReleaseEvidenceChecklist();
+  const partial = renderPartialReleaseEvidenceTemplate();
+  const refund = renderRefundEvidenceTemplate();
+  const dispute = renderDisputeEvidenceTemplate();
+  assert.match(holdRelease, /Deposit Hold\/Release Evidence Checklist/);
+  assert.match(holdRelease, /Deposit hold confirmed/);
+  assert.match(holdRelease, /Full release requested/);
+  assert.match(partial, /Partial Release Evidence Template/);
+  assert.match(partial, /Remaining balance calculated correctly/);
+  assert.match(refund, /Escrow Refund Evidence Template/);
+  assert.match(refund, /Refund amount <= available balance/);
+  assert.match(dispute, /Escrow Dispute Evidence Template/);
+  assert.match(dispute, /No legal escrow decision claimed without approval/);
+  for (const output of [holdRelease, partial, refund, dispute]) assertCredentialSafe(output);
+});
+
+test("escrow ledger evidence checklist includes static scenarios and no live-funds claim", () => {
+  const markdown = renderEscrowLedgerEvidenceChecklist();
+  assert.match(markdown, /Escrow Ledger Evidence Checklist/);
+  assert.match(markdown, /Ledger record has unique ID/);
+  assert.match(markdown, /ledger-security-deposit-held/);
+  assert.match(markdown, /live funds NO/i);
+  assertCredentialSafe(markdown);
+});
+
+test("escrow launch blocker report remains blocked pending legal and provider evidence", () => {
+  const missing = buildEscrowLaunchBlockerReport({ env: {} });
+  assert.equal(missing.status, "BLOCKED");
+  assert.equal(missing.liveEscrowActive, false);
+  assert.equal(missing.liveFundsProcessed, false);
+  assert.equal(missing.legalEscrowClaim, false);
+  assert.ok(missing.blockers.some((blocker) => /Escrow provider selected/.test(blocker)));
+
+  const shaped = buildEscrowLaunchBlockerReport({ env: shapedEscrowEnv });
+  assert.equal(shaped.status, "BLOCKED");
+  assert.ok(shaped.blockers.some((blocker) => /Escrow legal\/compliance signoff/.test(blocker)));
+
+  const markdown = renderEscrowLaunchBlockerReport(shaped);
+  assert.match(markdown, /Escrow Launch Blocker Report/);
+  assert.match(markdown, /Escrow activation remains blocked/);
+  assertCredentialSafe(markdown);
 });

@@ -3,6 +3,8 @@ import { validateFileMetadata } from "../server/src/files/fileValidator.js";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import {
+  SUPABASE_STORAGE_ACCESS_RULES,
+  SUPABASE_STORAGE_AUDIT_EVENTS,
   SUPABASE_SIGNED_URL_STRATEGY,
   SUPABASE_STORAGE_BUCKETS,
   getBucketForEntityType,
@@ -295,6 +297,138 @@ Do not include Supabase keys, service role tokens, JWTs, database passwords, raw
 `;
 }
 
+export function renderBucketEvidenceChecklistPerBucket() {
+  const sections = Object.values(SUPABASE_STORAGE_BUCKETS).map((bucket) => {
+    const privateBucket = !["public", "public_or_signed"].includes(bucket.visibility);
+    return `## ${bucket.defaultName}
+
+- Environment: Development / UAT
+- Bucket Env Key: ${bucket.envKey}
+- Approved Visibility: ${bucket.visibility}
+- Purpose: ${bucket.purpose}
+- Related Entity Types: ${bucket.relatedEntityTypes.join(", ")}
+
+| Evidence Item | Status | Evidence Location | Notes |
+| --- | --- | --- | --- |
+| Bucket created with approved name | Pending |  | Do not include credentials. |
+| Bucket visibility matches approved classification | Pending |  | Expected ${bucket.visibility}. |
+| Anonymous read policy reviewed | Pending |  | ${privateBucket ? "Must be denied." : "Allowed only for approved public assets."} |
+| Upload path convention reviewed | Pending |  | Record path pattern only, not file contents. |
+| Download/access policy reviewed | Pending |  | Record pass/fail only. |
+| Audit event captured | Pending |  | Expected one of: ${SUPABASE_STORAGE_AUDIT_EVENTS.join(", ")}. |
+| Evidence redacted | Pending |  | No keys, tokens, signed URLs, or private files. |`;
+  });
+  return [
+    "# Bucket Evidence Checklist Per Bucket",
+    "",
+    "Do not include Supabase keys, service role tokens, JWTs, database passwords, raw signed URL values, or screenshots containing credentials.",
+    "",
+    ...sections,
+    "",
+  ].join("\n");
+}
+
+export function renderPublicPrivateBucketPolicyEvidenceMatrix() {
+  const rows = Object.values(SUPABASE_STORAGE_BUCKETS).map((bucket) => {
+    const publicAllowed = bucket.visibility === "public" || bucket.visibility === "public_or_signed";
+    const signedUrlRequired = !publicAllowed || bucket.visibility === "public_or_signed";
+    return `| ${bucket.defaultName} | ${bucket.visibility} | ${publicAllowed ? "Yes" : "No"} | ${signedUrlRequired ? "Yes" : "No"} | ${publicAllowed ? "Approved public policy evidence" : "Anonymous access denial evidence"} | Pending | |`;
+  });
+  return [
+    "# Public/Private Bucket Policy Evidence Matrix",
+    "",
+    "Do not paste bucket policy secrets, service role keys, JWTs, or raw signed URLs.",
+    "",
+    "| Bucket | Required Visibility | Anonymous Read Allowed | Signed URL Required | Required Evidence | Status | Evidence Location |",
+    "| --- | --- | --- | --- | --- | --- | --- |",
+    ...rows,
+    "",
+    "Private verification, inspection, claim, and dispute evidence must remain non-public and require backend-authorized access.",
+  ].join("\n");
+}
+
+export function renderUploadDownloadEvidenceTemplate() {
+  return `# Upload/Download Evidence Template
+
+Do not include Supabase keys, database passwords, JWTs, raw signed URLs, private file contents, or screenshots containing credentials.
+
+## Environment
+
+- Environment: Development / UAT
+- Supabase Project Name:
+- Supabase Project ID:
+- Storage Operator:
+- Date:
+
+## Upload Evidence
+
+| Scenario | Bucket | Expected Result | Actual Result | Evidence Location | Notes |
+| --- | --- | --- | --- | --- | --- |
+| Public asset photo upload intent | public-assets | Upload accepted | Pending |  | Metadata and path only. |
+| Supplier logo upload intent | supplier-logos | Upload accepted | Pending |  | Metadata and path only. |
+| Verification document upload intent | private-verification | Upload accepted as private | Pending |  | No document contents. |
+| Inspection report upload intent | private-inspections | Upload accepted as private | Pending |  | No report contents. |
+| Claim evidence upload intent | private-claims | Upload accepted as private | Pending |  | No private evidence contents. |
+| Dispute evidence upload intent | private-disputes | Upload accepted as private | Pending |  | No private evidence contents. |
+
+## Download Evidence
+
+| Scenario | Expected Result | Actual Result | Evidence Location | Notes |
+| --- | --- | --- | --- | --- |
+| Public asset download | Public object accessible | Pending |  | Status code only. |
+| Supplier logo download | Public/signed access works | Pending |  | Status code only. |
+| Private verification download | Authorized signed download only | Pending |  | Do not paste URL. |
+| Private inspection download | Authorized signed download only | Pending |  | Do not paste URL. |
+| Private claim download | Authorized signed download only | Pending |  | Do not paste URL. |
+| Private dispute download | Authorized signed download only | Pending |  | Do not paste URL. |
+
+## Decision
+
+- Result: PASS / FAIL
+- Blockers:
+- Next action:
+`;
+}
+
+export function renderPrivateFileAccessDenialEvidenceTemplate() {
+  return `# Private File Access Denial Evidence Template
+
+Do not include Supabase keys, service role tokens, JWTs, raw signed URL values, private document contents, or screenshots containing credentials.
+
+## Environment
+
+- Environment: Development / UAT
+- Supabase Project Name:
+- Supabase Project ID:
+- Tester:
+- Date:
+
+## Denial Evidence
+
+| Scenario | Bucket | Expected Result | Actual Result | Status Code Only | Evidence Location |
+| --- | --- | --- | --- | --- | --- |
+| Anonymous access to verification document | private-verification | Denied | Pending | Pending |  |
+| Anonymous access to inspection evidence | private-inspections | Denied | Pending | Pending |  |
+| Anonymous access to claim evidence | private-claims | Denied | Pending | Pending |  |
+| Anonymous access to dispute evidence | private-disputes | Denied | Pending | Pending |  |
+| Cross-user access to private verification document | private-verification | Denied | Pending | Pending |  |
+| Cross-tenant access to private inspection evidence | private-inspections | Denied | Pending | Pending |  |
+| Expired signed URL reuse | private-* | Denied | Pending | Pending |  |
+
+## Required Audit Trail
+
+- Expected storage audit event: storage.access.denied
+- Audit event ID:
+- Evidence redaction verified: Yes / No
+
+## Decision
+
+- Result: PASS / FAIL
+- Blockers:
+- Next action:
+`;
+}
+
 export function runUploadIntentHarness(env = process.env) {
   const scenarios = [
     {
@@ -494,6 +628,113 @@ export function renderStorageAccessEvidencePackage(report = buildStorageAccessEv
   return lines.join("\n");
 }
 
+export function buildStorageClassificationAuditReport({ env = process.env } = {}) {
+  const bucketPolicy = buildBucketPolicyChecklist(env);
+  const classMatrix = validateBucketToFileClassMatrix(env);
+  const mismatchDetector = detectPrivatePublicMismatches(env);
+  const rows = FILE_CLASSIFICATION_MATRIX.map((item) => {
+    const bucket = getBucketForEntityType(item.relatedEntityType, env);
+    const policy = bucketPolicy.rows.find((row) => row.classification === item.classification);
+    const matrix = classMatrix.rows.find((row) => row.classification === item.classification);
+    const mismatch = mismatchDetector.rows.find((row) => row.classification === item.classification);
+    const blockers = [
+      ...(policy?.blockers || []),
+      ...(matrix?.blockers || []),
+      ...(mismatch?.blockers || []),
+    ];
+    return {
+      classification: item.classification,
+      relatedEntityType: item.relatedEntityType,
+      approvedBucket: item.expectedBucket,
+      observedBucketEnvKey: bucket.envKey,
+      observedVisibility: bucket.visibility,
+      expectedVisibility: item.visibility,
+      signedUrlRequired: item.signedUrlRequired,
+      publicAllowed: item.publicAllowed,
+      accessRules: SUPABASE_STORAGE_ACCESS_RULES.map((rule) => rule.role),
+      auditEventsRequired: SUPABASE_STORAGE_AUDIT_EVENTS,
+      status: blockers.length ? "REVIEW_REQUIRED" : "PASS",
+      blockers,
+    };
+  });
+  const blockers = rows.flatMap((row) => row.blockers.map((blocker) => `${row.classification}: ${blocker}`));
+  return {
+    status: blockers.length ? "REVIEW_REQUIRED" : "PASS",
+    generatedAt: new Date().toISOString(),
+    liveStorageTouched: false,
+    valuePrinted: false,
+    rows,
+    blockers,
+  };
+}
+
+export function renderStorageClassificationAuditReport(report = buildStorageClassificationAuditReport()) {
+  return [
+    "# Storage Classification Audit Report",
+    "",
+    `Status: ${report.status}`,
+    `Generated At: ${report.generatedAt}`,
+    `Live Storage Touched: ${report.liveStorageTouched ? "YES" : "NO"}`,
+    "",
+    "| Classification | Entity Type | Approved Bucket | Visibility | Signed URL Required | Public Allowed | Status |",
+    "| --- | --- | --- | --- | --- | --- | --- |",
+    ...report.rows.map((row) => `| ${row.classification} | ${row.relatedEntityType} | ${row.approvedBucket} | ${row.expectedVisibility} | ${row.signedUrlRequired ? "Yes" : "No"} | ${row.publicAllowed ? "Yes" : "No"} | ${row.status} |`),
+    "",
+    "## Required Access Roles",
+    ...SUPABASE_STORAGE_ACCESS_RULES.map((rule) => `- ${rule.role}: ${rule.access}`),
+    "",
+    "## Required Audit Events",
+    ...SUPABASE_STORAGE_AUDIT_EVENTS.map((event) => `- ${event}`),
+    ...(report.blockers.length ? ["", "## Blockers", ...report.blockers.map((blocker) => `- ${blocker}`)] : []),
+  ].join("\n");
+}
+
+export function buildStorageLaunchBlockerReport({ env = process.env } = {}) {
+  const accessPackage = buildStorageAccessEvidencePackage({ env });
+  const classificationAudit = buildStorageClassificationAuditReport({ env });
+  const requiredManualEvidence = [
+    "Supabase Development and UAT project IDs",
+    "Required buckets created in Development and UAT",
+    "Public/private bucket policy screenshots or exported policy summaries with secrets redacted",
+    "Signed upload/download generation evidence without raw URL values",
+    "Private file unauthorized-access denial evidence",
+    "Storage audit event evidence",
+    "Secrets exposure scan covering source, docs, frontend bundle, ZIP artifacts, and logs",
+  ];
+  const blockers = [
+    ...accessPackage.blockers,
+    ...classificationAudit.blockers,
+    ...requiredManualEvidence.map((item) => `Manual evidence required: ${item}`),
+  ];
+  return {
+    status: blockers.length ? "BLOCKED" : "PASS",
+    generatedAt: new Date().toISOString(),
+    liveStorageTouched: false,
+    valuePrinted: false,
+    readinessStatus: accessPackage.status,
+    classificationAuditStatus: classificationAudit.status,
+    blockers,
+    nextGate: "A4-01 Infrastructure Ownership Confirmation Submitted, then A4-02 Environment Provisioning Verification",
+  };
+}
+
+export function renderStorageLaunchBlockerReport(report = buildStorageLaunchBlockerReport()) {
+  return [
+    "# Storage Launch Blocker Report",
+    "",
+    `Status: ${report.status}`,
+    `Generated At: ${report.generatedAt}`,
+    `Live Storage Touched: ${report.liveStorageTouched ? "YES" : "NO"}`,
+    `Storage Readiness Status: ${report.readinessStatus}`,
+    "",
+    "## Blockers",
+    ...report.blockers.map((blocker) => `- ${blocker}`),
+    "",
+    "## Next Gate",
+    report.nextGate,
+  ].join("\n");
+}
+
 export function buildStorageReadinessReport({ env = process.env } = {}) {
   const bucketNames = validateBucketNames(env);
   const bucketNamingConformance = scanBucketNamingConformance(env);
@@ -527,6 +768,16 @@ export function buildStorageReadinessReport({ env = process.env } = {}) {
       liveStorageTouched: storageEvidencePackage.liveStorageTouched,
       valuePrinted: storageEvidencePackage.valuePrinted,
     },
+    classificationAudit: {
+      status: buildStorageClassificationAuditReport({ env }).status,
+      liveStorageTouched: false,
+      valuePrinted: false,
+    },
+    launchBlockers: {
+      status: buildStorageLaunchBlockerReport({ env }).status,
+      liveStorageTouched: false,
+      valuePrinted: false,
+    },
     classificationCount: FILE_CLASSIFICATION_MATRIX.length,
     valuePrinted: false,
     blockers,
@@ -554,6 +805,12 @@ if (resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1] || "")) 
   else if (command === "bucket-file-class") console.log(JSON.stringify(validateBucketToFileClassMatrix(), null, 2));
   else if (command === "private-public-mismatch") console.log(JSON.stringify(detectPrivatePublicMismatches(), null, 2));
   else if (command === "signed-url-checklist") console.log(renderSignedUrlEvidenceChecklist());
+  else if (command === "bucket-evidence-checklist") console.log(renderBucketEvidenceChecklistPerBucket());
+  else if (command === "bucket-policy-evidence-matrix") console.log(renderPublicPrivateBucketPolicyEvidenceMatrix());
+  else if (command === "upload-download-template") console.log(renderUploadDownloadEvidenceTemplate());
+  else if (command === "private-access-denial-template") console.log(renderPrivateFileAccessDenialEvidenceTemplate());
   else if (command === "access-evidence-package") console.log(renderStorageAccessEvidencePackage());
+  else if (command === "classification-audit") console.log(renderStorageClassificationAuditReport());
+  else if (command === "launch-blockers") console.log(renderStorageLaunchBlockerReport());
   else renderReport(buildStorageReadinessReport());
 }

@@ -6,11 +6,21 @@ import {
   SANDBOX_READINESS_CHECKLISTS,
   TAX_GCT_CONFIGURATION_MATRIX,
   buildPayoutReadinessChecklist,
+  buildRevenueLaunchBlockerReport,
   buildRevenueReadinessToolingReport,
   buildSandboxReadinessChecklist,
   buildTaxGctConfigurationMatrix,
+  renderChargebackEvidenceChecklist,
+  renderPaymentProviderEvidenceIntakeTemplate,
+  renderPayoutEvidenceChecklist,
+  renderRefundEvidenceChecklist,
   renderRevenueEvidencePackageTemplate,
+  renderRevenueLaunchBlockerReport,
+  renderSandboxReadinessChecklist,
+  renderSettlementEvidenceChecklist,
+  renderTaxGctReadinessChecklist,
   renderTaxGctConfigurationMatrix,
+  renderWebhookVerificationEvidenceTemplate,
   runWebhookReadinessTests,
   validateMockWebhookPayload,
   validatePaymentProviderCredentials,
@@ -56,6 +66,15 @@ const shapedWipayEnv = {
   WIPAY_WEBHOOK_SECRET: "wipay_webhook_test_readiness",
 };
 delete shapedWipayEnv.STRIPE_WEBHOOK_SECRET;
+
+function assertCredentialSafe(markdown) {
+  assert.doesNotMatch(markdown, /PAYMENT_SECRET_KEY\s*=/i);
+  assert.doesNotMatch(markdown, /STRIPE_WEBHOOK_SECRET\s*=/i);
+  assert.doesNotMatch(markdown, /WIPAY_WEBHOOK_SECRET\s*=/i);
+  assert.doesNotMatch(markdown, /SUPABASE_SERVICE_ROLE_KEY\s*=/i);
+  assert.doesNotMatch(markdown, /sk_live_/i);
+  assert.doesNotMatch(markdown, /postgresql:\/\//i);
+}
 
 test("payment provider credential validator supports Stripe and rejects missing placeholders", () => {
   assert.deepEqual(PAYMENT_PROVIDER_CREDENTIAL_KEYS.stripe.includes("STRIPE_WEBHOOK_SECRET"), true);
@@ -162,4 +181,80 @@ test("revenue readiness report is provider-ready and blocks missing manual input
   assert.equal(shaped.realMoneyMovementActive, false);
   assert.equal(shaped.livePaymentsActive, false);
   assert.equal(shaped.liveEscrowActive, false);
+});
+
+test("payment provider evidence intake template is credential-safe", () => {
+  const markdown = renderPaymentProviderEvidenceIntakeTemplate();
+  assert.match(markdown, /Payment Provider Evidence Intake Template/);
+  assert.match(markdown, /Secret key stored in backend-only secret manager/);
+  assert.match(markdown, /Sandbox mode confirmed/);
+  assertCredentialSafe(markdown);
+});
+
+test("Stripe and WiPay sandbox checklist renderers preserve no-live-payment boundary", () => {
+  const stripe = renderSandboxReadinessChecklist("stripe", shapedStripeEnv);
+  const wipay = renderSandboxReadinessChecklist("wipay", shapedWipayEnv);
+  assert.match(stripe, /Stripe Sandbox Readiness Checklist/);
+  assert.match(stripe, /Live Payments Active: NO/);
+  assert.match(stripe, /Webhook endpoint registered/);
+  assert.match(wipay, /WiPay Sandbox Readiness Checklist/);
+  assert.match(wipay, /JMD settlement flow reviewed/);
+  assertCredentialSafe(stripe);
+  assertCredentialSafe(wipay);
+});
+
+test("webhook verification evidence template covers provider events without secrets", () => {
+  const markdown = renderWebhookVerificationEvidenceTemplate();
+  assert.match(markdown, /Webhook Verification Evidence Template/);
+  assert.match(markdown, /payment_intent\.succeeded/);
+  assert.match(markdown, /transaction\.approved/);
+  assert.match(markdown, /Invalid signature rejected/);
+  assertCredentialSafe(markdown);
+});
+
+test("refund and chargeback evidence checklists cover required review paths", () => {
+  const refund = renderRefundEvidenceChecklist();
+  const chargeback = renderChargebackEvidenceChecklist();
+  assert.match(refund, /Refund Evidence Checklist/);
+  assert.match(refund, /Sandbox refund request created/);
+  assert.match(refund, /No live money movement/);
+  assert.match(chargeback, /Chargeback Evidence Checklist/);
+  assert.match(chargeback, /Provider dispute event received/);
+  assert.match(chargeback, /Response deadline captured/);
+  assertCredentialSafe(refund);
+  assertCredentialSafe(chargeback);
+});
+
+test("payout settlement and tax checklists render without activating money movement", () => {
+  const payout = renderPayoutEvidenceChecklist();
+  const settlement = renderSettlementEvidenceChecklist();
+  const tax = renderTaxGctReadinessChecklist();
+  assert.match(payout, /Payout Evidence Checklist/);
+  assert.match(payout, /Live Payout Active: NO/);
+  assert.match(settlement, /Settlement Evidence Checklist/);
+  assert.match(settlement, /No live settlement performed/);
+  assert.match(tax, /Tax\/GCT Readiness Checklist/);
+  assert.match(tax, /Live Tax Filing Active: NO/);
+  assertCredentialSafe(payout);
+  assertCredentialSafe(settlement);
+  assertCredentialSafe(tax);
+});
+
+test("revenue launch blocker report blocks real money movement pending manual evidence", () => {
+  const missing = buildRevenueLaunchBlockerReport({ env: {} });
+  assert.equal(missing.status, "BLOCKED");
+  assert.equal(missing.realMoneyMovementActive, false);
+  assert.equal(missing.livePaymentsActive, false);
+  assert.equal(missing.livePayoutsActive, false);
+  assert.equal(missing.liveSettlementActive, false);
+  assert.ok(missing.blockers.some((blocker) => /Payment provider sandbox account/.test(blocker)));
+
+  const shaped = buildRevenueLaunchBlockerReport({ env: shapedStripeEnv });
+  assert.equal(shaped.status, "BLOCKED");
+  assert.ok(shaped.blockers.some((blocker) => /Revenue operations signoff/.test(blocker)));
+
+  const markdown = renderRevenueLaunchBlockerReport(shaped);
+  assert.match(markdown, /Revenue Launch Blocker Report/);
+  assert.match(markdown, /E2 Revenue Sandbox Activation remains blocked/);
+  assertCredentialSafe(markdown);
 });

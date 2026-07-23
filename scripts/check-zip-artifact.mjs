@@ -1,5 +1,6 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const root = process.cwd();
 const required = [
@@ -81,17 +82,31 @@ function walk(dir, files = []) {
   return files;
 }
 
-const missing = required.filter((file) => !existsSync(join(root, file)));
-if (missing.length) {
-  console.error(`[zip-check] Missing required artifact files: ${missing.join(", ")}`);
-  process.exit(1);
+export function validateZipArtifactInclusionExclusion() {
+  const missing = required.filter((file) => !existsSync(join(root, file)));
+  const files = walk(root);
+  const forbidden = files.filter((file) => forbiddenPatterns.some((pattern) => pattern.test(file)));
+  const blockers = [
+    ...missing.map((file) => `Missing required artifact file: ${file}`),
+    ...forbidden.map((file) => `Generated runtime data would be included: ${file}`),
+  ];
+  return {
+    status: blockers.length ? "FAIL" : "PASS",
+    checkedFiles: files.length,
+    requiredFiles: required,
+    missing,
+    forbidden,
+    excludedSegments: [...forbiddenSegments],
+    blockers,
+  };
 }
 
-const files = walk(root);
-const forbidden = files.filter((file) => forbiddenPatterns.some((pattern) => pattern.test(file)));
-if (forbidden.length) {
-  console.error(`[zip-check] Generated runtime data would be included: ${forbidden.join(", ")}`);
-  process.exit(1);
-}
+if (fileURLToPath(import.meta.url) === process.argv[1]) {
+  const result = validateZipArtifactInclusionExclusion();
+  if (result.status === "FAIL") {
+    for (const blocker of result.blockers) console.error(`[zip-check] ${blocker}`);
+    process.exit(1);
+  }
 
-console.log(`[zip-check] PASS: ${files.length} packageable files checked. Required deployment artifacts exist and runtime data is excluded.`);
+  console.log(`[zip-check] PASS: ${result.checkedFiles} packageable files checked. Required deployment artifacts exist and runtime data is excluded.`);
+}

@@ -6,10 +6,19 @@ import {
   KYC_EVIDENCE_INTAKE_PLACEHOLDERS,
   PRIVACY_IMPACT_CHECKLIST,
   buildComplianceConfigChecklist,
+  buildComplianceLaunchBlockerReport,
   buildComplianceReadinessToolingReport,
+  renderComplianceLaunchBlockerReport,
+  renderConsentEvidenceChecklist,
   renderComplianceEvidencePackageTemplate,
   renderDataRetentionMatrix,
   renderDsarRequestTemplate,
+  renderGdprReadinessChecklist,
+  renderJamaicaDpaReadinessChecklist,
+  renderKycVendorReadinessChecklist,
+  renderPrivacyPolicyEvidenceChecklist,
+  renderRetentionDeletionEvidenceMatrix,
+  renderTermsOfUseEvidenceChecklist,
   validateConsentWorkflowPlaceholders,
   validateDataRetentionMatrix,
   validateDsarRequestTemplate,
@@ -34,6 +43,13 @@ const shapedEnv = {
   KYC_POLICY_OWNER: "kyc@rentashub.test",
   KYC_DATA_SHARING_POLICY_URL: "https://compliance.rentashub.test/kyc-sharing",
 };
+
+function assertCredentialSafe(markdown) {
+  assert.doesNotMatch(markdown, /SUPABASE_SERVICE_ROLE_KEY\s*=/i);
+  assert.doesNotMatch(markdown, /JWT_SECRET\s*=/i);
+  assert.doesNotMatch(markdown, /postgresql:\/\//i);
+  assert.doesNotMatch(markdown, /PAYMENT_SECRET_KEY\s*=/i);
+}
 
 test("consent workflow placeholders cover marketplace privacy auction KYC and marketing preferences", () => {
   const result = validateConsentWorkflowPlaceholders();
@@ -134,4 +150,78 @@ test("compliance readiness report remains provider-ready and blocks missing manu
   assert.equal(shaped.status, "CREDENTIAL_READY_FOR_LEGAL_REVIEW");
   assert.equal(shaped.liveKycVendorActive, false);
   assert.equal(shaped.legalApprovalComplete, false);
+});
+
+test("privacy policy and terms evidence checklists are generated without credentials", () => {
+  const privacy = renderPrivacyPolicyEvidenceChecklist();
+  const terms = renderTermsOfUseEvidenceChecklist();
+  assert.match(privacy, /Privacy Policy Evidence Checklist/);
+  assert.match(privacy, /Lawful basis mapped to workflows/);
+  assert.match(privacy, /Legal review complete/);
+  assert.match(terms, /Terms of Use Evidence Checklist/);
+  assert.match(terms, /Rental\/sale\/trade\/auction boundaries included/);
+  assert.match(terms, /Consent capture evidence defined/);
+  assertCredentialSafe(privacy);
+  assertCredentialSafe(terms);
+});
+
+test("Jamaica DPA and GDPR readiness checklists cover legal compliance evidence", () => {
+  const jamaica = renderJamaicaDpaReadinessChecklist();
+  const gdpr = renderGdprReadinessChecklist();
+  assert.match(jamaica, /Jamaica Data Protection Act Readiness Checklist/);
+  assert.match(jamaica, /Data subject rights process/);
+  assert.match(jamaica, /Cross-border transfer review/);
+  assert.match(gdpr, /GDPR Readiness Checklist/);
+  assert.match(gdpr, /Lawful basis and purpose limitation/);
+  assert.match(gdpr, /Processor\/DPA review/);
+  assertCredentialSafe(jamaica);
+  assertCredentialSafe(gdpr);
+});
+
+test("consent evidence checklist maps configured placeholder workflows", () => {
+  const markdown = renderConsentEvidenceChecklist();
+  assert.match(markdown, /Consent Evidence Checklist/);
+  for (const id of ["marketplace_terms", "privacy_notice", "auction_bidder_terms", "kyc_data_sharing", "marketing_preferences"]) {
+    assert.match(markdown, new RegExp(id));
+  }
+  assert.match(markdown, /Live consent management remains inactive/);
+  assertCredentialSafe(markdown);
+});
+
+test("retention deletion evidence matrix covers legal holds and deletion status", () => {
+  const markdown = renderRetentionDeletionEvidenceMatrix();
+  assert.match(markdown, /Retention\/Deletion Evidence Matrix/);
+  assert.match(markdown, /account_profile/);
+  assert.match(markdown, /kyc_verification_documents/);
+  assert.match(markdown, /Deletion automation remains inactive/);
+  assertCredentialSafe(markdown);
+});
+
+test("KYC vendor readiness checklist keeps provider inactive and private", () => {
+  const markdown = renderKycVendorReadinessChecklist();
+  assert.match(markdown, /KYC Vendor Readiness Checklist/);
+  assert.match(markdown, /customer/);
+  assert.match(markdown, /supplier/);
+  assert.match(markdown, /private-verification/);
+  assert.match(markdown, /Live KYC vendor activation remains inactive/);
+  assertCredentialSafe(markdown);
+});
+
+test("compliance launch blocker report remains blocked pending legal and provider evidence", () => {
+  const missing = buildComplianceLaunchBlockerReport({ env: {} });
+  assert.equal(missing.status, "BLOCKED");
+  assert.equal(missing.liveKycVendorActive, false);
+  assert.equal(missing.legalApprovalComplete, false);
+  assert.equal(missing.valuePrinted, false);
+  assert.ok(missing.blockers.some((blocker) => /Privacy policy legal approval/.test(blocker)));
+  assert.ok(missing.blockers.some((blocker) => /Jamaica DPA legal review/.test(blocker)));
+
+  const shaped = buildComplianceLaunchBlockerReport({ env: shapedEnv });
+  assert.equal(shaped.status, "BLOCKED");
+  assert.ok(shaped.blockers.some((blocker) => /KYC vendor approval/.test(blocker)));
+
+  const markdown = renderComplianceLaunchBlockerReport(shaped);
+  assert.match(markdown, /Compliance Launch Blocker Report/);
+  assert.match(markdown, /D2 Compliance Operationalization remains blocked/);
+  assertCredentialSafe(markdown);
 });

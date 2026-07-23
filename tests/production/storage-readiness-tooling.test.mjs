@@ -5,12 +5,20 @@ import {
   REQUIRED_SUPABASE_STORAGE_KEYS,
   buildStorageAccessEvidencePackage,
   buildBucketPolicyChecklist,
+  buildStorageClassificationAuditReport,
+  buildStorageLaunchBlockerReport,
   buildStorageReadinessReport,
   detectPrivatePublicMismatches,
+  renderBucketEvidenceChecklistPerBucket,
   renderSignedUrlEvidenceChecklist,
+  renderPrivateFileAccessDenialEvidenceTemplate,
+  renderPublicPrivateBucketPolicyEvidenceMatrix,
+  renderStorageClassificationAuditReport,
+  renderStorageLaunchBlockerReport,
   renderStorageAccessEvidencePackage,
   renderFileClassificationMatrix,
   renderStorageEvidencePackageTemplate,
+  renderUploadDownloadEvidenceTemplate,
   runUploadIntentHarness,
   scanBucketNamingConformance,
   validateBucketName,
@@ -176,4 +184,64 @@ test("storage access evidence package generator combines storage automation chec
   const rendered = renderStorageAccessEvidencePackage(report);
   assert.match(rendered, /Storage Access Evidence Package/);
   assert.match(rendered, /Live Storage Touched: NO/);
+});
+
+test("bucket evidence checklist per bucket covers every approved bucket without secrets", () => {
+  const markdown = renderBucketEvidenceChecklistPerBucket();
+  for (const bucket of ["public-assets", "supplier-logos", "private-verification", "private-inspections", "private-claims", "private-disputes"]) {
+    assert.match(markdown, new RegExp(bucket));
+  }
+  assert.match(markdown, /Bucket Evidence Checklist Per Bucket/);
+  assert.match(markdown, /Evidence redacted/);
+  for (const label of ["SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_ANON_KEY", "SUPABASE_URL"]) {
+    assert.doesNotMatch(markdown, new RegExp(`${label}\\s*=`));
+  }
+});
+
+test("public private bucket policy evidence matrix separates public and private evidence", () => {
+  const markdown = renderPublicPrivateBucketPolicyEvidenceMatrix();
+  assert.match(markdown, /Public\/Private Bucket Policy Evidence Matrix/);
+  assert.match(markdown, /public-assets \| public \| Yes/);
+  assert.match(markdown, /private-verification \| private \| No/);
+  assert.match(markdown, /Anonymous access denial evidence/);
+});
+
+test("upload download evidence template and private denial template are evidence-only", () => {
+  const uploadDownload = renderUploadDownloadEvidenceTemplate();
+  const privateDenial = renderPrivateFileAccessDenialEvidenceTemplate();
+  assert.match(uploadDownload, /Upload\/Download Evidence Template/);
+  assert.match(uploadDownload, /Private dispute download/);
+  assert.match(privateDenial, /Private File Access Denial Evidence Template/);
+  assert.match(privateDenial, /Expired signed URL reuse/);
+  for (const output of [uploadDownload, privateDenial]) {
+    assert.doesNotMatch(output, /SUPABASE_SERVICE_ROLE_KEY\s*=/);
+    assert.doesNotMatch(output, /postgresql:\/\//);
+  }
+});
+
+test("storage classification audit report covers classifications access roles and audit events", () => {
+  const report = buildStorageClassificationAuditReport({ env: shapedEnv });
+  assert.equal(report.status, "PASS");
+  assert.equal(report.liveStorageTouched, false);
+  assert.equal(report.valuePrinted, false);
+  assert.equal(report.rows.length, FILE_CLASSIFICATION_MATRIX.length);
+  assert.ok(report.rows.every((row) => row.auditEventsRequired.includes("storage.access.denied")));
+
+  const rendered = renderStorageClassificationAuditReport(report);
+  assert.match(rendered, /Storage Classification Audit Report/);
+  assert.match(rendered, /Required Access Roles/);
+  assert.match(rendered, /storage.access.denied/);
+});
+
+test("storage launch blocker report remains blocked until real storage evidence exists", () => {
+  const report = buildStorageLaunchBlockerReport({ env: shapedEnv });
+  assert.equal(report.status, "BLOCKED");
+  assert.equal(report.liveStorageTouched, false);
+  assert.equal(report.valuePrinted, false);
+  assert.ok(report.blockers.some((blocker) => /Manual evidence required: Required buckets created/.test(blocker)));
+  assert.ok(report.blockers.some((blocker) => /signed_url_readiness/.test(blocker) || /SDK signed upload\/download/.test(blocker)));
+
+  const rendered = renderStorageLaunchBlockerReport(report);
+  assert.match(rendered, /Storage Launch Blocker Report/);
+  assert.match(rendered, /A4-01 Infrastructure Ownership Confirmation Submitted/);
 });

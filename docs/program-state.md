@@ -27,8 +27,123 @@ Public launch ready: No
 Only the following work is authorized:
 
 - A4-01 Infrastructure Ownership Confirmation
+- A3-X - AI Studio Capability Consolidation, as a non-production integration stage on the backlog branch.
+- A3-Y - Repository Consolidation, Technical Debt Elimination, Performance Hardening, and Core Rental Vertical-Slice Readiness, as a non-production engineering stage on the backlog branch.
+- Accelerated Full-Feature Delivery Programme Phase 0, as a provider-independent implementation mobilization stage.
 
-The next valid submission must be infrastructure ownership evidence, not new code, architecture, planning, readiness documentation, feature development, or secrets.
+The next valid production-gate submission must be infrastructure ownership evidence, not secrets.
+
+Non-production A3-X work may proceed in parallel only when it preserves A4 gates, avoids production claims, and follows repository governance in `AGENTS.md`.
+
+Non-production A3-Y work may proceed in parallel only when it preserves A4 gates, avoids production claims, preserves existing worktree changes, avoids new marketplace feature breadth, and follows repository governance in `AGENTS.md`.
+
+Accelerated delivery work may proceed in parallel with A4-01 only when it is provider-independent, preserves A4 gates, avoids production claims, uses shared canonical services/contracts, and does not activate live Supabase, payments, escrow, monitoring, legal, security-certification, or production deployment providers.
+
+A4-01 remains mandatory but does not freeze provider-independent implementation work.
+
+## Parallel Provider-Independent Implementation Stage
+
+Stage identifier: Accelerated Full-Feature Delivery Programme Phase 0 - Mobilization and Shared Control Foundation
+
+Classification: Non-production provider-independent implementation stage.
+
+Relationship to A4-01:
+
+- May proceed in parallel with A4-01.
+- Does not satisfy A4-01.
+- Does not authorize live provider activation.
+- Does not authorize production claims.
+- Does not change RC-0.6A certification status.
+
+Scope:
+
+- Accelerated delivery controls.
+- Workstream ownership matrix.
+- Feature flag registry and local feature flag service.
+- Migration ledger.
+- Shared contract registry.
+- Feature completion ledger.
+- Machine-readable delivery dashboard inputs.
+- A4-01 evidence capture with unknowns clearly flagged.
+
+Required exit criteria:
+
+- A4-01 remains open unless a separate complete A4-01 evidence package passes.
+- No secrets are committed, documented, printed, or logged.
+- No duplicate app, router, backend, authentication system, database, or persistence layer is introduced.
+- New tests pass.
+- Existing tests remain passing for the affected batch.
+
+## Parallel Non-Production Engineering Stage
+
+Stage identifier: A3-X - AI Studio Capability Consolidation
+
+Classification: Non-production integration stage.
+
+Relationship to A4-01:
+
+- May proceed in parallel with A4-01.
+- Does not satisfy A4-01.
+- Does not authorize infrastructure activation.
+- Does not authorize production claims.
+- Does not change RC-0.6A certification status.
+
+Scope:
+
+- AI Assistant.
+- Documentation.
+- Workflow Guides.
+- Admin System Status.
+- Test and evidence updates.
+
+Required exit criteria:
+
+- No duplicate application architecture.
+- No mock transaction backend imported.
+- All existing 703 baseline tests remain passing.
+- New tests pass.
+- Production build passes.
+- Access controls verified.
+- Statuses remain truthful.
+- Evidence package complete.
+
+## Parallel Non-Production Engineering Stage
+
+Stage identifier: A3-Y - Repository Consolidation, Technical Debt Elimination, Performance Hardening, and Core Rental Vertical-Slice Readiness
+
+Classification: Non-production engineering stage.
+
+Relationship to A4-01:
+
+- May proceed in parallel with A4-01.
+- Does not satisfy A4-01.
+- Does not authorize infrastructure activation.
+- Does not authorize production claims.
+- Does not change RC-0.6A certification status.
+
+Scope:
+
+- Repository and worktree preservation evidence.
+- Baseline reconciliation.
+- Canonical implementation reality matrix.
+- Duplication and technical-debt audit.
+- Quality tooling verification or implementation.
+- Route-level performance and bundle hardening.
+- Core rental vertical-slice readiness using non-credential-dependent paths only.
+- LocalStorage reduction and migration register.
+- Security and truthfulness hardening.
+- Test and evidence updates.
+
+Required exit criteria:
+
+- A4-01 remains open unless a separate A4-01 evidence package passes.
+- Existing A3-X behavior remains preserved.
+- No second application, router, backend, authentication system, database, or persistence layer is introduced.
+- No real Supabase, payment, escrow, monitoring, legal, or production provider activation occurs.
+- Existing tests remain passing and new tests pass.
+- Production build passes.
+- Readiness remains truthful about credential and infrastructure blockers.
+- Evidence package complete.
 
 ## Blocked Work
 

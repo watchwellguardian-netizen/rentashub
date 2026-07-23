@@ -291,6 +291,176 @@ ${PRIVACY_IMPACT_CHECKLIST.map((item) => `| ${item.label} | Pending |  |`).join(
 `;
 }
 
+export function renderPrivacyPolicyEvidenceChecklist() {
+  return `# Privacy Policy Evidence Checklist
+
+Do not include private user data, KYC documents, credentials, secrets, tokens, or screenshots containing sensitive information.
+
+| Evidence Item | Development | UAT | Production Hold | Notes |
+| --- | --- | --- | --- | --- |
+| Privacy policy owner assigned | Pending | Pending | Pending | Reference owner only. |
+| Policy version recorded | Pending | Pending | Pending | Version/date, not draft secrets. |
+| Lawful basis mapped to workflows | Pending | Pending | Pending | Marketplace, auctions, payments, support, KYC. |
+| Data categories disclosed | Pending | Pending | Pending | Include uploads, messages, audit logs, payment placeholders. |
+| Processor inventory included | Pending | Pending | Pending | Supabase/hosting/monitoring/payment/KYC only when active. |
+| Data rights instructions included | Pending | Pending | Pending | Access, correction, deletion, export, withdrawal. |
+| Retention/deletion summary included | Pending | Pending | Pending | Reference approved retention matrix. |
+| Legal review complete | Pending | Pending | Pending | Manual legal signoff required. |
+`;
+}
+
+export function renderTermsOfUseEvidenceChecklist() {
+  return `# Terms of Use Evidence Checklist
+
+Do not include credentials, secrets, private user data, or screenshots containing sensitive information.
+
+| Evidence Item | Development | UAT | Production Hold | Notes |
+| --- | --- | --- | --- | --- |
+| Terms owner assigned | Pending | Pending | Pending | Legal/document owner. |
+| Marketplace terms version recorded | Pending | Pending | Pending | Required before account actions. |
+| Rental/sale/trade/auction boundaries included | Pending | Pending | Pending | Must not claim live escrow/payment where inactive. |
+| Supplier obligations included | Pending | Pending | Pending | Listing accuracy, inspection, disputes. |
+| Customer obligations included | Pending | Pending | Pending | Booking, damage, payments, conduct. |
+| Dispute/claims terms included | Pending | Pending | Pending | Simulation-safe until legal approval. |
+| Consent capture evidence defined | Pending | Pending | Pending | Version, timestamp, actor, audit record. |
+| Legal review complete | Pending | Pending | Pending | Manual legal signoff required. |
+`;
+}
+
+export function renderJamaicaDpaReadinessChecklist() {
+  return `# Jamaica Data Protection Act Readiness Checklist
+
+Do not include personal data, KYC files, credentials, tokens, or screenshots containing sensitive information.
+
+| Readiness Area | Evidence Required | Status | Evidence Location |
+| --- | --- | --- | --- |
+| Data controller/processor roles | Legal mapping and owner approval | Pending |  |
+| Lawful basis for processing | Workflow-to-purpose mapping | Pending |  |
+| Data subject rights process | DSAR intake, verification, fulfillment evidence | Pending |  |
+| Consent management | Consent capture and withdrawal evidence | Pending |  |
+| Data security controls | RBAC, storage, audit, secret-safety evidence | Pending |  |
+| Breach/incident notification | Incident response and notification procedure | Pending |  |
+| Cross-border transfer review | Provider region and safeguard evidence | Pending |  |
+| Retention/deletion controls | Approved retention matrix and deletion exceptions | Pending |  |
+| Legal review signoff | Jamaica DPA review owner approval | Pending |  |
+`;
+}
+
+export function renderGdprReadinessChecklist() {
+  return `# GDPR Readiness Checklist
+
+Do not include personal data, KYC files, credentials, tokens, or screenshots containing sensitive information.
+
+| Readiness Area | Evidence Required | Status | Evidence Location |
+| --- | --- | --- | --- |
+| Lawful basis and purpose limitation | Processing activity evidence | Pending |  |
+| Transparency/privacy notice | Published notice and version evidence | Pending |  |
+| Data minimization | Field inventory and justification | Pending |  |
+| DSAR process | Access/export/correction/deletion workflow evidence | Pending |  |
+| Consent withdrawal | Preference and withdrawal evidence | Pending |  |
+| Processor/DPA review | Provider inventory and DPA status | Pending |  |
+| Cross-border transfer safeguards | Hosting/provider region review | Pending |  |
+| Security controls | RBAC, encryption, logging, secret-safety evidence | Pending |  |
+| Breach response | Incident response and notification timing evidence | Pending |  |
+| Legal review signoff | GDPR review owner approval | Pending |  |
+`;
+}
+
+export function renderConsentEvidenceChecklist() {
+  return [
+    "# Consent Evidence Checklist",
+    "",
+    "Do not include passwords, tokens, cookies, raw IP addresses, private user data, or screenshots containing sensitive information.",
+    "",
+    "| Workflow | Trigger | Consent Type | Required Before | Evidence Required | Status |",
+    "| --- | --- | --- | --- | --- | --- |",
+    ...CONSENT_WORKFLOW_PLACEHOLDERS.map((workflow) => `| ${workflow.id} | ${workflow.trigger} | ${workflow.consentType} | ${workflow.requiredBefore} | ${workflow.evidenceRequired.join(", ")} | Pending |`),
+    "",
+    "Live consent management remains inactive until legal review, storage, audit, and environment evidence are complete.",
+  ].join("\n");
+}
+
+export function renderRetentionDeletionEvidenceMatrix() {
+  return [
+    "# Retention/Deletion Evidence Matrix",
+    "",
+    "Do not include private user records, KYC documents, credentials, tokens, or screenshots containing sensitive information.",
+    "",
+    "| Data Class | Default Retention | Deletion Eligible | Legal Hold | Evidence Required | Status |",
+    "| --- | --- | --- | --- | --- | --- |",
+    ...DATA_RETENTION_MATRIX.map((row) => `| ${row.dataClass} | ${row.defaultRetention} | ${row.deletionEligible} | ${row.legalHold ? "Yes" : "No"} | Policy approval, audit event, exception review where needed | Pending |`),
+    "",
+    "Deletion automation remains inactive until legal approval, storage/provider activation, and audit evidence are complete.",
+  ].join("\n");
+}
+
+export function renderKycVendorReadinessChecklist() {
+  return [
+    "# KYC Vendor Readiness Checklist",
+    "",
+    "Do not include live identity documents, vendor API keys, webhook secrets, KYC decision payloads, or screenshots containing sensitive information.",
+    "",
+    "| Subject | Evidence Type | Storage Class | Public Allowed | Signed Access Required | Vendor Evidence Status |",
+    "| --- | --- | --- | --- | --- | --- |",
+    ...KYC_EVIDENCE_INTAKE_PLACEHOLDERS.map((row) => `| ${row.subject} | ${row.requiredEvidence.join(", ")} | ${row.storageClass} | ${row.publicAllowed ? "Yes" : "No"} | ${row.signedAccessRequired ? "Yes" : "No"} | Pending |`),
+    "",
+    "## Vendor Activation Evidence Required",
+    "- Vendor selected and legal/compliance approved.",
+    "- DPA/processor terms reviewed.",
+    "- Data sharing policy approved.",
+    "- Webhook/security review complete.",
+    "- Private storage and signed access verified.",
+    "- Manual review process documented.",
+    "",
+    "Live KYC vendor activation remains inactive.",
+  ].join("\n");
+}
+
+export function buildComplianceLaunchBlockerReport({ env = process.env } = {}) {
+  const readiness = buildComplianceReadinessToolingReport({ env });
+  const manualEvidence = [
+    "Privacy policy legal approval",
+    "Terms of use legal approval",
+    "Jamaica DPA legal review",
+    "GDPR legal review",
+    "Consent capture and withdrawal evidence",
+    "DSAR execution evidence",
+    "Retention/deletion legal approval and audit evidence",
+    "KYC vendor approval and processor review",
+    "Compliance evidence package signoff",
+  ];
+  const blockers = [
+    ...readiness.blockers,
+    ...manualEvidence.map((item) => `Manual evidence required: ${item}`),
+  ];
+  return {
+    status: "BLOCKED",
+    generatedAt: new Date().toISOString(),
+    liveKycVendorActive: false,
+    legalApprovalComplete: false,
+    valuePrinted: false,
+    blockers: [...new Set(blockers)],
+    nextGate: "A4-01 Infrastructure Ownership Confirmation Submitted; D2 Compliance Operationalization remains blocked until A4 passes.",
+  };
+}
+
+export function renderComplianceLaunchBlockerReport(report = buildComplianceLaunchBlockerReport()) {
+  return [
+    "# Compliance Launch Blocker Report",
+    "",
+    `Status: ${report.status}`,
+    `Generated At: ${report.generatedAt}`,
+    `Live KYC Vendor Active: ${report.liveKycVendorActive ? "YES" : "NO"}`,
+    `Legal Approval Complete: ${report.legalApprovalComplete ? "YES" : "NO"}`,
+    "",
+    "## Blockers",
+    ...report.blockers.map((blocker) => `- ${blocker}`),
+    "",
+    "## Next Gate",
+    report.nextGate,
+  ].join("\n");
+}
+
 export function renderDataRetentionMatrix() {
   return [
     "# Data Retention Matrix",
@@ -351,5 +521,13 @@ if (resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1] || "")) 
   else if (command === "dsar-template") console.log(renderDsarRequestTemplate());
   else if (command === "retention-matrix") console.log(renderDataRetentionMatrix());
   else if (command === "evidence-template") console.log(renderComplianceEvidencePackageTemplate());
+  else if (command === "privacy-policy-checklist") console.log(renderPrivacyPolicyEvidenceChecklist());
+  else if (command === "terms-checklist") console.log(renderTermsOfUseEvidenceChecklist());
+  else if (command === "jamaica-dpa-checklist") console.log(renderJamaicaDpaReadinessChecklist());
+  else if (command === "gdpr-checklist") console.log(renderGdprReadinessChecklist());
+  else if (command === "consent-checklist") console.log(renderConsentEvidenceChecklist());
+  else if (command === "retention-deletion-matrix") console.log(renderRetentionDeletionEvidenceMatrix());
+  else if (command === "kyc-vendor-checklist") console.log(renderKycVendorReadinessChecklist());
+  else if (command === "launch-blockers") console.log(renderComplianceLaunchBlockerReport());
   else renderReport(buildComplianceReadinessToolingReport());
 }

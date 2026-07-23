@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { LogOut, Search, CalendarCheck, MessageSquare, Bot, LayoutDashboard, Wallet, Bell, BadgeCheck, Home, Gavel, ClipboardCheck, Truck, Landmark, BarChart3 } from "lucide-react";
+import { LogOut, Search, CalendarCheck, MessageSquare, Bot, LayoutDashboard, Wallet, Bell, BadgeCheck, Home, Gavel, ClipboardCheck, Truck, Landmark, BarChart3, BookOpen, ListChecks, Activity } from "lucide-react";
 import { useAuth } from "../state/AuthContext.jsx";
 import { messageAdapter } from "../lib/adapters/messageAdapter.js";
 import { notificationAdapter } from "../lib/adapters/notificationAdapter.js";
@@ -19,7 +19,9 @@ const navItems = [
   { to: "/messages", label: "Messages", icon: MessageSquare },
   { to: "/notifications", label: "Alerts", icon: Bell },
   { to: "/trust", label: "Trust", icon: BadgeCheck },
-  { to: "/ai", label: "AI Help", icon: Bot },
+  { to: "/ai-assistant", label: "AI Help", icon: Bot },
+  { to: "/documentation", label: "Docs", icon: BookOpen },
+  { to: "/workflows", label: "Workflows", icon: ListChecks },
 ];
 
 export default function AppShell() {
@@ -74,6 +76,8 @@ export default function AppShell() {
         { to: "/admin/auction-documents", label: "Documents", icon: ClipboardCheck },
         { to: "/admin/ai-listing-recommendations", label: "AI Recs", icon: Bot },
         { to: "/admin/ai-valuations", label: "Valuations", icon: BarChart3 },
+        { to: "/admin/system-status", label: "Status", icon: Activity },
+        { to: "/documentation", label: "Docs", icon: BookOpen },
         { to: "/admin/notifications", label: "Alerts", icon: Bell },
       ]
     : isBroker
@@ -85,6 +89,8 @@ export default function AppShell() {
         { to: "/brokerage", label: "Brokerage", icon: Search },
         { to: "/marketplace", label: "Marketplace", icon: Search },
         { to: "/trust", label: "Trust", icon: BadgeCheck },
+        { to: "/documentation", label: "Docs", icon: BookOpen },
+        { to: "/workflows", label: "Workflows", icon: ListChecks },
         { to: "/messages", label: "Messages", icon: MessageSquare },
         { to: "/dealer/notifications", label: "Alerts", icon: Bell },
       ]
@@ -105,7 +111,9 @@ export default function AppShell() {
         { to: "/trust", label: "Trust", icon: BadgeCheck },
         { to: "/messages", label: "Messages", icon: MessageSquare },
         { to: "/supplier/notifications", label: "Alerts", icon: Bell },
-        { to: "/ai", label: "AI Help", icon: Bot },
+        { to: "/ai-assistant", label: "AI Help", icon: Bot },
+        { to: "/documentation", label: "Docs", icon: BookOpen },
+        { to: "/workflows", label: "Workflows", icon: ListChecks },
       ]
   : navItems;
 

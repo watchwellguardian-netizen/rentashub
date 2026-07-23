@@ -1,5 +1,181 @@
 # Verification Log
 
+## Master Readiness Evidence Orchestrator - 2026-06-20
+
+- Scope: Credential-readiness evidence orchestration only; no Supabase connection, provider activation, migration execution, storage/auth testing, money movement, escrow activation, monitoring activation, production deployment, or launch certification occurred.
+- Added master readiness orchestrator for A4/Supabase, database, Auth/RBAC, storage, monitoring, security, compliance, revenue, escrow, infrastructure, operations, repository/CI, and launch evidence domains.
+- Added master report, JSON report, manual blocker report, and executive summary commands.
+- Added focused production tests for domain coverage, A4 gate status, no-secret output behavior, launch boundary preservation, and manual blocker coverage.
+- Package scripts added: `readiness:master`, `readiness:master:json`, `readiness:master:blockers`, and `readiness:master:executive`.
+- Master readiness focused tests: Passed, 6/6.
+- Master readiness CLI commands: Passed for report, JSON, blocker report, and executive summary.
+- Full frontend production tests: Passed, 589/589.
+- Backend tests: Passed, 114/114.
+- Readiness CLI: Passed.
+- Secret scan: Passed, 460 files scanned.
+- Secret safety report: Passed; frontend bundle, ZIP packageable files, documentation, logs, and service-role exposure checks passed.
+- Production build: Passed.
+- Artifact validation: Passed, 522 packageable files checked.
+- ZIP sanity check: Passed, 528 packageable files checked.
+- Remaining blocker: A4-01 Infrastructure Ownership Confirmation still requires real Supabase Development, UAT/Staging, and Production project names/IDs plus Infrastructure Owner, Billing Owner, and Access Owner evidence.
+
+## Deployment Infrastructure Readiness Evidence Expansion - 2026-06-20
+
+- Scope: Credential-readiness deployment/infrastructure evidence tooling only; no live DNS changes, TLS certificate activation, hosting deployment, CDN routing, environment promotion, rollback execution, disaster recovery failover, backup restore, production traffic cutover, or production launch occurred.
+- Added DNS evidence checklist.
+- Added TLS evidence checklist.
+- Added hosting evidence checklist.
+- Added CDN evidence checklist.
+- Added environment promotion evidence template.
+- Added rollback evidence template.
+- Added disaster recovery evidence template.
+- Added backup validation evidence template.
+- Added production launch infrastructure checklist.
+- Added infrastructure launch blocker report that keeps production infrastructure activation blocked pending A4 and manual operational evidence.
+- Added package scripts for infrastructure readiness, DNS/TLS/hosting/CDN checklists, promotion/rollback/DR/backup templates, production launch checklist, and launch blocker report.
+- Focused infrastructure readiness tests: Passed.
+- Infrastructure command smoke checks: Passed.
+- Secret safety checks: Passed.
+- Remaining blocker: A4 infrastructure certification and real DNS/TLS/hosting/CDN/backup/DR/promotion/rollback evidence are required before infrastructure activation or production launch can be approved.
+
+## Escrow Readiness Evidence Expansion - 2026-06-20
+
+- Scope: Credential-readiness escrow evidence tooling only; no escrow provider activation, legal trust account activation, deposit hold, release, partial release, refund, dispute adjudication, settlement, bank transfer, or real money movement occurred.
+- Added escrow provider intake template.
+- Added legal trust account evidence checklist.
+- Added deposit hold/release evidence checklist.
+- Added partial release evidence template.
+- Added refund evidence template.
+- Added dispute evidence template.
+- Added escrow ledger evidence checklist.
+- Added escrow launch blocker report that keeps escrow activation blocked pending A4, legal review, provider approval, ledger/reconciliation evidence, and no-live-funds certification.
+- Added package scripts for escrow provider intake template, legal trust evidence, deposit hold/release checklist, partial release template, refund template, dispute template, ledger evidence checklist, and launch blocker report.
+- Focused escrow readiness tests: Passed.
+- Escrow command smoke checks: Passed.
+- Secret safety checks: Passed.
+- Remaining blocker: A4 infrastructure certification, escrow provider/legal approval, legal trust account evidence, and real escrow/ledger/reconciliation evidence are required before escrow activation can be approved.
+
+## Revenue Readiness Evidence Expansion - 2026-06-20
+
+- Scope: Credential-readiness revenue evidence tooling only; no Stripe, WiPay, Lynk, NCB, live payment provider, webhook secret, refund execution, chargeback processing, payout, settlement, bank transfer, Tax/GCT filing, escrow movement, or real money movement occurred.
+- Added payment provider evidence intake template.
+- Added Stripe sandbox readiness checklist.
+- Added WiPay sandbox readiness checklist.
+- Added webhook verification evidence template.
+- Added refund evidence checklist.
+- Added chargeback evidence checklist.
+- Added payout evidence checklist.
+- Added settlement evidence checklist.
+- Added Tax/GCT readiness checklist.
+- Added revenue launch blocker report that keeps E2 revenue sandbox activation blocked pending A4 and manual provider/revenue evidence.
+- Added package scripts for revenue provider intake, Stripe/WiPay sandbox checklists, webhook evidence, refund/chargeback/payout/settlement checklists, Tax/GCT checklist, and launch blocker report.
+- Focused revenue readiness tests: Passed.
+- Revenue command smoke checks: Passed.
+- Secret safety checks: Passed.
+- Remaining blocker: A4 infrastructure certification and real sandbox provider evidence are required before revenue sandbox activation, paid pilot, or real money movement can be approved.
+
+## Compliance Readiness Evidence Expansion - 2026-06-20
+
+- Scope: Credential-readiness compliance evidence tooling only; no legal approval, live consent platform, DSAR execution, retention/deletion automation, KYC vendor integration, sanctions screening, AML monitoring, document verification provider, or production compliance activation occurred.
+- Added privacy policy evidence checklist.
+- Added terms of use evidence checklist.
+- Added Jamaica Data Protection Act readiness checklist.
+- Added GDPR readiness checklist.
+- Added DSAR workflow evidence template command coverage.
+- Added consent evidence checklist.
+- Added retention/deletion evidence matrix.
+- Added KYC vendor readiness checklist.
+- Added compliance launch blocker report that keeps D2 compliance operationalization blocked pending A4 and manual legal/compliance evidence.
+- Added package scripts for compliance privacy policy checklist, terms checklist, Jamaica DPA checklist, GDPR checklist, consent checklist, retention/deletion matrix, KYC vendor checklist, and launch blocker report.
+- Focused compliance readiness tests: Passed.
+- Compliance command smoke checks: Passed.
+- Secret safety checks: Passed.
+- Remaining blocker: A4 infrastructure certification and real legal/compliance evidence are required before compliance activation or production compliance readiness can be approved.
+
+## Security Readiness Evidence Expansion - 2026-06-20
+
+- Scope: Credential-readiness security evidence tooling only; no live WAF, MFA provider, SOC/SIEM, CSP enforcement, dependency audit execution, vulnerability scanner, OWASP review, penetration test, external certification, or production security activation occurred.
+- Added security evidence package generator.
+- Added CSP readiness matrix.
+- Added CORS lockdown checklist.
+- Added CSRF review checklist.
+- Added rate-limit readiness checklist.
+- Added dependency audit evidence template.
+- Added vulnerability scan evidence template.
+- Added secrets exposure certification template.
+- Added OWASP review evidence checklist.
+- Added pen-test readiness intake template.
+- Added security launch blocker report that keeps C2 security operationalization blocked pending A4 and manual security evidence.
+- Added package scripts for security readiness, evidence package, CSP matrix, CORS/CSRF checklists, rate-limit checklist, dependency audit template, vulnerability scan template, secrets exposure template, OWASP checklist, pen-test intake, and launch blocker report.
+- Focused security evidence readiness tests: Passed.
+- Security evidence command smoke checks: Passed.
+- Secret safety checks: Passed.
+- Remaining blocker: A4 infrastructure certification and real security evidence are required before production security readiness or certification can be approved.
+
+## Monitoring Readiness Evidence Expansion - 2026-06-20
+
+- Scope: Credential-readiness monitoring tooling only; no live Sentry SDK capture, Better Stack heartbeat, uptime monitor creation, log drain connection, status page update, alert delivery, incident notification, or production monitoring activation occurred.
+- Added Sentry credential-readiness checklist.
+- Added Better Stack credential-readiness checklist.
+- Added alert routing evidence template.
+- Added uptime monitor checklist.
+- Added log drain readiness checklist.
+- Added incident notification test template.
+- Added monitoring launch blocker report that keeps monitoring activation blocked pending A4 infrastructure evidence and real provider validation.
+- Added package scripts for monitoring readiness, Sentry checklist, Better Stack checklist, alert routing template, uptime checklist, log drain checklist, incident notification template, and launch blocker report.
+- Focused monitoring readiness tests: Passed.
+- Monitoring command smoke checks: Passed.
+- Secret safety checks: Passed after replacing realistic DSN-shaped test data with a credential-safe test reference.
+- Remaining blocker: A4-01/A4-02 live infrastructure evidence and B3 provider credentials/evidence are required before live monitoring readiness can be certified.
+
+## Storage Readiness Evidence Expansion - 2026-06-20
+
+- Scope: Credential-readiness storage tooling only; no live Supabase connection, bucket creation, upload, download, signed URL generation, private file access test, production storage activation, or service-role credential use occurred.
+- Added bucket evidence checklist per bucket.
+- Added public/private bucket policy evidence matrix.
+- Added signed URL evidence checklist command coverage.
+- Added upload/download evidence template.
+- Added private file access denial evidence template.
+- Added storage classification audit report.
+- Added storage launch blocker report that keeps storage activation blocked pending A4 infrastructure evidence and live Supabase Storage validation.
+- Added package scripts for storage bucket evidence, policy evidence matrix, upload/download template, private access denial template, classification audit, and launch blocker reports.
+- Focused storage readiness tests: Passed.
+- Storage command smoke checks: Passed.
+- Remaining blocker: A4-01/A4-02 live Supabase environment evidence and A4-04 real storage evidence are required before live storage readiness can be certified.
+
+## Auth/RBAC Readiness Evidence Expansion - 2026-06-20
+
+- Scope: Credential-readiness Auth/RBAC tooling only; no live Supabase Auth connection, registration, login, password reset, email verification, MFA, session refresh, session revocation, production bearer-token proof, or production authentication activation occurred.
+- Added live-auth evidence collection template.
+- Added Supabase Auth configuration evidence checklist.
+- Added password reset evidence form.
+- Added email verification evidence form.
+- Added MFA readiness evidence form with missing provider/manual evidence blockers.
+- Added session lifecycle evidence form.
+- Added session revocation evidence checklist.
+- Added role-to-route coverage report.
+- Added API route auth guard coverage matrix.
+- Added dev-header lockdown final certification checklist.
+- Focused Auth/RBAC readiness tests: Passed, 21/21.
+- Role-to-route coverage report status: `REVIEW_REQUIRED` for dealer, inspector, transport provider, and financing partner protected-route coverage.
+- API auth guard coverage matrix: Passed; protected mutations are guarded and admin routes are protected.
+- Remaining blocker: A4-01/A4-02 live Supabase environment evidence is required before live Auth/RBAC evidence can be collected.
+
+## Database Readiness Automation Expansion - 2026-06-20
+
+- Scope: Credential-readiness database tooling only; no Supabase connection, DATABASE_URL loading, migration execution, seed execution, backup, restore, RLS enforcement test, or production database activation occurred.
+- Added migration dependency graph visual report with Mermaid output and static dependency edges.
+- Added per-SQL-file migration rollback checklist generator.
+- Added migration execution evidence template for Development/UAT evidence collection.
+- Added seed-data evidence checklist for required roles and core tables.
+- Added database backup/restore evidence template with RPO, RTO, and integrity validation fields.
+- Added database RLS table coverage dashboard from static SQL analysis.
+- Added database launch blocker report that keeps RC-0.6A blocked pending A4 evidence, secure DATABASE_URL validation, RLS/RBAC review gaps, and production hold requirements.
+- Added package scripts for database dependency graph, rollback checklists, execution template, seed checklist, backup/restore template, RLS dashboard, and launch blocker report.
+- Focused database readiness tests: Passed, 13/13.
+- New database command smoke checks: Passed.
+- Remaining blocker: A4-01 still requires actual Supabase Development, UAT/Staging, and Production project IDs; A4-03/A4-04 require real migration, persistence, RLS/RBAC, backup, and restore evidence.
+
 ## Project A4 Live Supabase Activation & Certification Package - 2026-06-14
 
 - Scope: Infrastructure Activation Certification package only; no live Supabase project, database, auth, storage, backup, restore, monitoring, payment, escrow, KYC, deployment, or production activation was performed.
@@ -1319,6 +1495,94 @@
 - Standalone ZIP was refreshed as `RentasHub-Standalone-Web-App.zip`.
 - Clean install risk remains CI-pending: local sandbox still lacks a normal working npm clean-install path, and GitHub Actions or another proper Node/npm environment must confirm clean install.
 # RentasHub Verification Log
+
+## Repository / CI Readiness Evidence Expansion - 2026-06-20
+
+- Scope: Credential-readiness repository/CI evidence tooling only; no GitHub branch protection settings, remote repository settings, CI secrets, deployment, release tag creation, or production release approval occurred.
+- Added CI gate evidence reporter.
+- Added branch protection evidence checklist.
+- Added pull request approval evidence checklist.
+- Added artifact integrity report that reuses local artifact and ZIP validators.
+- Expanded ZIP artifact inclusion/exclusion validation for reusable reporting.
+- Added changelog generator.
+- Added release tag evidence generator using dry-run tag planning only.
+- Added build/test/readiness matrix reporter.
+- Added `npm run release:*` package scripts for CI gate, branch protection, PR approval, artifact integrity, ZIP validator, changelog, release tag evidence, and build/test/readiness matrix reporting.
+- Focused repository release readiness tests: Passed, 11/11.
+- Repository/CI command smoke checks: Passed.
+- Full frontend production tests: Passed, 583/583.
+- Backend tests: Passed, 114/114.
+- Readiness CLI: Passed.
+- Secret scan: Passed, 458 files scanned.
+- Production build: Passed.
+- Artifact validation: Passed, 520 packageable files checked.
+- ZIP sanity check: Passed, 526 packageable files checked.
+- Remaining blocker: Actual GitHub branch protection, CI run evidence, release tag creation, and production release approval remain manual/external and are not activated by this tooling.
+
+## Release / Launch Readiness Evidence Tooling - 2026-06-20
+
+- Scope: Credential-readiness launch evidence tooling only; no closed beta launch, paid pilot, public launch, live provider activation, production certification, legal approval, or executive launch approval occurred.
+- Added closed beta evidence package generator.
+- Added paid pilot evidence package generator.
+- Added public launch evidence package generator.
+- Added launch blocker dashboard/report.
+- Added release candidate evidence index.
+- Added final go/no-go report generator.
+- Added launch approval checklist.
+- Added executive launch readiness summary.
+- Added board/investor readiness evidence summary.
+- Added `npm run launch:*` package scripts for launch readiness reporting and evidence generation.
+- Focused launch readiness tests: Passed, 8/8.
+- Launch readiness CLI commands: Passed; reports preserve Closed Beta as conditional, Paid Pilot as NO-GO, Public Launch as NO-GO, and Production Ready as No.
+- Full frontend production tests: Passed, 578/578.
+- Backend tests: Passed, 114/114.
+- Readiness CLI: Passed.
+- Secret scan: Passed.
+- Production build: Passed.
+- Artifact validation: Passed, 520 packageable files checked.
+- ZIP sanity check: Passed, 526 packageable files checked; no ZIP refresh script is defined in `package.json`.
+- Remaining blocker: A4-01 Infrastructure Ownership Confirmation and downstream A4 execution evidence remain required before infrastructure certification or launch approval can advance.
+
+## Accelerated Delivery Phase 0 Control Foundation - 2026-07-22
+
+- Scope: Provider-independent implementation mobilization only; A4-01 remains open, RC-0.6A remains unchanged, no live Supabase/payment/escrow/monitoring/provider activation occurred, and no production readiness is claimed.
+- Updated `docs/program-state.md` to authorize the Accelerated Full-Feature Delivery Programme Phase 0 as a parallel non-production provider-independent implementation stage.
+- Added programme controls under `docs/program/`, including accelerated delivery control, active workstream ownership matrix, feature flag registry, migration ledger, shared contract registry, feature completion ledger, A4-01 ownership evidence capture, machine-readable status data, and generated delivery dashboard.
+- Added `src/lib/featureFlags.js` as the canonical local feature flag registry and evaluator for provider-dependent/incomplete capabilities.
+- Added `scripts/accelerated-delivery-dashboard.mjs` and `npm run program:dashboard` to generate `docs/program/RENTASHUB_ACCELERATED_DELIVERY_DASHBOARD.md` from `docs/program/accelerated-delivery-status.json`.
+- Added `tests/production/accelerated-delivery-controls.test.mjs` covering governance authorization, Phase 0 controls, A4-01 incomplete evidence, feature flag safety, and dashboard generation.
+- A4-01 evidence status: incomplete. Known Development project ID `hnpoqtxyqexykotackev` and known owners were recorded; UAT/Staging and Production project IDs remain unknown; additional operational owners remain required.
+- Dashboard generation: Passed.
+- Added local foundation evidence runner with in-memory migration reset, deterministic seed evidence, migration checksums, invalid-order detection, failed-migration reporting simulation, storage definition validation, rental contract validation, static RBAC/RLS policy scenarios, and audit event coverage.
+- Added canonical storage bucket definitions for listing media, profile images, identity documents, business verification documents, inspection evidence, claim/dispute evidence, auction documents, and generated contracts. Status remains `DEFINED_NOT_ACTIVATED`.
+- Added core rental journey API contract definitions covering supplier profile, asset, listing, moderation, availability, pricing, booking, acceptance, payment-required, contract, check-in, active rental, extension, check-out, settlement, review, cancellation, and dispute steps.
+- Added static RBAC/RLS policy contract scenarios. These are explicitly `STATIC_POLICY_VALIDATED`, not `RLS_ENFORCED`.
+- Local foundation evidence: Passed. Seven migrations applied in memory; 26 deterministic seed records; no live provider touched; artifacts written under `artifacts/accelerated-delivery/`.
+- Frontend production tests: Passed, 616/616.
+- Backend tests: Passed, 114/114.
+- Lint: Passed, 349 files scanned, 0 findings, 0 warnings.
+- Readiness CLI: Passed at credential-level readiness; missing real-provider credentials remain expected.
+- Production build: Passed. Main JS chunk remains 222.24 kB, gzip 67.69 kB.
+- Remaining blockers: Complete A4-01 with UAT/Staging project ID, Production project ID, Supabase account owner, secret-management owner confirmation, storage owner, monitoring owner, deployment/DNS/domain owners, payment-provider owner, incident-response owner, and legal/compliance approvers.
+
+## A3-Y Repository Consolidation and Performance Hardening - 2026-07-22
+
+- Scope: Non-production engineering stage only; A4-01 remains open, RC-0.6A remains unchanged, no provider activation occurred, and no production readiness is claimed.
+- Added A3-Y authorization to `docs/program-state.md` while preserving the Infrastructure Activation Hold.
+- Recorded the pre-existing dirty worktree in `docs/evidence/a3-y/PREEXISTING_WORKTREE_STATE.md`.
+- Added A3-Y evidence covering baseline reconciliation, canonical implementation reality, duplication/technical debt, core rental vertical-slice planning, localStorage migration boundaries, security/truthfulness, quality tooling, bundle/performance, test results, and completion.
+- Added dependency-free quality tooling in `scripts/a3-y-quality-tooling.mjs`.
+- Added package scripts: `lint`, `lint:check`, `bundle:report`, and `build:report`.
+- Implemented route-level lazy loading in the existing RentasHub router; no second app, router, backend, auth, database, or persistence layer was introduced.
+- Focused A3-Y tests: Passed, 604/604 under the repository production test glob.
+- Full frontend production tests: Passed, 604/604.
+- Backend tests: Passed, 114/114.
+- Lint: Passed, 341 files scanned, 0 findings, 0 warnings.
+- Readiness CLI: Passed at credential-level readiness; missing real-provider credentials remain expected.
+- Production build: Passed. Main JS chunk is 222.24 kB, gzip 67.69 kB, below Vite's 500 kB warning threshold.
+- Bundle report: Passed. Total assets 868.32 kB; main JS 217.04 kB; main JS over 500 kB: no.
+- Classification: COMPLETE - NON-PRODUCTION ENGINEERING GATE PASSED.
+- Remaining blockers: A4-01 Infrastructure Ownership Confirmation and downstream real Supabase/provider evidence remain required before infrastructure certification, closed beta advancement, paid pilot, or production certification.
 
 ## A4 Supabase Evidence Automation Expansion - 2026-06-20
 
