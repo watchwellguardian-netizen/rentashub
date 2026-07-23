@@ -30,6 +30,7 @@ Only the following work is authorized:
 - A3-X - AI Studio Capability Consolidation, as a non-production integration stage on the backlog branch.
 - A3-Y - Repository Consolidation, Technical Debt Elimination, Performance Hardening, and Core Rental Vertical-Slice Readiness, as a non-production engineering stage on the backlog branch.
 - Accelerated Full-Feature Delivery Programme Phase 0, as a provider-independent implementation mobilization stage.
+- ACCEL-P1-001 - Local PostgreSQL/Supabase Execution & Core Rental Infrastructure, as a non-production local-only execution-readiness stage on the backlog branch.
 
 The next valid production-gate submission must be infrastructure ownership evidence, not secrets.
 
@@ -40,6 +41,8 @@ Non-production A3-Y work may proceed in parallel only when it preserves A4 gates
 Accelerated delivery work may proceed in parallel with A4-01 only when it is provider-independent, preserves A4 gates, avoids production claims, uses shared canonical services/contracts, and does not activate live Supabase, payments, escrow, monitoring, legal, security-certification, or production deployment providers.
 
 A4-01 remains mandatory but does not freeze provider-independent implementation work.
+
+ACCEL-P1-001 work may proceed only against local/provider-independent execution paths. It may add local Supabase scaffolding, static migration parity checks, local command guards, and backend contracts. It must not run linked Supabase commands, touch production, load real credentials, or claim A4 evidence completion.
 
 ## Parallel Provider-Independent Implementation Stage
 

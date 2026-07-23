@@ -18,7 +18,7 @@ Generated from: `docs/program/accelerated-delivery-status.json`
 
 | Domain | Total Features | Complete | Partial | Not Started | Blocked | Completion % | Owner | Current Gate |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| Core platform foundation | 14 | 6 | 5 | 1 | 2 | 43% | platform-engineering | Local foundation evidence |
+| Core platform foundation | 14 | 7 | 5 | 0 | 2 | 50% | platform-engineering | Local Supabase execution readiness |
 | Rental marketplace | 12 | 5 | 5 | 1 | 1 | 42% | marketplace-engineering | Awaiting shared foundation |
 | Financial platform | 12 | 1 | 5 | 2 | 4 | 8% | financial-engineering | Provider-independent state engines only |
 | Asset commerce | 10 | 3 | 4 | 2 | 1 | 30% | commerce-engineering | Awaiting shared foundation |
@@ -30,8 +30,8 @@ Generated from: `docs/program/accelerated-delivery-status.json`
 | Metric | Value |
 | --- | ---: |
 | Total requirements | 78 |
-| Completed requirements | 24 |
-| Accepted tests | 730 |
+| Completed requirements | 25 |
+| Accepted tests | 734 |
 | Failing tests | 0 |
 | Open P0 defects | 11 |
 | Open P1 defects | 5 |
@@ -41,6 +41,6 @@ Generated from: `docs/program/accelerated-delivery-status.json`
 
 ## Status Notes
 
-- Database migration status: migrations 001 007 apply in memory not live executed.
+- Database migration status: migrations 001 007 apply in memory and mirrored to local supabase not live executed.
 - Provider activation status: blocked pending a4 and provider credentials.
 - Environment status: local build passes live environments not certified.

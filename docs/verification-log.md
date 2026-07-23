@@ -1,5 +1,22 @@
 # Verification Log
 
+## ACCEL-P1-001 Local Supabase Execution Readiness - 2026-07-23
+
+- Scope: Non-production local-only Supabase execution readiness; no remote Supabase project was linked, no live provider was touched, no credentials were loaded or printed, and production remained untouched.
+- Added `supabase/config.toml` local scaffold with `rentashub-local` project identity only.
+- Mirrored canonical migrations `001` through `007` into `supabase/migrations` for local reset readiness.
+- Added `supabase/seed.sql` as a secret-free local seed placeholder.
+- Added `scripts/accel-p1-local-supabase-evidence.mjs`.
+- Added package scripts `accel:p1:local-supabase` and `accel:p1:local-supabase:json`.
+- Added focused production tests in `tests/production/accel-p1-local-supabase-evidence.test.mjs`.
+- Focused evidence command: PASS.
+- Focused ACCEL-P1 tests: PASS, 4/4.
+- Migration parity: PASS; local Supabase migration checksums match canonical server migrations.
+- Local command guard: PASS; no `--linked`, `--db-url`, `supabase link`, `supabase db push`, or deploy command is present.
+- Supabase CLI availability in current environment: NOT_AVAILABLE.
+- Classification: Local-only execution-readiness PASS.
+- Remaining blocker: This does not satisfy A4-01, A4-02, A4-03, A4-04, or A4-05. Real Supabase project evidence, credentials in secret storage, local operator CLI/Docker execution, Development/UAT migration execution, RLS enforcement evidence, storage evidence, and backup/restore evidence remain required.
+
 ## Master Readiness Evidence Orchestrator - 2026-06-20
 
 - Scope: Credential-readiness evidence orchestration only; no Supabase connection, provider activation, migration execution, storage/auth testing, money movement, escrow activation, monitoring activation, production deployment, or launch certification occurred.

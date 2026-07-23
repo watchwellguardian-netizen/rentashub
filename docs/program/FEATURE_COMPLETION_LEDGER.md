@@ -14,6 +14,7 @@ Status vocabulary:
 | Core platform | Program controls | Implemented locally | None for Phase 0 | Keep dashboard generated from status data | ACCEL-P0 |
 | Core platform | Feature flags | Implemented locally | Environment-backed persistence not active | Use central registry in new incomplete/provider-dependent work | ACCEL-P0 |
 | Core platform | Local migration reset evidence | Implemented locally | Live Supabase migration execution missing | Use A4-03 for Development/UAT execution evidence | ACCEL-P0-002 |
+| Core platform | Local Supabase execution scaffold | Implemented locally | Supabase CLI/Docker execution and live project execution missing | Run local-only Supabase reset when operator environment supports CLI/Docker; use A4-03 for Development/UAT execution evidence | ACCEL-P1-001 |
 | Core platform | Storage bucket definitions | Implemented locally | Real buckets and signed URL tests missing | Use A4-04 for storage certification | ACCEL-P0-002 |
 | Rental marketplace | Core rental API contracts | Implemented locally | Backend implementation and persistence not complete | Build vertical-slice backend services after shared foundation | ACCEL-P0-002 |
 | Core platform | Supabase ownership | Blocked by external dependency | Staging/Production project IDs missing | Submit A4-01 evidence | A4-01 |
