@@ -1,5 +1,21 @@
 # Verification Log
 
+## ACCEL-P1-003 Core Rental Backend Preparation - 2026-07-24
+
+- Scope: Provider-independent core rental backend preparation only; no executable PostgreSQL, RLS enforcement, Supabase Auth, Supabase Storage, payment, escrow, monitoring, staging, production, or live provider activation occurred.
+- Added core rental service contracts for quote calculation, asset rental validation, booking request validation, availability overlap detection, idempotency, booking lifecycle state guards, and booking audit actions.
+- Integrated booking preparation into the existing resource service without creating a second backend, router, database, authentication system, or persistence layer.
+- Added focused in-memory API tests for overlapping booking denial, priced pending booking creation, idempotent request handling, and valid/invalid lifecycle transitions.
+- Focused core rental tests: PASS, 5/5.
+- Existing resource API tests: PASS, 16/16.
+- Full frontend production tests: PASS, 625/625.
+- Backend tests: PASS, 119/119.
+- Lint: PASS, 354 files scanned, 0 findings, 0 warnings.
+- Readiness master JSON: PASS.
+- Production build: PASS.
+- ZIP/packageability check: PASS, 710 files.
+- Remaining blockers: A4-01 Infrastructure Ownership Confirmation remains open; executable database validation remains blocked until Supabase CLI, Docker, or psql/disposable PostgreSQL is available.
+
 ## ACCEL-P1-002 Executable Local Database and RLS Validation - 2026-07-23
 
 - Scope: Non-production local-only executable database validation gate; no remote Supabase project was linked, no live provider was touched, no credentials were loaded or printed, and production remained untouched.

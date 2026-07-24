@@ -19,7 +19,7 @@ Generated from: `docs/program/accelerated-delivery-status.json`
 | Domain | Total Features | Complete | Partial | Not Started | Blocked | Completion % | Owner | Current Gate |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
 | Core platform foundation | 14 | 7 | 6 | 0 | 1 | 50% | platform-engineering | Executable database validation blocked by missing local engine |
-| Rental marketplace | 12 | 5 | 5 | 1 | 1 | 42% | marketplace-engineering | Awaiting shared foundation |
+| Rental marketplace | 12 | 6 | 4 | 1 | 1 | 50% | marketplace-engineering | Provider-independent core rental backend implemented; executable persistence pending |
 | Financial platform | 12 | 1 | 5 | 2 | 4 | 8% | financial-engineering | Provider-independent state engines only |
 | Asset commerce | 10 | 3 | 4 | 2 | 1 | 30% | commerce-engineering | Awaiting shared foundation |
 | Auctions and recovery | 14 | 3 | 5 | 3 | 3 | 21% | auction-engineering | Simulation-safe only |
@@ -30,8 +30,8 @@ Generated from: `docs/program/accelerated-delivery-status.json`
 | Metric | Value |
 | --- | ---: |
 | Total requirements | 78 |
-| Completed requirements | 25 |
-| Accepted tests | 734 |
+| Completed requirements | 26 |
+| Accepted tests | 744 |
 | Failing tests | 0 |
 | Open P0 defects | 11 |
 | Open P1 defects | 5 |

@@ -1,4 +1,10 @@
 import { getRepositories } from "./persistenceService.js";
+import {
+  CORE_RENTAL_AUDIT_ACTIONS,
+  prepareBookingCreate,
+  prepareBookingUpdate,
+  validateAssetForRental,
+} from "./coreRentalService.js";
 
 function validationError(details) {
   const error = new Error("The request contains validation errors.");
@@ -19,7 +25,7 @@ function notFound(resourceName) {
 
 const REQUIRED_FIELDS = {
   assets: ["owner_id", "title", "category", "listing_type"],
-  bookings: ["asset_id", "customer_id", "supplier_id", "status"],
+  bookings: ["asset_id", "customer_id", "supplier_id"],
   inspections: ["booking_id", "asset_id", "type", "condition_status"],
 };
 
@@ -61,15 +67,34 @@ export function createResourceService(resourceName, options = {}) {
 
     async create(payload, req) {
       validateRequired(resourceName, payload, REQUIRED_FIELDS[resourceName] || []);
-      const record = await (await repository()).create(payload);
-      await audit(`${resourceName}.created`, record.id, req);
+      if (resourceName === "assets") validateAssetForRental(payload);
+      let preparedPayload = payload;
+      let idempotent = null;
+      if (resourceName === "bookings") {
+        const repositories = await getRepositories(context);
+        const prepared = await prepareBookingCreate(repositories, payload, req);
+        preparedPayload = prepared.payload;
+        idempotent = prepared.idempotent || null;
+      }
+      if (idempotent) return idempotent;
+      const record = await (await repository()).create(preparedPayload);
+      const action = resourceName === "bookings" ? CORE_RENTAL_AUDIT_ACTIONS.bookingRequested : `${resourceName}.created`;
+      await audit(action, record.id, req);
       return record;
     },
 
     async update(id, payload, req) {
-      const updated = await (await repository()).update(id, payload);
+      let preparedPayload = payload;
+      if (resourceName === "bookings") {
+        const repositories = await getRepositories(context);
+        const prepared = await prepareBookingUpdate(repositories, id, payload);
+        if (prepared.missing) throw notFound(resourceName.slice(0, -1));
+        preparedPayload = prepared.payload;
+      }
+      const updated = await (await repository()).update(id, preparedPayload);
       if (!updated) throw notFound(resourceName.slice(0, -1));
-      await audit(`${resourceName}.updated`, id, req);
+      const action = resourceName === "bookings" && payload.status ? CORE_RENTAL_AUDIT_ACTIONS.bookingStatusChanged : `${resourceName}.updated`;
+      await audit(action, id, req);
       return updated;
     },
 

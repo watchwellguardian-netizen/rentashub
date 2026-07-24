@@ -3,7 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 export const AUDIT_EVENT_CATEGORIES = {
   auth: ["auth.registered", "auth.login_succeeded", "auth.login_failed", "auth.logout", "auth.password_reset_requested", "auth.session_revoked"],
   rbac: ["rbac.role_assigned", "rbac.role_changed", "rbac.permission_denied", "rbac.dev_header_blocked"],
-  marketplace: ["supplier.profile_submitted", "assets.created", "assets.updated", "assets.deleted", "listings.submitted", "listings.moderated", "availability.checked", "pricing.quoted", "bookings.requested", "bookings.accepted", "bookings.cancelled", "bookings.extension_requested", "bookings.status_changed", "auctions.created", "auctions.approved", "auctions.rejected", "admin.auctions.updated"],
+  marketplace: ["supplier.profile_submitted", "assets.created", "assets.updated", "assets.deleted", "listings.submitted", "listings.moderated", "availability.checked", "pricing.quoted", "bookings.requested", "bookings.accepted", "bookings.declined", "bookings.cancelled", "bookings.extension_requested", "bookings.status_changed", "auctions.created", "auctions.approved", "auctions.rejected", "admin.auctions.updated"],
   operations: ["inspections.created", "inspections.updated", "handover.checkin_completed", "handover.checkout_completed", "transport.requested", "financing.referral.created"],
   communications: ["message_threads.created", "messages.created", "notifications.created", "notifications.updated", "documents.generated"],
   trustSafety: ["reviews.created", "reviews.responded", "trust.recalculated", "disputes.created", "admin.disputes.updated", "claims.created", "admin.claims.updated"],
