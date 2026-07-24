@@ -1,5 +1,22 @@
 # Verification Log
 
+## ACCEL-P1-004 Core Rental API, State-Machine, Authorization, and Adapter Integration - 2026-07-24
+
+- Scope: Provider-independent core rental API and lifecycle implementation only; no live Supabase, PostgreSQL, RLS enforcement, storage, Auth provider, payment, escrow, staging, or production provider was activated.
+- Added ACCEL-P1-004 authorization to `docs/program-state.md` while preserving RC-0.6A and open A4-01 status.
+- Added versioned backend routes under `/api/v1/rentals` for action matrix, availability, quote, asset creation, listing moderation/publication, booking request, and booking lifecycle actions.
+- Extended core rental service with lifecycle actions, state guards, ownership checks, stable error handling, idempotency, domain event metadata, and audit events.
+- Added frontend API adapter behind `rental_core_backend_path`; localStorage fallback remains active until A4 persistence/Auth/Storage evidence passes.
+- Added evidence file: `artifacts/accelerated-delivery/ACCEL_P1_004_CORE_RENTAL_API_EVIDENCE.md`.
+- Focused verification: Passed, 12/12.
+- Full frontend production tests: Passed, 626/626.
+- Full backend tests: Passed, 125/125.
+- Lint: Passed, 358 files scanned, 0 findings, 0 warnings.
+- Readiness master JSON: Passed; RC-0.6A Infrastructure Activation Hold remains active.
+- Production build: Passed, 1693 modules transformed, main JS 222.24 kB, gzip 67.69 kB.
+- ZIP/packageability check: Passed, 716 packageable files checked.
+- Remaining blockers: A4-01 remains open; executable PostgreSQL/Supabase validation, real RLS, live Auth, live Storage, payments, escrow, staging validation, and production readiness remain not certified.
+
 ## ACCEL-P1-003 Core Rental Backend Preparation - 2026-07-24
 
 - Scope: Provider-independent core rental backend preparation only; no executable PostgreSQL, RLS enforcement, Supabase Auth, Supabase Storage, payment, escrow, monitoring, staging, production, or live provider activation occurred.

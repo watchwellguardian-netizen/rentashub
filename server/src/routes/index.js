@@ -1,4 +1,5 @@
 import { registerContractRoutes } from "./contractRoutes.js";
+import { registerCoreRentalRoutes } from "./coreRentalRoutes.js";
 import { registerHealthRoutes } from "./healthRoutes.js";
 import { registerAssetRoutes, registerBookingRoutes, registerInspectionRoutes } from "./resourceRoutes.js";
 import { registerAuthRoutes } from "./authRoutes.js";
@@ -19,6 +20,7 @@ export function registerRoutes(router, options = {}) {
   registerFileRoutes(router, options);
   registerAssetRoutes(router, options);
   registerBookingRoutes(router, options);
+  registerCoreRentalRoutes(router, options);
   registerInspectionRoutes(router, options);
   registerMessageRoutes(router, options);
   registerNotificationRoutes(router, options);

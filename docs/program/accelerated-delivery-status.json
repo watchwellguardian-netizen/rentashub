@@ -8,7 +8,7 @@
   "providerActivation": false,
   "workstreams": [
     { "id": "ws1", "domain": "Core platform foundation", "totalFeatures": 14, "complete": 7, "partial": 6, "notStarted": 0, "blocked": 1, "owner": "platform-engineering", "currentGate": "Executable database validation blocked by missing local engine" },
-    { "id": "ws2", "domain": "Rental marketplace", "totalFeatures": 12, "complete": 6, "partial": 4, "notStarted": 1, "blocked": 1, "owner": "marketplace-engineering", "currentGate": "Provider-independent core rental backend implemented; executable persistence pending" },
+    { "id": "ws2", "domain": "Rental marketplace", "totalFeatures": 12, "complete": 7, "partial": 3, "notStarted": 1, "blocked": 1, "owner": "marketplace-engineering", "currentGate": "Provider-independent versioned core rental API and lifecycle state machine implemented; executable persistence pending" },
     { "id": "ws3", "domain": "Financial platform", "totalFeatures": 12, "complete": 1, "partial": 5, "notStarted": 2, "blocked": 4, "owner": "financial-engineering", "currentGate": "Provider-independent state engines only" },
     { "id": "ws4", "domain": "Asset commerce", "totalFeatures": 10, "complete": 3, "partial": 4, "notStarted": 2, "blocked": 1, "owner": "commerce-engineering", "currentGate": "Awaiting shared foundation" },
     { "id": "ws5", "domain": "Auctions and recovery", "totalFeatures": 14, "complete": 3, "partial": 5, "notStarted": 3, "blocked": 3, "owner": "auction-engineering", "currentGate": "Simulation-safe only" },
@@ -16,16 +16,16 @@
   ],
   "metrics": {
     "totalRequirements": 78,
-    "completedRequirements": 26,
-    "acceptedTests": 744,
+    "completedRequirements": 27,
+    "acceptedTests": 751,
     "failingTests": 0,
     "openP0Defects": 11,
     "openP1Defects": 5,
     "databaseMigrationStatus": "migrations_001_007_apply_in_memory_and_mirrored_to_local_supabase_executable_postgres_blocked",
     "providerActivationStatus": "blocked_pending_a4_and_provider_credentials",
     "environmentStatus": "local_build_passes_live_environments_not_certified",
-    "closedBetaCompletion": 44,
-    "paidPilotCompletion": 24,
-    "productionCompletion": 19
+    "closedBetaCompletion": 45,
+    "paidPilotCompletion": 25,
+    "productionCompletion": 20
   }
 }
