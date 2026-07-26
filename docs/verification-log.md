@@ -1,5 +1,24 @@
 # Verification Log
 
+## ACCEL-P1-005 Core Rental Repository Persistence, API Integration, and Legacy State Migration - 2026-07-26
+
+- Scope: Provider-independent core rental repository persistence and migration preparation only; no live Supabase, PostgreSQL execution, RLS enforcement, Supabase Auth, Storage, payment, escrow, staging, or production provider was activated.
+- Added ACCEL-P1-005 authorization to `docs/program-state.md` while preserving RC-0.6A and open A4-01 status.
+- Added canonical repository contract validation for suppliers, assets, listings, availability, bookings, booking actions, and audit events.
+- Added local persistence adapter with JSON snapshot rollback, in-process keyed asset/booking locks, duplicate-action conflict guards, and API persistence metadata.
+- Added `/api/v1/rentals/persistence/readiness` for admin-readable provider-independent persistence status.
+- Extended the frontend booking adapter so the bounded rental create/update journey can opt into `/api/v1/rentals` behind `rental_core_backend_path`; legacy localStorage and existing API fallbacks remain preserved.
+- Added legacy localStorage migration plan: `docs/program/CORE_RENTAL_LEGACY_STATE_MIGRATION_PLAN.md`.
+- Added evidence file: `artifacts/accelerated-delivery/ACCEL_P1_005_CORE_RENTAL_PERSISTENCE_EVIDENCE.md`.
+- Focused verification: Passed, 55/55.
+- Full frontend production tests: Passed, 627/627.
+- Full backend tests: Passed, 127/127.
+- Lint: Passed, 360 files scanned, 0 findings, 0 warnings.
+- Readiness master JSON: Passed; RC-0.6A Infrastructure Activation Hold remains active.
+- Production build: Passed, 1694 modules transformed, main JS 222.24 kB, gzip 67.70 kB.
+- ZIP/packageability check: Passed, 719 packageable files checked.
+- Remaining blockers: A4-01 remains open; executable PostgreSQL/Supabase validation, real RLS, live Auth, live Storage, payments, escrow, staging validation, distributed production locking, and production readiness remain not certified.
+
 ## ACCEL-P1-004 Core Rental API, State-Machine, Authorization, and Adapter Integration - 2026-07-24
 
 - Scope: Provider-independent core rental API and lifecycle implementation only; no live Supabase, PostgreSQL, RLS enforcement, storage, Auth provider, payment, escrow, staging, or production provider was activated.

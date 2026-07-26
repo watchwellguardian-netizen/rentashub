@@ -61,6 +61,11 @@ export class JsonDatabaseAdapter {
     this.ensureTables();
     return clone(this.state);
   }
+
+  async restore(snapshot) {
+    this.state = clone(snapshot);
+    await this.persist();
+  }
 }
 
 export async function createJsonDatabase(options = {}) {

@@ -5,6 +5,7 @@ import { createFrontendAdapter } from "./createAdapter.js";
 import { DATA_MODES, normalizeDataMode } from "./adapterConfig.js";
 import { assetAdapter } from "./assetAdapter.js";
 import { apiPilotAuthHeaders } from "./apiAuthHeaders.js";
+import { isFeatureEnabled } from "../featureFlags.js";
 
 export const BOOKING_API_PILOT_NOTICE =
   "Booking API mode is a guarded development pilot. Writes prefer backend bearer auth and use development role headers only as a local/demo fallback.";
@@ -34,6 +35,13 @@ function requireBaseUrl() {
 }
 
 function toCamelBooking(record = {}) {
+  let metadata = {};
+  try {
+    metadata = typeof record.metadata_json === "string" ? JSON.parse(record.metadata_json || "{}") : record.metadata_json || {};
+  } catch {
+    metadata = {};
+  }
+  const pricingQuote = metadata.pricing_quote || {};
   return {
     id: record.id,
     assetId: record.assetId ?? record.asset_id ?? "",
@@ -42,18 +50,19 @@ function toCamelBooking(record = {}) {
     customerName: record.customerName ?? record.customer_name ?? "Customer",
     supplierId: record.supplierId ?? record.supplier_id ?? "",
     supplierName: record.supplierName ?? record.supplier_name ?? "Supplier",
-    startDateTime: record.startDateTime ?? record.start_date_time ?? "",
-    endDateTime: record.endDateTime ?? record.end_date_time ?? "",
+    startDateTime: record.startDateTime ?? record.start_date_time ?? record.start_at ?? "",
+    endDateTime: record.endDateTime ?? record.end_date_time ?? record.end_at ?? "",
     rentalType: record.rentalType ?? record.rental_type ?? "daily",
     pickupDeliveryMethod: record.pickupDeliveryMethod ?? record.pickup_delivery_method ?? "pickup",
     deliveryLocation: record.deliveryLocation ?? record.delivery_location ?? "",
     notes: record.notes || "",
-    estimatedDuration: record.estimatedDuration ?? record.estimated_duration ?? 0,
-    estimatedDurationLabel: record.estimatedDurationLabel ?? record.estimated_duration_label ?? "",
-    estimatedCost: record.estimatedCost ?? record.estimated_cost ?? 0,
+    estimatedDuration: record.estimatedDuration ?? record.estimated_duration ?? pricingQuote.units ?? 0,
+    estimatedDurationLabel: record.estimatedDurationLabel ?? record.estimated_duration_label ?? (pricingQuote.units ? `${pricingQuote.units} ${pricingQuote.rentalType} unit(s)` : ""),
+    estimatedCost: record.estimatedCost ?? record.estimated_cost ?? record.total_amount ?? pricingQuote.subtotal ?? 0,
     depositRequirement: record.depositRequirement ?? record.deposit_requirement ?? "",
     status: record.status || "pending_supplier_approval",
     paymentStatus: record.paymentStatus ?? record.payment_status ?? "not_active",
+    persistenceStatus: record.persistenceStatus ?? metadata.provider_status ?? "",
     protectionPlanIds: record.protectionPlanIds ?? record.protection_plan_ids ?? [],
     protectionCost: record.protectionCost ?? record.protection_cost ?? 0,
     createdAt: record.createdAt ?? record.created_at,
@@ -149,6 +158,33 @@ function buildBookingPayload({ user, listing, input }) {
   };
 }
 
+function shouldUseCoreRentalV1(options = {}) {
+  return isFeatureEnabled("rental_core_backend_path", options.environment || "development", options.featureOverrides || {});
+}
+
+function toCoreRentalBookingPayload({ user, listing, input }) {
+  return {
+    id: input.id,
+    asset_id: listing.id,
+    customer_id: user.id,
+    supplier_id: listing.ownerSupplierId,
+    start_at: input.startDateTime,
+    end_at: input.endDateTime,
+    notes: input.notes || "",
+    idempotency_key: input.idempotencyKey || input.id,
+  };
+}
+
+function mapStatusToCoreRentalAction(status) {
+  return {
+    approved: "accept",
+    declined: "reject",
+    cancelled: "cancel",
+    active: "activate",
+    completed: "check-out",
+  }[status] || "";
+}
+
 const bookingApiImplementation = {
   adapter: "backendApiPilot",
   notice: BOOKING_API_PILOT_NOTICE,
@@ -176,6 +212,16 @@ const bookingApiImplementation = {
   async createRequest(_storage, payload, options = {}) {
     const validation = validateBookingRequest({ user: payload.user, listing: payload.listing, input: payload.input, existingBookings: [] });
     if (!validation.valid) return validation;
+    if (shouldUseCoreRentalV1(options)) {
+      const body = toCoreRentalBookingPayload(payload);
+      const response = await requestBookingApi("/api/v1/rentals/bookings", {
+        method: "POST",
+        body,
+        headers: devAuthHeaders({ customer_id: body.customer_id }, { ...options, user: options.user || payload.user }),
+      });
+      const booking = toCamelBooking(response.data);
+      return { valid: true, errors: {}, booking, bookings: [booking], apiMode: true, coreRentalV1: true };
+    }
     const body = toApiBooking(buildBookingPayload(payload));
     const response = await requestBookingApi("/api/bookings", {
       method: "POST",
@@ -186,6 +232,21 @@ const bookingApiImplementation = {
     return { valid: true, errors: {}, booking, bookings: [booking], apiMode: true };
   },
   async updateStatus(_storage, bookingId, status, user, options = {}) {
+    if (shouldUseCoreRentalV1(options)) {
+      const action = mapStatusToCoreRentalAction(status);
+      if (!action) {
+        throw new BookingApiError(`Status ${status} is not mapped to the core rental v1 journey.`, {
+          code: "unsupported_core_rental_status",
+        });
+      }
+      const response = await requestBookingApi(`/api/v1/rentals/bookings/${encodeURIComponent(bookingId)}/${action}`, {
+        method: "PATCH",
+        body: status === "cancelled" ? { reason: "frontend core rental v1 cancellation" } : {},
+        headers: devAuthHeaders({}, { ...options, user }),
+      });
+      const booking = toCamelBooking(response.data);
+      return { valid: true, booking, bookings: [booking], apiMode: true, coreRentalV1: true };
+    }
     const response = await requestBookingApi(`/api/bookings/${encodeURIComponent(bookingId)}`, {
       method: "PATCH",
       body: { status },

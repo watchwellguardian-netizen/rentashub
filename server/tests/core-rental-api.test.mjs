@@ -97,6 +97,18 @@ test("versioned core rental action matrix covers required lifecycle actions", as
   });
 });
 
+test("core rental persistence readiness reports repository contract and local transaction boundary", async () => {
+  const { app } = await createSeededApp();
+  await withServer(app.handler, async (baseUrl) => {
+    const result = await requestJson(baseUrl, "/api/v1/rentals/persistence/readiness", { headers: adminHeaders });
+    assert.equal(result.response.status, 200);
+    assert.equal(result.body.data.status, "CONTRACT_READY");
+    assert.equal(result.body.data.persistence.transactionalStrategy, "snapshot_rollback");
+    assert.equal(result.body.data.persistence.lockStrategy, "in_process_keyed_mutex");
+    assert.equal(result.body.data.persistence.productionSuitable, false);
+  });
+});
+
 test("core rental API blocks unpublished listing booking and allows publish workflow", async () => {
   const { app } = await createSeededApp();
   await withServer(app.handler, async (baseUrl) => {
@@ -164,6 +176,9 @@ test("booking request uses deterministic quote, idempotency, and audit events", 
     assert.equal(second.body.data.id, first.body.data.id);
     assert.ok(database.table("audit_logs").some((entry) => entry.action === "bookings.requested"));
     assert.ok(first.body.meta.domain_event.type === "booking.requested");
+    assert.equal(first.body.meta.repository_contract, "CONTRACT_READY");
+    assert.equal(first.body.meta.persistence.transactionalStrategy, "snapshot_rollback");
+    assert.equal(first.body.meta.lock_key, "asset:asset-demo-excavator");
   });
 });
 
@@ -197,7 +212,7 @@ test("core rental lifecycle enforces state order, duplicate transitions, extensi
     const accepted = await transition(baseUrl, id, "accept");
     assert.equal(accepted.response.status, 200);
     const duplicateAccept = await transition(baseUrl, id, "accept");
-    assert.equal(duplicateAccept.response.status, 400);
+    assert.equal(duplicateAccept.response.status, 409);
 
     const paymentRequired = await transition(baseUrl, id, "payment-required");
     assert.equal(paymentRequired.response.status, 200);
@@ -211,7 +226,7 @@ test("core rental lifecycle enforces state order, duplicate transitions, extensi
     const checkedIn = await transition(baseUrl, id, "check-in");
     assert.equal(checkedIn.response.status, 200);
     const duplicateCheckIn = await transition(baseUrl, id, "check-in");
-    assert.equal(duplicateCheckIn.response.status, 400);
+    assert.equal(duplicateCheckIn.response.status, 409);
     const activated = await transition(baseUrl, id, "activate");
     assert.equal(activated.response.status, 200);
 
@@ -255,5 +270,26 @@ test("overlapping accepted bookings remain blocked by local availability guard",
     const overlap = await createBooking(baseUrl, "2026-09-02T09:00:00.000Z", "2026-09-04T09:00:00.000Z");
     assert.equal(overlap.response.status, 409);
     assert.equal(overlap.body.error, "rental_conflict");
+  });
+});
+
+test("parallel booking requests serialize on asset lock and prevent duplicate reservations", async () => {
+  const { app } = await createSeededApp();
+  await withServer(app.handler, async (baseUrl) => {
+    const body = {
+      asset_id: "asset-demo-excavator",
+      customer_id: "customer-demo",
+      supplier_id: "supplier-demo",
+      start_at: "2026-09-10T09:00:00.000Z",
+      end_at: "2026-09-11T09:00:00.000Z",
+    };
+    const responses = await Promise.all([
+      requestJson(baseUrl, "/api/v1/rentals/bookings", { method: "POST", headers: customerHeaders, body }),
+      requestJson(baseUrl, "/api/v1/rentals/bookings", { method: "POST", headers: customerHeaders, body: { ...body, idempotency_key: "parallel-second" } }),
+    ]);
+    const statuses = responses.map((item) => item.response.status).sort();
+    assert.deepEqual(statuses, [201, 409]);
+    const successful = responses.find((item) => item.response.status === 201);
+    assert.equal(successful.body.meta.lock_key, "asset:asset-demo-excavator");
   });
 });

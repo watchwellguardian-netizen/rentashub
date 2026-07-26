@@ -1,11 +1,15 @@
-import { getRepositories } from "../services/persistenceService.js";
-import { getCoreRentalActionMatrix, performCoreRentalAction } from "../services/coreRentalService.js";
+import { createRepositories } from "../repositories/index.js";
+import { getCoreRentalActionMatrix } from "../services/coreRentalService.js";
+import { executeCoreRentalPersistenceAction, getCoreRentalPersistenceReadiness } from "../services/coreRentalPersistenceAdapter.js";
 
 export function createCoreRentalController(options = {}) {
   const context = options.context || options;
 
-  async function repositories() {
-    return getRepositories(context);
+  function activeContext() {
+    return {
+      ...context,
+      repositories: context.repositories || (context.database ? createRepositories(context.database) : context.repositories),
+    };
   }
 
   return {
@@ -17,18 +21,25 @@ export function createCoreRentalController(options = {}) {
       });
     },
 
+    async readiness(req, res) {
+      res.json(200, {
+        resource: "core-rental-persistence-readiness",
+        data: getCoreRentalPersistenceReadiness(activeContext()),
+      });
+    },
+
     async quote(req, res) {
-      const result = await performCoreRentalAction(await repositories(), "quotePrice", req.body || {}, req);
+      const result = await executeCoreRentalPersistenceAction(activeContext(), "quotePrice", req.body || {}, req);
       res.json(result.status, { resource: "core-rental", ...result });
     },
 
     async checkAvailability(req, res) {
-      const result = await performCoreRentalAction(await repositories(), "checkAvailability", req.body || {}, req);
+      const result = await executeCoreRentalPersistenceAction(activeContext(), "checkAvailability", req.body || {}, req);
       res.json(result.status, { resource: "core-rental", ...result });
     },
 
     async createAsset(req, res) {
-      const result = await performCoreRentalAction(await repositories(), "createAsset", req.body || {}, req);
+      const result = await executeCoreRentalPersistenceAction(activeContext(), "createAsset", req.body || {}, req);
       res.json(result.status, { resource: "core-rental", ...result });
     },
 
@@ -38,12 +49,12 @@ export function createCoreRentalController(options = {}) {
         publish: "publishListing",
       };
       const action = actionMap[req.params.action] || req.params.action;
-      const result = await performCoreRentalAction(await repositories(), action, { ...(req.body || {}), asset_id: req.params.id }, req);
+      const result = await executeCoreRentalPersistenceAction(activeContext(), action, { ...(req.body || {}), asset_id: req.params.id }, req);
       res.json(result.status, { resource: "core-rental", ...result });
     },
 
     async requestBooking(req, res) {
-      const result = await performCoreRentalAction(await repositories(), "requestBooking", req.body || {}, req);
+      const result = await executeCoreRentalPersistenceAction(activeContext(), "requestBooking", req.body || {}, req);
       res.json(result.status, { resource: "core-rental", ...result });
     },
 
@@ -67,7 +78,7 @@ export function createCoreRentalController(options = {}) {
         "open-dispute": "openDispute",
       };
       const action = actionMap[req.params.action] || req.params.action;
-      const result = await performCoreRentalAction(await repositories(), action, { ...(req.body || {}), booking_id: req.params.id }, req);
+      const result = await executeCoreRentalPersistenceAction(activeContext(), action, { ...(req.body || {}), booking_id: req.params.id }, req);
       res.json(result.status, { resource: "core-rental", ...result });
     },
   };

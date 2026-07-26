@@ -602,6 +602,65 @@ test("api mode booking create and update send dev-authenticated backend requests
   }
 });
 
+test("api mode booking can opt into core rental v1 journey behind feature flag", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalBaseUrl = API_CONFIG.baseUrl;
+  const calls = [];
+  API_CONFIG.baseUrl = "http://api.test";
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push({ url, options });
+    const body = JSON.parse(options.body || "{}");
+    return {
+      ok: true,
+      status: options.method === "POST" ? 201 : 200,
+      async json() {
+        return {
+          data: {
+            id: body.id || "booking-core-v1-created",
+            asset_id: body.asset_id || "asset-api-1",
+            customer_id: body.customer_id || "review-customer",
+            supplier_id: body.supplier_id || "review-supplier",
+            start_at: body.start_at || "2026-06-16T09:00",
+            end_at: body.end_at || "2026-06-17T09:00",
+            status: url.endsWith("/accept") ? "approved" : "pending",
+            payment_status: "unpaid",
+            metadata_json: JSON.stringify({ provider_status: "provider_independent_local", pricing_quote: { units: 1, subtotal: 18000 } }),
+          },
+        };
+      },
+    };
+  };
+
+  try {
+    const user = { id: "review-customer", full_name: "Review Customer", role: "customer" };
+    const featureOverrides = { rental_core_backend_path: true };
+    const created = await bookingAdapter.forMode("api").createRequest(null, {
+      user,
+      listing: SEED_LISTINGS[0],
+      input: {
+        id: "booking-core-v1-created",
+        startDateTime: "2026-06-16T09:00",
+        endDateTime: "2026-06-17T09:00",
+        pickupDeliveryMethod: "pickup",
+      },
+    }, { user, featureOverrides });
+    const updated = await bookingAdapter.forMode("api").updateStatus(null, "booking-core-v1-created", "approved", { id: "review-supplier", role: "supplier" }, { featureOverrides });
+
+    assert.equal(created.valid, true);
+    assert.equal(created.coreRentalV1, true);
+    assert.equal(created.booking.assetId, SEED_LISTINGS[0].id);
+    assert.equal(updated.valid, true);
+    assert.equal(updated.coreRentalV1, true);
+    assert.equal(calls[0].url, "http://api.test/api/v1/rentals/bookings");
+    assert.equal(calls[0].options.method, "POST");
+    assert.equal(calls[1].url, "http://api.test/api/v1/rentals/bookings/booking-core-v1-created/accept");
+    assert.equal(calls[1].options.method, "PATCH");
+  } finally {
+    globalThis.fetch = originalFetch;
+    API_CONFIG.baseUrl = originalBaseUrl;
+  }
+});
+
 test("api mode booking unauthorized write and backend unavailable return controlled errors", async () => {
   const originalFetch = globalThis.fetch;
   const originalBaseUrl = API_CONFIG.baseUrl;

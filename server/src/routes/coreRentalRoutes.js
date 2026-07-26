@@ -9,6 +9,7 @@ export function registerCoreRentalRoutes(router, options = {}) {
   const controller = createCoreRentalController(options);
 
   router.get("/api/v1/rentals/actions", requireRoles(RENTAL_ROLES), controller.actions);
+  router.get("/api/v1/rentals/persistence/readiness", requireRoles(["admin"]), controller.readiness);
   router.post("/api/v1/rentals/availability", requireRoles(RENTAL_ROLES), controller.checkAvailability);
   router.post("/api/v1/rentals/quote", requireRoles(RENTAL_ROLES), controller.quote);
 
