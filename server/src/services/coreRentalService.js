@@ -173,6 +173,23 @@ async function recordAudit(repositories, req, action, entityType, entityId, meta
   });
 }
 
+async function recordLocalNotification(repositories, recipientId, type, title, body, metadata = {}) {
+  if (!recipientId || !repositories.notifications?.create) return null;
+  return repositories.notifications.create({
+    recipient_id: recipientId,
+    type,
+    title,
+    body,
+    read: false,
+    related_route: metadata.booking_id ? `/booking/${metadata.booking_id}` : metadata.asset_id ? `/asset/${metadata.asset_id}` : "/notifications",
+    metadata_json: JSON.stringify({
+      ...metadata,
+      provider_status: "provider_independent_local",
+      live_delivery: false,
+    }),
+  });
+}
+
 function actionResult({ action, record, domainEvent, auditAction, status = 200 }) {
   return {
     status,
@@ -793,6 +810,14 @@ export async function requestBooking(repositories, payload, req) {
   }
   const record = await repositories.bookings.create(prepared.payload);
   await recordAudit(repositories, req, CORE_RENTAL_AUDIT_ACTIONS.bookingRequested, "booking", record.id);
+  await recordLocalNotification(
+    repositories,
+    record.supplier_id,
+    "rental_booking_requested",
+    "Rental request received",
+    `A customer requested ${asset.title || "your rental asset"}.`,
+    { booking_id: record.id, asset_id: record.asset_id, customer_id: record.customer_id },
+  );
   return actionResult({
     action: "requestBooking",
     record,
@@ -815,6 +840,26 @@ async function updateBookingAction(repositories, req, booking, action, changes, 
     }),
   });
   await recordAudit(repositories, req, auditAction, "booking", booking.id, { previous_status: booking.status, next_status: record.status });
+  const notifyBothParties = ["cancelBooking", "checkIn", "activateRental", "checkOut", "openDispute"].includes(action);
+  const recipientId = roleOf(req) === "customer" ? booking.supplier_id : booking.customer_id;
+  await recordLocalNotification(
+    repositories,
+    recipientId,
+    domainType,
+    `Rental ${action.replace(/[A-Z]/g, (letter) => ` ${letter.toLowerCase()}`)}`,
+    `Booking ${booking.id} moved from ${booking.status} to ${record.status}.`,
+    { booking_id: booking.id, asset_id: booking.asset_id, actor_id: actorId(req), previous_status: booking.status, next_status: record.status },
+  );
+  if (notifyBothParties) {
+    await recordLocalNotification(
+      repositories,
+      roleOf(req) === "customer" ? booking.customer_id : booking.supplier_id,
+      domainType,
+      `Rental ${action.replace(/[A-Z]/g, (letter) => ` ${letter.toLowerCase()}`)}`,
+      `Booking ${booking.id} moved from ${booking.status} to ${record.status}.`,
+      { booking_id: booking.id, asset_id: booking.asset_id, actor_id: actorId(req), previous_status: booking.status, next_status: record.status },
+    );
+  }
   return actionResult({
     action,
     record,
@@ -1058,6 +1103,14 @@ async function openDispute(repositories, payload, req) {
   });
   await repositories.bookings.update(booking.id, { metadata_json: mergeBookingMetadata(booking, { dispute_id: dispute.id }) });
   await recordAudit(repositories, req, CORE_RENTAL_AUDIT_ACTIONS.disputeOpened, "dispute", dispute.id, { booking_id: booking.id });
+  await recordLocalNotification(
+    repositories,
+    actorId(req) === booking.customer_id ? booking.supplier_id : booking.customer_id,
+    "dispute.opened",
+    "Rental dispute opened",
+    `A dispute was opened for booking ${booking.id}.`,
+    { booking_id: booking.id, dispute_id: dispute.id, actor_id: actorId(req) },
+  );
   return actionResult({
     action: "openDispute",
     record: dispute,

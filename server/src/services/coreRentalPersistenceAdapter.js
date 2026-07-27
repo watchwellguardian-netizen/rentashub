@@ -255,6 +255,49 @@ export async function readCoreRentalBooking(context = {}, bookingId, req = {}) {
   };
 }
 
+export async function listCoreRentalBookings(context = {}, filter = {}, req = {}) {
+  const repositories = await getRepositories(context);
+  const role = req.user?.role || "anonymous";
+  const actorId = req.user?.id || "anonymous";
+  let bookings;
+
+  if (role === "admin") {
+    bookings = await repositories.bookings.list(filter);
+  } else if (role === "customer") {
+    const requestedCustomer = filter.customer_id || actorId;
+    if (requestedCustomer !== actorId) {
+      throw createForbidden("Customers can only list their own core rental bookings.", [
+        { field: "customer_id", message: requestedCustomer },
+      ]);
+    }
+    bookings = await repositories.bookings.list({ ...filter, customer_id: actorId });
+  } else if (role === "supplier") {
+    const requestedSupplier = filter.supplier_id || actorId;
+    if (requestedSupplier !== actorId) {
+      throw createForbidden("Suppliers can only list bookings for their own assets.", [
+        { field: "supplier_id", message: requestedSupplier },
+      ]);
+    }
+    bookings = await repositories.bookings.list({ ...filter, supplier_id: actorId });
+  } else {
+    throw createForbidden("Only customers, suppliers, or admins can list core rental bookings.", [
+      { field: "role", message: role },
+    ]);
+  }
+
+  return {
+    status: 200,
+    data: bookings,
+    meta: {
+      provider_status: "provider_independent_local",
+      persistence: providerStatusFor(context.database),
+      repository_contract: validateCoreRentalRepositoryContract(repositories).status,
+      repository_invariants: "READ_ONLY",
+      list_scope: role,
+    },
+  };
+}
+
 export function getCoreRentalPersistenceReadiness(context = {}) {
   const contract = validateCoreRentalRepositoryContract(context.repositories || {});
   return {

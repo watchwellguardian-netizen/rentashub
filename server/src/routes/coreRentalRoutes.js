@@ -14,9 +14,11 @@ export function registerCoreRentalRoutes(router, options = {}) {
   router.post("/api/v1/rentals/quote", requireRoles(RENTAL_ROLES), controller.quote);
 
   router.post("/api/v1/rentals/assets", requireRoles(SUPPLIER_ROLES), controller.createAsset);
+  router.post("/api/v1/rentals/supplier-profile/validate", requireRoles(SUPPLIER_ROLES), controller.validateSupplierProfile);
   router.patch("/api/v1/rentals/listings/:id/:action", requireRoles(SUPPLIER_ROLES), controller.runListingAction);
 
   router.post("/api/v1/rentals/bookings", requireRoles(CUSTOMER_ROLES), controller.requestBooking);
+  router.get("/api/v1/rentals/bookings", requireRoles(RENTAL_ROLES), controller.listBookings);
   router.get("/api/v1/rentals/bookings/:id", requireRoles(RENTAL_ROLES), controller.readBooking);
   router.patch("/api/v1/rentals/bookings/:id/:action", requireRoles(RENTAL_ROLES), controller.runBookingAction);
 }

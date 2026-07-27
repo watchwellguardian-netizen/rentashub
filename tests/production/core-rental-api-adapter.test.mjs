@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { bookingAdapter } from "../../src/lib/adapters/bookingAdapter.js";
 import { coreRentalApiAdapter } from "../../src/lib/adapters/coreRentalApiAdapter.js";
 import { API_CONFIG } from "../../src/lib/apiClient.js";
 import { generateCoreRentalLegacyMigrationPlan } from "../../src/lib/coreRentalLegacyMigration.js";
@@ -116,4 +117,118 @@ test("legacy migration planner is idempotent reconciles counts and quarantines i
   assert.equal(plan.controls.idempotent, true);
   assert.equal(plan.controls.featureFlagRollback, "rental_core_backend_path");
   assert.equal(plan.mappedBookings[0].idempotency_key, "booking:booking-legacy-1");
+});
+
+test("core rental API adapter orchestrates complete provider-independent lifecycle and dashboard refresh", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalBaseUrl = API_CONFIG.baseUrl;
+  const originalDataMode = API_CONFIG.dataMode;
+  const calls = [];
+  const versions = {
+    request: 1,
+    accept: 2,
+    "payment-required": 3,
+    confirm: 4,
+    "trigger-contract": 5,
+    "check-in": 6,
+    activate: 7,
+    "request-extension": 8,
+    "approve-extension": 9,
+    "check-out": 10,
+    "calculate-final-charge": 11,
+    "prepare-settlement": 12,
+    "mark-review-eligible": 13,
+  };
+  API_CONFIG.baseUrl = "http://api.test";
+  API_CONFIG.dataMode = "api";
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push({ url, options });
+    const body = JSON.parse(options.body || "{}");
+    if (url.endsWith("/api/v1/rentals/assets")) {
+      return { ok: true, status: 201, async json() { return { data: { id: "asset-full-v1", owner_id: "supplier-demo", ...body, version: 1 } }; } };
+    }
+    if (url.includes("/api/v1/rentals/listings/asset-full-v1/")) {
+      const action = url.split("/").pop();
+      return { ok: true, status: 200, async json() { return { data: { id: "asset-full-v1", status: action === "publish" ? "published" : "moderated", version: action === "publish" ? 3 : 2 } }; } };
+    }
+    if (url.endsWith("/api/v1/rentals/availability")) {
+      return { ok: true, status: 200, async json() { return { data: { available: true, asset_id: body.asset_id } }; } };
+    }
+    if (url.endsWith("/api/v1/rentals/quote")) {
+      return { ok: true, status: 200, async json() { return { data: { asset_id: body.asset_id, quote: { total: 1000, currency: "JMD" } } }; } };
+    }
+    if (url.endsWith("/api/v1/rentals/bookings") && options.method === "POST") {
+      return { ok: true, status: 201, async json() { return { data: { id: "booking-full-v1", ...body, status: "pending", version: versions.request } }; } };
+    }
+    if (url.includes("/api/v1/rentals/bookings/booking-full-v1/")) {
+      const action = url.split("/").pop();
+      const status = {
+        accept: "approved",
+        "payment-required": "approved",
+        confirm: "confirmed",
+        "trigger-contract": "confirmed",
+        "check-in": "checked_in",
+        activate: "active",
+        "request-extension": "extension_requested",
+        "approve-extension": "active",
+        "check-out": "completed",
+        "calculate-final-charge": "completed",
+        "prepare-settlement": "completed",
+        "mark-review-eligible": "completed",
+        "open-dispute": "open",
+      }[action];
+      return { ok: true, status: action === "open-dispute" ? 201 : 200, async json() { return { data: { id: action === "open-dispute" ? "dispute-full-v1" : "booking-full-v1", status, version: versions[action] || 14 }, meta: { repository_invariants: "PASS" } }; } };
+    }
+    if (url.endsWith("/api/v1/rentals/bookings/booking-full-v1")) {
+      return { ok: true, status: 200, async json() { return { data: { id: "booking-full-v1", customer_id: "customer-demo", supplier_id: "supplier-demo", status: "completed", version: 13 } }; } };
+    }
+    if (url.includes("/api/v1/rentals/bookings?")) {
+      return { ok: true, status: 200, async json() { return { data: [{ id: "booking-full-v1", customer_id: "customer-demo", supplier_id: "supplier-demo", status: "completed", version: 13 }] }; } };
+    }
+    return { ok: false, status: 404, async json() { return { error: "not_found" }; } };
+  };
+
+  try {
+    const featureOverrides = { rental_core_backend_path: true };
+    const journey = await coreRentalApiAdapter.runProviderIndependentLifecycle({
+      asset: {
+        title: "Full V1 loader",
+        category: "heavy-equipment",
+        listing_type: "rental",
+        owner_id: "supplier-demo",
+      },
+      booking: {
+        customer_id: "customer-demo",
+        supplier_id: "supplier-demo",
+        start_at: "2026-12-01T09:00:00.000Z",
+        end_at: "2026-12-02T09:00:00.000Z",
+      },
+      extension: { requested_end_at: "2026-12-03T09:00:00.000Z" },
+      dispute: { reason: "adapter dispute evidence" },
+    }, {
+      environment: "development",
+      featureOverrides,
+    });
+
+    assert.equal(journey.providerStatus, "provider_independent_local");
+    assert.equal(journey.customerBooking.data.status, "completed");
+    assert.equal(journey.supplierBookings.data[0].id, "booking-full-v1");
+    assert.ok(calls.some((call) => call.url.endsWith("/api/v1/rentals/quote")));
+    assert.ok(calls.some((call) => call.url.endsWith("/api/v1/rentals/bookings/booking-full-v1/check-out")));
+
+    const customerDashboardRows = await bookingAdapter.forMode("api").listByCustomer(null, "customer-demo", {
+      featureOverrides,
+      user: { id: "customer-demo", role: "customer" },
+    });
+    const supplierDashboardRows = await bookingAdapter.forMode("api").listBySupplier(null, "supplier-demo", {
+      featureOverrides,
+      user: { id: "supplier-demo", role: "supplier" },
+    });
+    assert.equal(customerDashboardRows[0].id, "booking-full-v1");
+    assert.equal(supplierDashboardRows[0].supplierId, "supplier-demo");
+  } finally {
+    globalThis.fetch = originalFetch;
+    API_CONFIG.baseUrl = originalBaseUrl;
+    API_CONFIG.dataMode = originalDataMode;
+  }
 });

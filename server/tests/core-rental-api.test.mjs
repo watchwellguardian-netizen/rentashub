@@ -432,3 +432,175 @@ test("provider-independent JSON persistence survives restart and recovery", asyn
   assert.equal(persisted.status, "pending");
   assert.equal(persisted.version, 1);
 });
+
+test("ACCEL-P1-007 full provider-independent rental journey connects lifecycle dashboards notifications and audit events", async () => {
+  const { app, database } = await createSeededApp();
+  await withServer(app.handler, async (baseUrl) => {
+    const profile = await requestJson(baseUrl, "/api/v1/rentals/supplier-profile/validate", {
+      method: "POST",
+      headers: supplierHeaders,
+      body: { supplier_id: "supplier-demo" },
+    });
+    assert.equal(profile.response.status, 200);
+    assert.equal(profile.body.data.readiness, "validated");
+
+    const asset = await requestJson(baseUrl, "/api/v1/rentals/assets", {
+      method: "POST",
+      headers: supplierHeaders,
+      body: {
+        title: "ACCEL P1 007 loader",
+        category: "heavy-equipment",
+        listing_type: "rental",
+        rental_type: "daily",
+        price_rate: 225,
+        deposit_amount: 400,
+      },
+    });
+    assert.equal(asset.response.status, 201);
+
+    const moderated = await requestJson(baseUrl, `/api/v1/rentals/listings/${asset.body.data.id}/moderate`, {
+      method: "PATCH",
+      headers: supplierHeaders,
+      body: {},
+    });
+    assert.equal(moderated.response.status, 200);
+    const published = await requestJson(baseUrl, `/api/v1/rentals/listings/${asset.body.data.id}/publish`, {
+      method: "PATCH",
+      headers: supplierHeaders,
+      body: {},
+    });
+    assert.equal(published.response.status, 200);
+
+    const window = {
+      asset_id: asset.body.data.id,
+      customer_id: "customer-demo",
+      supplier_id: "supplier-demo",
+      start_at: "2026-11-01T09:00:00.000Z",
+      end_at: "2026-11-03T09:00:00.000Z",
+    };
+    const availability = await requestJson(baseUrl, "/api/v1/rentals/availability", { method: "POST", headers: customerHeaders, body: window });
+    assert.equal(availability.response.status, 200);
+    assert.equal(availability.body.data.available, true);
+    const quote = await requestJson(baseUrl, "/api/v1/rentals/quote", { method: "POST", headers: customerHeaders, body: window });
+    assert.equal(quote.response.status, 200);
+    assert.equal(quote.body.data.quote.total, 850);
+
+    const requested = await requestJson(baseUrl, "/api/v1/rentals/bookings", {
+      method: "POST",
+      headers: { ...customerHeaders, "idempotency-key": "accel-p1-007-full" },
+      body: window,
+    });
+    assert.equal(requested.response.status, 201);
+    const bookingId = requested.body.data.id;
+
+    const customerListPending = await requestJson(baseUrl, `/api/v1/rentals/bookings?customer_id=customer-demo`, { headers: customerHeaders });
+    const supplierListPending = await requestJson(baseUrl, `/api/v1/rentals/bookings?supplier_id=supplier-demo`, { headers: supplierHeaders });
+    assert.ok(customerListPending.body.data.some((booking) => booking.id === bookingId));
+    assert.ok(supplierListPending.body.data.some((booking) => booking.id === bookingId));
+
+    const accepted = await transition(baseUrl, bookingId, "accept", supplierHeaders, { expected_version: requested.body.data.version });
+    assert.equal(accepted.response.status, 200);
+    const paymentRequired = await transition(baseUrl, bookingId, "payment-required", supplierHeaders, { expected_version: accepted.body.data.version });
+    assert.equal(paymentRequired.response.status, 200);
+    assert.equal(paymentRequired.body.data.payment_status, "payment_required");
+    const confirmed = await transition(baseUrl, bookingId, "confirm", supplierHeaders, { expected_version: paymentRequired.body.data.version });
+    assert.equal(confirmed.response.status, 200);
+    const contract = await transition(baseUrl, bookingId, "trigger-contract", supplierHeaders, { expected_version: confirmed.body.data.version });
+    assert.equal(JSON.parse(contract.body.data.metadata_json).contract_status, "pending_generation");
+    const checkedIn = await transition(baseUrl, bookingId, "check-in", supplierHeaders, { expected_version: contract.body.data.version });
+    assert.equal(checkedIn.response.status, 200);
+    const active = await transition(baseUrl, bookingId, "activate", supplierHeaders, { expected_version: checkedIn.body.data.version });
+    assert.equal(active.response.status, 200);
+    const extension = await transition(baseUrl, bookingId, "request-extension", customerHeaders, {
+      requested_end_at: "2026-11-04T09:00:00.000Z",
+      expected_version: active.body.data.version,
+    });
+    assert.equal(extension.body.data.status, "extension_requested");
+    const extensionDecision = await transition(baseUrl, bookingId, "approve-extension", supplierHeaders, { expected_version: extension.body.data.version });
+    assert.equal(extensionDecision.body.data.status, "active");
+    const checkedOut = await transition(baseUrl, bookingId, "check-out", supplierHeaders, { expected_version: extensionDecision.body.data.version });
+    assert.equal(checkedOut.body.data.status, "completed");
+    const finalCharge = await transition(baseUrl, bookingId, "calculate-final-charge", supplierHeaders, { expected_version: checkedOut.body.data.version });
+    assert.ok(JSON.parse(finalCharge.body.data.metadata_json).final_charge);
+    const settlement = await transition(baseUrl, bookingId, "prepare-settlement", supplierHeaders, { expected_version: finalCharge.body.data.version });
+    assert.equal(JSON.parse(settlement.body.data.metadata_json).settlement_status, "ready");
+    const review = await transition(baseUrl, bookingId, "mark-review-eligible", customerHeaders, { expected_version: settlement.body.data.version });
+    assert.equal(JSON.parse(review.body.data.metadata_json).review_eligible, true);
+    const dispute = await transition(baseUrl, bookingId, "open-dispute", customerHeaders, {
+      reason: "ACCEL P1 007 dispute path",
+      expected_version: review.body.data.version,
+    });
+    assert.equal(dispute.response.status, 201);
+
+    const customerRead = await requestJson(baseUrl, `/api/v1/rentals/bookings/${bookingId}`, { headers: customerHeaders });
+    const supplierListFinal = await requestJson(baseUrl, `/api/v1/rentals/bookings?supplier_id=supplier-demo`, { headers: supplierHeaders });
+    assert.equal(customerRead.response.status, 200);
+    assert.ok(supplierListFinal.body.data.some((booking) => booking.id === bookingId && booking.status === "completed"));
+
+    const auditActions = new Set(database.table("audit_logs").map((entry) => entry.action));
+    for (const action of [
+      "supplier_profiles.validated",
+      "assets.created",
+      "listings.moderated",
+      "listings.published",
+      "availability.checked",
+      "pricing.quoted",
+      "bookings.requested",
+      "bookings.accepted",
+      "bookings.payment_required",
+      "bookings.confirmed",
+      "contracts.generation_triggered",
+      "bookings.checked_in",
+      "rentals.activated",
+      "rentals.extension_requested",
+      "rentals.extension_approved",
+      "bookings.checked_out",
+      "rentals.final_charge_calculated",
+      "settlements.prepared",
+      "reviews.eligibility_marked",
+      "disputes.opened",
+    ]) {
+      assert.ok(auditActions.has(action), `${action} audit event should be present`);
+    }
+    const notifications = database.table("notifications");
+    assert.ok(notifications.some((note) => note.recipient_id === "supplier-demo" && note.type === "rental_booking_requested"));
+    assert.ok(notifications.some((note) => note.recipient_id === "customer-demo" && note.type === "booking.accepted"));
+  });
+});
+
+test("core rental booking list denies cross-tenant customer and supplier dashboard access", async () => {
+  const { app } = await createSeededApp();
+  await withServer(app.handler, async (baseUrl) => {
+    const created = await createBooking(baseUrl, "2026-11-10T09:00:00.000Z", "2026-11-11T09:00:00.000Z");
+    assert.equal(created.response.status, 201);
+
+    const wrongCustomerList = await requestJson(baseUrl, "/api/v1/rentals/bookings?customer_id=customer-demo", {
+      headers: otherCustomerHeaders,
+    });
+    assert.equal(wrongCustomerList.response.status, 403);
+
+    const wrongSupplierList = await requestJson(baseUrl, "/api/v1/rentals/bookings?supplier_id=supplier-demo", {
+      headers: otherSupplierHeaders,
+    });
+    assert.equal(wrongSupplierList.response.status, 403);
+
+    const adminList = await requestJson(baseUrl, "/api/v1/rentals/bookings?supplier_id=supplier-demo", {
+      headers: adminHeaders,
+    });
+    assert.equal(adminList.response.status, 200);
+    assert.ok(adminList.body.data.some((booking) => booking.id === created.body.data.id));
+  });
+});
+
+test("simultaneous supplier acceptance serializes and blocks duplicate action", async () => {
+  const { app } = await createSeededApp();
+  await withServer(app.handler, async (baseUrl) => {
+    const created = await createBooking(baseUrl, "2026-11-12T09:00:00.000Z", "2026-11-13T09:00:00.000Z");
+    const responses = await Promise.all([
+      transition(baseUrl, created.body.data.id, "accept", supplierHeaders, { expected_version: 1 }),
+      transition(baseUrl, created.body.data.id, "accept", supplierHeaders, { expected_version: 1 }),
+    ]);
+    const statuses = responses.map((item) => item.response.status).sort();
+    assert.deepEqual(statuses, [200, 409]);
+  });
+});

@@ -197,16 +197,40 @@ const bookingApiImplementation = {
     return (payload.data || []).map(toCamelBooking);
   },
   async getById(_storage, bookingId, options = {}) {
+    if (shouldUseCoreRentalV1(options)) {
+      const payload = await requestBookingApi(`/api/v1/rentals/bookings/${encodeURIComponent(bookingId)}`, {
+        headers: devAuthHeaders({}, options),
+      });
+      return payload.data ? toCamelBooking(payload.data) : null;
+    }
     const payload = await requestBookingApi(`/api/bookings/${encodeURIComponent(bookingId)}`, {
       headers: devAuthHeaders({}, options),
     });
     return payload.data ? toCamelBooking(payload.data) : null;
   },
   async listByCustomer(storage, customerId, options = {}) {
+    if (shouldUseCoreRentalV1(options)) {
+      const payload = await requestBookingApi(`/api/v1/rentals/bookings?customer_id=${encodeURIComponent(customerId)}`, {
+        headers: devAuthHeaders(
+          { customer_id: customerId },
+          { ...options, user: options.user || { id: customerId, role: "customer" } },
+        ),
+      });
+      return (payload.data || []).map(toCamelBooking);
+    }
     const bookings = await this.list(storage, { ...options, user: options.user || { id: customerId, role: "customer" } });
     return bookings.filter((booking) => booking.customerId === customerId);
   },
   async listBySupplier(storage, supplierId, options = {}) {
+    if (shouldUseCoreRentalV1(options)) {
+      const payload = await requestBookingApi(`/api/v1/rentals/bookings?supplier_id=${encodeURIComponent(supplierId)}`, {
+        headers: devAuthHeaders(
+          { supplier_id: supplierId },
+          { ...options, user: options.user || { id: supplierId, role: "supplier" } },
+        ),
+      });
+      return (payload.data || []).map(toCamelBooking);
+    }
     const bookings = await this.list(storage, { ...options, user: options.user || { id: supplierId, role: "supplier" } });
     return bookings.filter((booking) => booking.supplierId === supplierId);
   },

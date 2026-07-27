@@ -1,6 +1,6 @@
 import { createRepositories } from "../repositories/index.js";
 import { getCoreRentalActionMatrix } from "../services/coreRentalService.js";
-import { executeCoreRentalPersistenceAction, getCoreRentalPersistenceReadiness, readCoreRentalBooking } from "../services/coreRentalPersistenceAdapter.js";
+import { executeCoreRentalPersistenceAction, getCoreRentalPersistenceReadiness, listCoreRentalBookings, readCoreRentalBooking } from "../services/coreRentalPersistenceAdapter.js";
 
 export function createCoreRentalController(options = {}) {
   const context = options.context || options;
@@ -43,6 +43,11 @@ export function createCoreRentalController(options = {}) {
       res.json(result.status, { resource: "core-rental", ...result });
     },
 
+    async validateSupplierProfile(req, res) {
+      const result = await executeCoreRentalPersistenceAction(activeContext(), "validateSupplierProfile", req.body || {}, req);
+      res.json(result.status, { resource: "core-rental", ...result });
+    },
+
     async runListingAction(req, res) {
       const actionMap = {
         moderate: "moderateListing",
@@ -55,6 +60,11 @@ export function createCoreRentalController(options = {}) {
 
     async requestBooking(req, res) {
       const result = await executeCoreRentalPersistenceAction(activeContext(), "requestBooking", req.body || {}, req);
+      res.json(result.status, { resource: "core-rental", ...result });
+    },
+
+    async listBookings(req, res) {
+      const result = await listCoreRentalBookings(activeContext(), req.query || {}, req);
       res.json(result.status, { resource: "core-rental", ...result });
     },
 

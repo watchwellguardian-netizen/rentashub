@@ -1,5 +1,25 @@
 # Verification Log
 
+## ACCEL-P1-007 Core Rental Vertical Slice Completion and Operational Workflow Integration - 2026-07-27
+
+- Scope: Provider-independent full core rental lifecycle and operational workflow integration only; no live Supabase, PostgreSQL execution, RLS enforcement, Supabase Auth, Storage, payment, escrow, staging, or production provider was activated.
+- Added ACCEL-P1-007 authorization to `docs/program-state.md` while preserving RC-0.6A and open A4-01 status.
+- Added supplier-profile validation route, customer/supplier booking list route, and party-scoped dashboard refresh support for the core rental v1 API.
+- Added provider-independent local notification records for booking request and lifecycle state changes.
+- Extended the frontend core rental API adapter with full lifecycle orchestration behind `rental_core_backend_path`.
+- Extended the booking adapter so customer and supplier dashboards can list core rental v1 bookings when the feature flag is enabled, while preserving legacy localStorage fallback.
+- Added vertical slice completion report: `docs/program/CORE_RENTAL_VERTICAL_SLICE_COMPLETION_REPORT.md`.
+- Added evidence file: `artifacts/accelerated-delivery/ACCEL_P1_007_VERTICAL_SLICE_EVIDENCE.md`.
+- Focused verification: Passed, 65/65.
+- Full frontend production tests: Passed, 630/630.
+- Full backend tests: Passed, 134/134.
+- Programme dashboard generation: Passed; `docs/program/RENTASHUB_ACCELERATED_DELIVERY_DASHBOARD.md` regenerated from `docs/program/accelerated-delivery-status.json`.
+- Lint: Passed, 361 files scanned, 0 findings, 0 warnings.
+- Readiness master JSON: Passed; RC-0.6A Infrastructure Activation Hold remains active, A4 remains incomplete, and no live provider activation was reported.
+- Production build: Passed; Vite transformed 1694 modules and emitted main bundle `dist/assets/index-CRssWH5b.js` at 222.24 kB / 67.71 kB gzip.
+- ZIP/packageability check: Passed, 725 packageable files checked.
+- Remaining blockers: A4-01 remains open; executable PostgreSQL/Supabase validation, real RLS, live Auth, live Storage, payments, escrow, staging validation, distributed production locking, and production readiness remain not certified.
+
 ## ACCEL-P1-006 Core Rental Transaction Integrity, Concurrency, and Frontend Vertical Slice - 2026-07-26
 
 - Scope: Provider-independent transaction integrity, concurrency, and bounded frontend vertical-slice integration only; no live Supabase, PostgreSQL execution, RLS enforcement, Supabase Auth, Storage, payment, escrow, staging, or production provider was activated.
