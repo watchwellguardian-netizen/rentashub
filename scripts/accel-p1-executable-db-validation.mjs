@@ -15,6 +15,7 @@ const requiredMigrations = [
   "005_supabase_auth_rbac_activation.sql",
   "006_supabase_storage_activation.sql",
   "007_audit_logging_activation.sql",
+  "008_core_rental_production_readiness_bridge.sql",
 ];
 
 const executionCommands = [

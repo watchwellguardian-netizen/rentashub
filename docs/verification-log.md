@@ -1691,6 +1691,18 @@
 - ZIP/packageability check: Passed, 730 packageable files checked.
 - Remaining blockers: A4-01 ownership evidence, executable PostgreSQL/Supabase path, migration execution, RLS enforcement proof, live Supabase Auth, live Supabase Storage, payment sandbox credentials/webhooks, staging journey execution, and production certification remain pending.
 
+## ACCEL-CS-001 Controlled Rental Production-Readiness Sprint Start Check - 2026-07-27
+
+- Scope: Start-check only for controlled non-production execution sprint; no live provider activation, staging validation, or production readiness claim occurred.
+- Updated `docs/program-state.md` to record ACCEL-CS-001 as authorized only when executable database/Supabase tooling and required non-production provider credentials/evidence exist.
+- Ran executable database validation evidence command: `cmd /c npm run accel:p1:db-validation:json`.
+- Result: `BLOCKED_NO_EXECUTABLE_POSTGRES`.
+- Tool availability: Supabase CLI unavailable; Docker unavailable; psql unavailable.
+- Corrected `scripts/accel-p1-executable-db-validation.mjs` so the required migration set includes `008_core_rental_production_readiness_bridge.sql`.
+- Focused ACCEL-P1-002 validation tests: Passed, 5/5.
+- Evidence added: `docs/program/ACCEL_CS_001_BLOCKED_START_REPORT.md`.
+- Remaining blocker: provide Supabase CLI, Docker, psql, or another approved disposable PostgreSQL/Supabase execution path before ACCEL-CS-001 can execute.
+
 ## Accelerated Delivery Phase 0 Control Foundation - 2026-07-22
 
 - Scope: Provider-independent implementation mobilization only; A4-01 remains open, RC-0.6A remains unchanged, no live Supabase/payment/escrow/monitoring/provider activation occurred, and no production readiness is claimed.

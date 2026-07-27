@@ -38,6 +38,7 @@ Only the following work is authorized:
 - ACCEL-P1-006 - Core rental transaction integrity, concurrency, and frontend vertical slice on the backlog branch.
 - ACCEL-P1-007 - Core rental vertical slice completion and operational workflow integration on the backlog branch.
 - ACCEL-P1-008 - Core rental production-readiness bridge on the backlog branch.
+- ACCEL-CS-001 - Controlled Rental Production-Readiness Sprint, only after an executable disposable database/Supabase path and required non-production provider credentials/evidence are available.
 
 The next valid production-gate submission must be infrastructure ownership evidence, not secrets.
 
@@ -64,6 +65,8 @@ ACCEL-P1-006 work may proceed only as provider-independent core rental transacti
 ACCEL-P1-007 work may proceed only as provider-independent core rental vertical slice completion and operational workflow integration. It may connect supplier profile validation, asset/listing readiness, availability, pricing, booking, supplier decision, payment-required marker, contract trigger, check-in, active rental, extension, check-out, final-charge, settlement, review eligibility, dispute, audit, local notification, dashboard-list, and frontend refresh paths behind `rental_core_backend_path`. It must preserve legacy fallback behavior and must not claim PostgreSQL execution, RLS enforcement, live storage, live Supabase Auth, live payments, escrow activation, staging validation, or production readiness.
 
 ACCEL-P1-008 work may proceed only as a provider-independent production-readiness bridge for the completed core rental vertical slice. It may prepare PostgreSQL/Supabase repository adapter contracts, Auth session and ownership validation contracts, executable RLS policy SQL, storage object policy manifests, payment sandbox/webhook contracts, staging journey plans, and test coverage for mandatory bridge scenarios. It must preserve the provider-independent adapter path, must not connect to Supabase, must not run PostgreSQL migrations against a live or linked project, must not load provider credentials, and must not claim PostgreSQL execution, RLS enforcement, live Supabase Auth, live storage, live payments, escrow activation, staging validation, or production readiness.
+
+ACCEL-CS-001 may proceed only as a controlled non-production execution sprint. It may execute migrations 001-008, RLS tests, storage policy tests, Auth integration tests, payment sandbox tests, and complete rental staging journey tests only against approved disposable local, Development, or UAT/Staging environments with credentials stored in approved secret stores. If Supabase CLI, Docker, psql, disposable PostgreSQL, Supabase project access, provider sandbox credentials, or required ownership evidence are unavailable, the sprint must report BLOCKED rather than simulate execution or claim validation. Production must remain untouched.
 
 ## Parallel Provider-Independent Implementation Stage
 
