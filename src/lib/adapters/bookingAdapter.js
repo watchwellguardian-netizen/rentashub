@@ -62,6 +62,7 @@ function toCamelBooking(record = {}) {
     depositRequirement: record.depositRequirement ?? record.deposit_requirement ?? "",
     status: record.status || "pending_supplier_approval",
     paymentStatus: record.paymentStatus ?? record.payment_status ?? "not_active",
+    version: record.version ?? 0,
     persistenceStatus: record.persistenceStatus ?? metadata.provider_status ?? "",
     protectionPlanIds: record.protectionPlanIds ?? record.protection_plan_ids ?? [],
     protectionCost: record.protectionCost ?? record.protection_cost ?? 0,
@@ -241,7 +242,10 @@ const bookingApiImplementation = {
       }
       const response = await requestBookingApi(`/api/v1/rentals/bookings/${encodeURIComponent(bookingId)}/${action}`, {
         method: "PATCH",
-        body: status === "cancelled" ? { reason: "frontend core rental v1 cancellation" } : {},
+        body: {
+          ...(status === "cancelled" ? { reason: "frontend core rental v1 cancellation" } : {}),
+          ...(options.expectedVersion !== undefined ? { expected_version: options.expectedVersion } : {}),
+        },
         headers: devAuthHeaders({}, { ...options, user }),
       });
       const booking = toCamelBooking(response.data);

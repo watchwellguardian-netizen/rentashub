@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
+import { mkdtemp } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { test } from "node:test";
 import { createDatabase } from "../src/db/connection.js";
 import { runMigrations } from "../src/db/migrator.js";
@@ -179,6 +182,9 @@ test("booking request uses deterministic quote, idempotency, and audit events", 
     assert.equal(first.body.meta.repository_contract, "CONTRACT_READY");
     assert.equal(first.body.meta.persistence.transactionalStrategy, "snapshot_rollback");
     assert.equal(first.body.meta.lock_key, "asset:asset-demo-excavator");
+    assert.equal(first.body.meta.repository_invariants, "PASS");
+    assert.equal(first.body.data.idempotency_key, "core-rental-p1-004");
+    assert.equal(first.body.data.version, 1);
   });
 });
 
@@ -211,6 +217,8 @@ test("core rental lifecycle enforces state order, duplicate transitions, extensi
 
     const accepted = await transition(baseUrl, id, "accept");
     assert.equal(accepted.response.status, 200);
+    assert.equal(accepted.body.data.version, 2);
+    assert.equal(JSON.parse(accepted.body.data.metadata_json).reservation_strategy, "provider_independent_local_lock");
     const duplicateAccept = await transition(baseUrl, id, "accept");
     assert.equal(duplicateAccept.response.status, 409);
 
@@ -292,4 +300,135 @@ test("parallel booking requests serialize on asset lock and prevent duplicate re
     const successful = responses.find((item) => item.response.status === 201);
     assert.equal(successful.body.meta.lock_key, "asset:asset-demo-excavator");
   });
+});
+
+test("bounded core rental frontend vertical-slice API path persists and reads updated booking state", async () => {
+  const { app, database } = await createSeededApp();
+  await withServer(app.handler, async (baseUrl) => {
+    const asset = await requestJson(baseUrl, "/api/v1/rentals/assets", {
+      method: "POST",
+      headers: supplierHeaders,
+      body: {
+        title: "Vertical slice generator",
+        category: "small-tools-machines",
+        listing_type: "rental",
+        rental_type: "daily",
+        price_rate: 150,
+        deposit_amount: 300,
+      },
+    });
+    assert.equal(asset.response.status, 201);
+
+    const moderated = await requestJson(baseUrl, `/api/v1/rentals/listings/${asset.body.data.id}/moderate`, {
+      method: "PATCH",
+      headers: supplierHeaders,
+      body: {},
+    });
+    assert.equal(moderated.response.status, 200);
+    const published = await requestJson(baseUrl, `/api/v1/rentals/listings/${asset.body.data.id}/publish`, {
+      method: "PATCH",
+      headers: supplierHeaders,
+      body: {},
+    });
+    assert.equal(published.response.status, 200);
+
+    const availability = await requestJson(baseUrl, "/api/v1/rentals/availability", {
+      method: "POST",
+      headers: customerHeaders,
+      body: {
+        asset_id: asset.body.data.id,
+        start_at: "2026-10-01T09:00:00.000Z",
+        end_at: "2026-10-02T09:00:00.000Z",
+      },
+    });
+    assert.equal(availability.response.status, 200);
+    assert.equal(availability.body.data.available, true);
+
+    const booking = await requestJson(baseUrl, "/api/v1/rentals/bookings", {
+      method: "POST",
+      headers: { ...customerHeaders, "idempotency-key": "vertical-slice-001" },
+      body: {
+        asset_id: asset.body.data.id,
+        customer_id: "customer-demo",
+        supplier_id: "supplier-demo",
+        start_at: "2026-10-01T09:00:00.000Z",
+        end_at: "2026-10-02T09:00:00.000Z",
+      },
+    });
+    assert.equal(booking.response.status, 201);
+
+    const accepted = await transition(baseUrl, booking.body.data.id, "accept", supplierHeaders, {
+      expected_version: booking.body.data.version,
+    });
+    assert.equal(accepted.response.status, 200);
+    assert.equal(accepted.body.data.status, "approved");
+    assert.equal(accepted.body.data.version, 2);
+
+    const customerRead = await requestJson(baseUrl, `/api/v1/rentals/bookings/${booking.body.data.id}`, {
+      headers: customerHeaders,
+    });
+    assert.equal(customerRead.response.status, 200);
+    assert.equal(customerRead.body.data.status, "approved");
+    assert.equal(customerRead.body.data.version, 2);
+    assert.equal(customerRead.body.meta.repository_invariants, "READ_ONLY");
+
+    assert.ok(database.table("audit_logs").some((entry) => entry.action === "bookings.requested"));
+    assert.ok(database.table("audit_logs").some((entry) => entry.action === "bookings.accepted"));
+  });
+});
+
+test("stale booking version updates are rejected before mutation", async () => {
+  const { app, database } = await createSeededApp();
+  await withServer(app.handler, async (baseUrl) => {
+    const created = await createBooking(baseUrl, "2026-10-05T09:00:00.000Z", "2026-10-06T09:00:00.000Z");
+    const stale = await transition(baseUrl, created.body.data.id, "accept", supplierHeaders, { expected_version: 0 });
+    assert.equal(stale.response.status, 409);
+    assert.equal(stale.body.error, "rental_conflict");
+    assert.equal(database.table("bookings").find((booking) => booking.id === created.body.data.id).status, "pending");
+  });
+});
+
+test("local snapshot rollback restores booking after partial persistence failure", async () => {
+  const { app, database } = await createSeededApp();
+  await withServer(app.handler, async (baseUrl) => {
+    const created = await createBooking(baseUrl, "2026-10-07T09:00:00.000Z", "2026-10-08T09:00:00.000Z");
+    const originalPersist = database.persist.bind(database);
+    let failed = false;
+    database.persist = async () => {
+      if (!failed) {
+        failed = true;
+        throw new Error("Injected local persistence failure");
+      }
+      return originalPersist();
+    };
+
+    const failedAccept = await transition(baseUrl, created.body.data.id, "accept");
+    assert.equal(failedAccept.response.status, 500);
+    const stored = database.table("bookings").find((booking) => booking.id === created.body.data.id);
+    assert.equal(stored.status, "pending");
+    assert.equal(stored.version, 1);
+    database.persist = originalPersist;
+  });
+});
+
+test("provider-independent JSON persistence survives restart and recovery", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "rentashub-core-rental-"));
+  const filePath = join(tempDir, "restart-db.json");
+  const database = await createDatabase({ filePath });
+  await runMigrations(database);
+  await runSeeds(database);
+  const app = createApp({ database });
+
+  await withServer(app.handler, async (baseUrl) => {
+    const created = await createBooking(baseUrl, "2026-10-09T09:00:00.000Z", "2026-10-10T09:00:00.000Z", {
+      "idempotency-key": "restart-recovery",
+    });
+    assert.equal(created.response.status, 201);
+  });
+
+  const recovered = await createDatabase({ filePath });
+  await runMigrations(recovered);
+  const persisted = recovered.table("bookings").find((booking) => booking.idempotency_key === "restart-recovery");
+  assert.equal(persisted.status, "pending");
+  assert.equal(persisted.version, 1);
 });

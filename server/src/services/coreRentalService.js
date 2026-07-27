@@ -605,7 +605,7 @@ export async function findIdempotentBooking(repositories, payload, req) {
   const key = getIdempotencyKey(payload, req);
   if (!key) return null;
   const bookings = await repositories.bookings.list({ customer_id: payload.customer_id });
-  return bookings.find((booking) => parseMetadata(booking).idempotency_key === key) || null;
+  return bookings.find((booking) => booking.idempotency_key === key || parseMetadata(booking).idempotency_key === key) || null;
 }
 
 export async function prepareBookingCreate(repositories, payload, req = {}) {
@@ -633,6 +633,8 @@ export async function prepareBookingCreate(repositories, payload, req = {}) {
       payment_status: payload.payment_status || "unpaid",
       total_amount: payload.total_amount ?? quote?.subtotal ?? payload.total_amount,
       deposit_amount: payload.deposit_amount ?? quote?.deposit,
+      idempotency_key: metadata.idempotency_key,
+      version: 1,
       metadata_json: serializeMetadata(payload, metadata),
     },
   };
@@ -694,6 +696,7 @@ export async function createRentalAsset(repositories, payload, req) {
     owner_id: ownerId,
     availability_status: payload.availability_status || "available",
     verification_status: payload.verification_status || "pending",
+    version: 1,
     metadata_json: serializeMetadata(payload, { listing_status: "draft", provider_status: "provider_independent_local" }),
   });
   await recordAudit(repositories, req, CORE_RENTAL_AUDIT_ACTIONS.assetCreated, "asset", record.id);
@@ -712,6 +715,7 @@ export async function moderateListing(repositories, payload, req) {
   requireAssetOwnership(req, asset, "moderateListing");
   const record = await repositories.assets.update(asset.id, {
     verification_status: payload.verification_status || "verified",
+    version: Number(asset.version || 0) + 1,
     metadata_json: serializeMetadata(asset, { listing_status: "moderated", moderation_note: payload.note || "local provider-independent moderation" }),
   });
   await recordAudit(repositories, req, CORE_RENTAL_AUDIT_ACTIONS.listingModerated, "asset", asset.id);
@@ -733,6 +737,7 @@ export async function publishListing(repositories, payload, req) {
   const record = await repositories.assets.update(asset.id, {
     availability_status: "available",
     verification_status: payload.verification_status || asset.verification_status || "verified",
+    version: Number(asset.version || 0) + 1,
     metadata_json: serializeMetadata(asset, { listing_status: "published", published_at: now() }),
   });
   await recordAudit(repositories, req, CORE_RENTAL_AUDIT_ACTIONS.listingPublished, "asset", asset.id);
@@ -802,6 +807,7 @@ async function updateBookingAction(repositories, req, booking, action, changes, 
   if (changes.status) assertTransition(booking.status, changes.status);
   const record = await repositories.bookings.update(booking.id, {
     ...changes,
+    version: Number(booking.version || 0) + 1,
     metadata_json: mergeBookingMetadata(booking, {
       ...(changes.metadata || {}),
       last_action: action,
@@ -822,7 +828,15 @@ async function acceptBooking(repositories, payload, req) {
   requireSupplierOwnership(req, booking, "acceptBooking");
   assertStatus(booking, ["pending"], "acceptBooking");
   await assertBookingAvailability(repositories, booking, { ignoreBookingId: booking.id });
-  return updateBookingAction(repositories, req, booking, "acceptBooking", { status: "approved" }, CORE_RENTAL_AUDIT_ACTIONS.bookingAccepted, "booking.accepted");
+  return updateBookingAction(
+    repositories,
+    req,
+    booking,
+    "acceptBooking",
+    { status: "approved", metadata: { availability_reserved_at: now(), reservation_strategy: "provider_independent_local_lock" } },
+    CORE_RENTAL_AUDIT_ACTIONS.bookingAccepted,
+    "booking.accepted",
+  );
 }
 
 async function rejectBooking(repositories, payload, req) {

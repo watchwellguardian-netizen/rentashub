@@ -28,6 +28,16 @@ async function callCoreRental(path, body, options = {}) {
   });
 }
 
+async function getCoreRental(path, options = {}) {
+  const readiness = assertBackendPath(options);
+  if (!readiness.enabled) return readiness;
+  return apiRequest(path, {
+    method: "GET",
+    headers: options.headers || {},
+    storage: options.storage,
+  });
+}
+
 async function patchCoreRental(path, body, options = {}) {
   const readiness = assertBackendPath(options);
   if (!readiness.enabled) return readiness;
@@ -43,6 +53,9 @@ export const coreRentalApiAdapter = {
   readiness(options = {}) {
     return assertBackendPath(options);
   },
+  createAsset(payload, options = {}) {
+    return callCoreRental("/api/v1/rentals/assets", payload, options);
+  },
   quote(payload, options = {}) {
     return callCoreRental("/api/v1/rentals/quote", payload, options);
   },
@@ -51,6 +64,9 @@ export const coreRentalApiAdapter = {
   },
   requestBooking(payload, options = {}) {
     return callCoreRental("/api/v1/rentals/bookings", payload, options);
+  },
+  getBooking(bookingId, options = {}) {
+    return getCoreRental(`/api/v1/rentals/bookings/${encodeURIComponent(bookingId)}`, options);
   },
   runBookingAction(bookingId, action, payload = {}, options = {}) {
     return patchCoreRental(`/api/v1/rentals/bookings/${encodeURIComponent(bookingId)}/${action}`, payload, options);

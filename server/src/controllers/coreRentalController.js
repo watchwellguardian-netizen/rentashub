@@ -1,6 +1,6 @@
 import { createRepositories } from "../repositories/index.js";
 import { getCoreRentalActionMatrix } from "../services/coreRentalService.js";
-import { executeCoreRentalPersistenceAction, getCoreRentalPersistenceReadiness } from "../services/coreRentalPersistenceAdapter.js";
+import { executeCoreRentalPersistenceAction, getCoreRentalPersistenceReadiness, readCoreRentalBooking } from "../services/coreRentalPersistenceAdapter.js";
 
 export function createCoreRentalController(options = {}) {
   const context = options.context || options;
@@ -55,6 +55,11 @@ export function createCoreRentalController(options = {}) {
 
     async requestBooking(req, res) {
       const result = await executeCoreRentalPersistenceAction(activeContext(), "requestBooking", req.body || {}, req);
+      res.json(result.status, { resource: "core-rental", ...result });
+    },
+
+    async readBooking(req, res) {
+      const result = await readCoreRentalBooking(activeContext(), req.params.id, req);
       res.json(result.status, { resource: "core-rental", ...result });
     },
 

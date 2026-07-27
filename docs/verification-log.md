@@ -1,5 +1,25 @@
 # Verification Log
 
+## ACCEL-P1-006 Core Rental Transaction Integrity, Concurrency, and Frontend Vertical Slice - 2026-07-26
+
+- Scope: Provider-independent transaction integrity, concurrency, and bounded frontend vertical-slice integration only; no live Supabase, PostgreSQL execution, RLS enforcement, Supabase Auth, Storage, payment, escrow, staging, or production provider was activated.
+- Added ACCEL-P1-006 authorization to `docs/program-state.md` while preserving RC-0.6A and open A4-01 status.
+- Added optimistic booking version checks, idempotency-key persistence, supplier-acceptance reservation metadata, and post-mutation repository invariant validation.
+- Added bounded read path `/api/v1/rentals/bookings/:id` for customer/supplier/admin confirmation of updated booking state.
+- Extended core rental API adapter with create asset and booking read helpers behind `rental_core_backend_path`.
+- Added pure legacy migration planner for localStorage-shaped assets and bookings with idempotent skip, duplicate prevention, invalid-record quarantine, resumability controls, and reconciliation counts.
+- Added transaction integrity report: `docs/program/CORE_RENTAL_TRANSACTION_INTEGRITY_REPORT.md`.
+- Added evidence file: `artifacts/accelerated-delivery/ACCEL_P1_006_TRANSACTION_INTEGRITY_EVIDENCE.md`.
+- Focused verification: Passed, 61/61.
+- Full frontend production tests: Passed, 629/629.
+- Full backend tests: Passed, 131/131.
+- Programme dashboard generation: Passed; `docs/program/RENTASHUB_ACCELERATED_DELIVERY_DASHBOARD.md` regenerated from `docs/program/accelerated-delivery-status.json`.
+- Lint: Passed, 361 files scanned, 0 findings, 0 warnings.
+- Readiness master JSON: Passed; RC-0.6A Infrastructure Activation Hold remains active, A4 remains incomplete, and no live provider activation was reported.
+- Production build: Passed; Vite transformed 1694 modules and emitted main bundle `dist/assets/index-qceashje.js` at 222.24 kB / 67.70 kB gzip.
+- ZIP/packageability check: Passed, 723 packageable files checked.
+- Remaining blockers: A4-01 remains open; executable PostgreSQL/Supabase validation, real RLS, live Auth, live Storage, payments, escrow, staging validation, distributed production locking, and production readiness remain not certified.
+
 ## ACCEL-P1-005 Core Rental Repository Persistence, API Integration, and Legacy State Migration - 2026-07-26
 
 - Scope: Provider-independent core rental repository persistence and migration preparation only; no live Supabase, PostgreSQL execution, RLS enforcement, Supabase Auth, Storage, payment, escrow, staging, or production provider was activated.

@@ -35,6 +35,7 @@ Only the following work is authorized:
 - ACCEL-P1-003 - Provider-independent core rental backend contracts, pricing, availability, idempotency, lifecycle, and audit-event preparation on the backlog branch.
 - ACCEL-P1-004 - Core rental API, state-machine, authorization, and persistence adapter integration on the backlog branch.
 - ACCEL-P1-005 - Core rental repository persistence, API integration, and legacy state migration on the backlog branch.
+- ACCEL-P1-006 - Core rental transaction integrity, concurrency, and frontend vertical slice on the backlog branch.
 
 The next valid production-gate submission must be infrastructure ownership evidence, not secrets.
 
@@ -55,6 +56,8 @@ ACCEL-P1-003 work may proceed only as provider-independent core rental backend p
 ACCEL-P1-004 work may proceed only as provider-independent core rental API, state-machine, authorization, and persistence adapter integration. It may expose versioned backend endpoints, add request and response validation, stable error envelopes, ownership enforcement, repository interfaces for future PostgreSQL persistence, in-memory integration tests, concurrency/idempotency tests, and frontend API adapters behind feature flags. It must preserve legacy localStorage fallback paths and document their removal path. It must not claim PostgreSQL execution, RLS enforcement, live storage, live Supabase Auth, live payments, escrow activation, staging validation, or production readiness.
 
 ACCEL-P1-005 work may proceed only as provider-independent core rental repository persistence, API integration, and legacy state migration preparation. It may implement canonical repository contracts, local snapshot rollback, in-process lock strategy, API persistence metadata, bounded frontend API-mode integration behind `rental_core_backend_path`, legacy localStorage dependency documentation, and expanded tests for concurrency, idempotency, ownership, and invalid transitions. It must not claim PostgreSQL execution, RLS enforcement, live storage, live Supabase Auth, live payments, escrow activation, staging validation, or production readiness.
+
+ACCEL-P1-006 work may proceed only as provider-independent core rental transaction integrity, concurrency, and bounded frontend vertical-slice integration. It may strengthen atomic booking creation, availability reservation, overlapping-booking prevention, supplier acceptance locking, idempotency-key persistence, duplicate-action protection, optimistic version checks, local rollback, repository-level invariants, frontend API-mode journey coverage behind `rental_core_backend_path`, legacy fallback behavior, and migration idempotency/reconciliation evidence. It must not claim PostgreSQL execution, RLS enforcement, live storage, live Supabase Auth, live payments, escrow activation, staging validation, or production readiness.
 
 ## Parallel Provider-Independent Implementation Stage
 

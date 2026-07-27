@@ -30,6 +30,15 @@ The ACCEL-P1-005 backend path adds:
 
 These controls are not production substitutes. They exist to make local and future PostgreSQL-backed behavior deterministic.
 
+ACCEL-P1-006 adds:
+
+- optimistic booking version checks for flagged API-mode booking actions;
+- idempotency-key persistence on core rental booking records;
+- provider-independent reservation metadata on supplier acceptance;
+- repository invariant validation for booking party references, asset references, blocking booking overlaps, date order, and duplicate customer idempotency keys;
+- a bounded `/api/v1/rentals/bookings/:id` read path for customer/supplier/admin journey confirmation;
+- a pure legacy migration planner that maps existing localStorage-shaped assets and bookings, quarantines invalid records, skips existing targets idempotently, and reports reconciliation counts.
+
 ## Removal Criteria For Authoritative localStorage Rental State
 
 Do not remove the localStorage rental state until all are true:
@@ -41,6 +50,11 @@ Do not remove the localStorage rental state until all are true:
 5. Frontend API mode passes create, accept, reject, cancel, check-in, activation, extension, checkout, settlement, review, and dispute journeys.
 6. Legacy data export/import or reset instructions are approved for demo users.
 7. Rollback plan exists for switching `rental_core_backend_path` off.
+8. Legacy migration planner evidence shows no quarantined P0 records for the intended population.
+9. Legacy migration reconciliation counts match source, mapped, skipped, and quarantined totals.
+10. Legacy writes are disabled before legacy reads are removed.
+11. Audit evidence records who initiated migration and what changed.
+12. No financial or booking record is lost.
 
 ## Remaining Manual Evidence
 

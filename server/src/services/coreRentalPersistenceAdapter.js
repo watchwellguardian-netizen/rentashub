@@ -1,6 +1,6 @@
 import { validateCoreRentalRepositoryContract } from "../repositories/coreRentalRepositoryContracts.js";
 import { getRepositories } from "./persistenceService.js";
-import { performCoreRentalAction } from "./coreRentalService.js";
+import { parseMetadata, performCoreRentalAction } from "./coreRentalService.js";
 
 const lockQueues = new Map();
 
@@ -22,6 +22,24 @@ function createConflict(message, details = []) {
   error.code = "rental_conflict";
   error.publicMessage = message;
   error.details = details;
+  return error;
+}
+
+function createForbidden(message, details = []) {
+  const error = new Error(message);
+  error.statusCode = 403;
+  error.code = "forbidden";
+  error.publicMessage = message;
+  error.details = details;
+  return error;
+}
+
+function createNotFound(entityType, id) {
+  const error = new Error(`${entityType} was not found.`);
+  error.statusCode = 404;
+  error.code = "not_found";
+  error.publicMessage = `${entityType} was not found.`;
+  error.details = id ? [{ field: "id", message: id }] : [];
   return error;
 }
 
@@ -111,6 +129,74 @@ async function assertActionNotDuplicated(repositories, action, payload = {}) {
   }
 }
 
+async function assertExpectedVersion(repositories, payload = {}) {
+  if (!payload.booking_id || payload.expected_version === undefined) return;
+  const booking = await repositories.bookings.findById(payload.booking_id);
+  if (!booking) return;
+  const expected = Number(payload.expected_version);
+  const actual = Number(booking.version || 0);
+  if (!Number.isFinite(expected) || expected !== actual) {
+    throw createConflict("Booking version is stale. Reload the booking before retrying this action.", [
+      { field: "expected_version", message: String(payload.expected_version) },
+      { field: "actual_version", message: String(actual) },
+    ]);
+  }
+}
+
+function rangesOverlap(first, second) {
+  return new Date(first.start_at).getTime() < new Date(second.end_at).getTime()
+    && new Date(second.start_at).getTime() < new Date(first.end_at).getTime();
+}
+
+async function assertRepositoryInvariants(repositories) {
+  const bookings = await repositories.bookings.list();
+  const assets = await repositories.assets.list();
+  const assetIds = new Set(assets.map((asset) => asset.id));
+  const blocking = new Set(["pending", "approved", "confirmed", "checked_in", "active", "extension_requested"]);
+  const idempotencyKeys = new Set();
+
+  for (const booking of bookings) {
+    if (!booking.asset_id || !assetIds.has(booking.asset_id)) {
+      throw createConflict("Repository invariant failed: booking asset reference must exist.", [
+        { field: "asset_id", message: booking.asset_id || "missing" },
+      ]);
+    }
+    if (!booking.customer_id || !booking.supplier_id) {
+      throw createConflict("Repository invariant failed: booking parties are required.", [
+        { field: "booking_id", message: booking.id },
+      ]);
+    }
+    if (booking.start_at && booking.end_at && new Date(booking.end_at) <= new Date(booking.start_at)) {
+      throw createConflict("Repository invariant failed: booking end must be after start.", [
+        { field: "booking_id", message: booking.id },
+      ]);
+    }
+    const idempotencyKey = booking.idempotency_key || parseMetadata(booking).idempotency_key;
+    if (idempotencyKey) {
+      const scopedKey = `${booking.customer_id}:${idempotencyKey}`;
+      if (idempotencyKeys.has(scopedKey)) {
+        throw createConflict("Repository invariant failed: idempotency key must be unique per customer.", [
+          { field: "idempotency_key", message: "duplicate" },
+        ]);
+      }
+      idempotencyKeys.add(scopedKey);
+    }
+  }
+
+  const activeBookings = bookings.filter((booking) => blocking.has(booking.status));
+  for (let index = 0; index < activeBookings.length; index += 1) {
+    for (let compareIndex = index + 1; compareIndex < activeBookings.length; compareIndex += 1) {
+      const first = activeBookings[index];
+      const second = activeBookings[compareIndex];
+      if (first.asset_id === second.asset_id && rangesOverlap(first, second)) {
+        throw createConflict("Repository invariant failed: blocking bookings cannot overlap for the same asset.", [
+          { field: "asset_id", message: first.asset_id },
+        ]);
+      }
+    }
+  }
+}
+
 export async function executeCoreRentalPersistenceAction(context = {}, action, payload = {}, req = {}) {
   const repositories = await getRepositories(context);
   const contract = validateCoreRentalRepositoryContract(repositories);
@@ -125,8 +211,10 @@ export async function executeCoreRentalPersistenceAction(context = {}, action, p
   const database = context.database;
   const lockKey = await deriveLockKey(repositories, action, payload);
   const runner = async () => withTransaction(database, async () => {
+    await assertExpectedVersion(repositories, payload);
     await assertActionNotDuplicated(repositories, action, payload);
     const result = await performCoreRentalAction(repositories, action, payload, req);
+    await assertRepositoryInvariants(repositories);
     return {
       ...result,
       meta: {
@@ -134,10 +222,37 @@ export async function executeCoreRentalPersistenceAction(context = {}, action, p
         persistence: providerStatusFor(database),
         repository_contract: contract.status,
         lock_key: lockKey,
+        repository_invariants: "PASS",
       },
     };
   });
   return requiresSerializedExecution(action) ? withKeyedLock(lockKey, runner) : runner();
+}
+
+export async function readCoreRentalBooking(context = {}, bookingId, req = {}) {
+  const repositories = await getRepositories(context);
+  const booking = await repositories.bookings.findById(bookingId);
+  if (!booking) throw createNotFound("Booking", bookingId);
+  const role = req.user?.role || "anonymous";
+  const actorId = req.user?.id || "anonymous";
+  const allowed = role === "admin"
+    || (role === "customer" && booking.customer_id === actorId)
+    || (role === "supplier" && booking.supplier_id === actorId);
+  if (!allowed) {
+    throw createForbidden("Only booking parties or admin can view this core rental booking.", [
+      { field: "booking_id", message: booking.id },
+    ]);
+  }
+  return {
+    status: 200,
+    data: booking,
+    meta: {
+      provider_status: "provider_independent_local",
+      persistence: providerStatusFor(context.database),
+      repository_contract: validateCoreRentalRepositoryContract(repositories).status,
+      repository_invariants: "READ_ONLY",
+    },
+  };
 }
 
 export function getCoreRentalPersistenceReadiness(context = {}) {
