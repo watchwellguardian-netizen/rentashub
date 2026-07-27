@@ -1,6 +1,7 @@
 import { validateCoreRentalRepositoryContract } from "../repositories/coreRentalRepositoryContracts.js";
 import { getRepositories } from "./persistenceService.js";
 import { parseMetadata, performCoreRentalAction } from "./coreRentalService.js";
+import { getCoreRentalProductionBridgeReadiness } from "./coreRentalProductionBridge.js";
 
 const lockQueues = new Map();
 
@@ -304,6 +305,7 @@ export function getCoreRentalPersistenceReadiness(context = {}) {
     status: contract.status,
     repositoryContract: contract,
     persistence: providerStatusFor(context.database),
+    productionReadinessBridge: getCoreRentalProductionBridgeReadiness(),
     boundaries: [
       "No executable PostgreSQL validation claimed.",
       "No live Supabase Auth, Storage, RLS, payment, or escrow provider activated.",

@@ -41,7 +41,7 @@ test("ACCEL-P1-002 remains honest about static RLS versus enforced RLS", async (
 
 test("ACCEL-P1-002 requires manual executable database evidence before PASS", async () => {
   const result = await collectAccelP1002ExecutableDbValidation();
-  assert.ok(result.evidence.requiredBeforePass.includes("Migrations 001-007 executed against real PostgreSQL"));
+  assert.ok(result.evidence.requiredBeforePass.includes("Migrations 001-008 executed against real PostgreSQL"));
   assert.ok(result.evidence.requiredBeforePass.includes("RLS policy execution proof"));
   if (result.status === "BLOCKED_NO_EXECUTABLE_POSTGRES") {
     assert.match(result.evidence.blockedReason, /No Supabase CLI, Docker, or psql executable/);

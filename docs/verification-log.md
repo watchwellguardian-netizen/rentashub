@@ -1668,6 +1668,29 @@
 - ZIP sanity check: Passed, 526 packageable files checked; no ZIP refresh script is defined in `package.json`.
 - Remaining blocker: A4-01 Infrastructure Ownership Confirmation and downstream A4 execution evidence remain required before infrastructure certification or launch approval can advance.
 
+## ACCEL-P1-008 Core Rental Production-Readiness Bridge - 2026-07-27
+
+- Scope: Provider-independent production-readiness bridge only; A4-01 remains open, RC-0.6A remains unchanged, no live Supabase, PostgreSQL, Auth, Storage, payment, escrow, staging, or production provider activation occurred, and no production readiness is claimed.
+- Added `server/src/services/coreRentalProductionBridge.js` with database adapter, Auth bridge, RLS policy matrix, storage manifest, payment sandbox bridge, staging journey plan, and mandatory test coverage definitions.
+- Added prepared SQL migration `008_core_rental_production_readiness_bridge.sql` mirrored under `server/migrations/` and `supabase/migrations/`; migration is prepared only and was not executed against PostgreSQL or Supabase.
+- Expanded the core rental persistence readiness endpoint to surface the production-readiness bridge while preserving provider-independent boundary labels.
+- Added `docs/program/CORE_RENTAL_PRODUCTION_READINESS_BRIDGE.md`.
+- Added `docs/program/ACCEL_P1_008_COMPLETION_REPORT.md`.
+- Added focused ACCEL-P1-008 tests covering provider-ready status, database/Auth contracts, RLS matrix, storage manifest, payment bridge, staging plan, mandatory scenarios, and migration mirroring.
+- Focused ACCEL-P1-008 tests: Passed, 7/7.
+- Affected local foundation tests: Passed, 7/7.
+- ACCEL-P1-002 executable DB validation tests: Passed, 5/5.
+- Core rental API backend tests: Passed, 15/15.
+- Full frontend production tests: Passed, 637/637.
+- Backend tests: Passed, 134/134.
+- Lint: Passed, 363 files scanned, 0 findings, 0 warnings.
+- Secret scan: Passed, 552 files scanned.
+- Readiness master JSON: Passed; A4 remains incomplete and no live provider activation was reported.
+- Production build: Passed. Vite transformed 1,694 modules; main JavaScript bundle remains 222.24 kB, gzip 67.71 kB.
+- Artifact validation: Passed, 642 packageable files checked.
+- ZIP/packageability check: Passed, 730 packageable files checked.
+- Remaining blockers: A4-01 ownership evidence, executable PostgreSQL/Supabase path, migration execution, RLS enforcement proof, live Supabase Auth, live Supabase Storage, payment sandbox credentials/webhooks, staging journey execution, and production certification remain pending.
+
 ## Accelerated Delivery Phase 0 Control Foundation - 2026-07-22
 
 - Scope: Provider-independent implementation mobilization only; A4-01 remains open, RC-0.6A remains unchanged, no live Supabase/payment/escrow/monitoring/provider activation occurred, and no production readiness is claimed.

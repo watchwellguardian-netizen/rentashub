@@ -151,7 +151,7 @@ function buildEvidenceRequirements(environmentStatus) {
     requiredBeforePass: [
       "Supabase CLI or disposable PostgreSQL engine available",
       "Command and exit-code log for local reset",
-      "Migrations 001-007 executed against real PostgreSQL",
+      "Migrations 001-008 executed against real PostgreSQL",
       "Seed counts from executable database",
       "Schema checksum before and after deterministic reset",
       "RLS policy execution proof",
