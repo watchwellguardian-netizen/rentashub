@@ -150,7 +150,22 @@ function assertTable(tableName) {
 function allowedColumns(tableName, input = {}) {
   assertTable(tableName);
   const allowed = new Set(TABLE_COLUMNS[tableName]);
-  return Object.keys(input).filter((key) => allowed.has(key));
+  const keys = Object.keys(input);
+  const invalid = keys.filter((key) => !allowed.has(key));
+  if (invalid.length) {
+    throw repositoryError({
+      code: "unsupported_column",
+      statusCode: 400,
+      message: `Unsupported column for ${tableName}: ${invalid.join(", ")}.`,
+      details: invalid.map((field) => ({ field, message: "Column is not part of the approved repository contract." })),
+    });
+  }
+  return keys;
+}
+
+function tableHasColumn(tableName, columnName) {
+  assertTable(tableName);
+  return TABLE_COLUMNS[tableName].includes(columnName);
 }
 
 function orderByCreatedAtDesc() {
@@ -197,8 +212,8 @@ function createBasePostgresRepository(client, tableName, { idPrefix = tableName,
         id: input.id || createId(idPrefix),
         ...input,
         created_at: input.created_at || timestamp,
-        updated_at: input.updated_at || timestamp,
       };
+      if (tableHasColumn(tableName, "updated_at")) record.updated_at = input.updated_at || timestamp;
       const columns = allowedColumns(tableName, record).filter((column) => record[column] !== undefined);
       const values = columns.map((column) => record[column]);
       const placeholders = values.map((_, index) => `$${index + 1}`).join(", ");
@@ -222,7 +237,8 @@ function createBasePostgresRepository(client, tableName, { idPrefix = tableName,
 
     async update(id, changes = {}) {
       const timestamp = now();
-      const patch = { ...changes, updated_at: changes.updated_at || timestamp };
+      const patch = { ...changes };
+      if (tableHasColumn(tableName, "updated_at")) patch.updated_at = changes.updated_at || timestamp;
       const columns = allowedColumns(tableName, patch).filter((column) => column !== "id" && patch[column] !== undefined);
       if (!columns.length) return this.findById(id);
       const params = columns.map((column) => patch[column]);

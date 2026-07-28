@@ -28,11 +28,42 @@ function createFakeClient({ rows = [], rowCount, failOn = [] } = {}) {
   };
 }
 
+function createFakeTransactionClient() {
+  const outerCalls = [];
+  const txCalls = [];
+  const txClient = {
+    calls: txCalls,
+    async query(sql, params = []) {
+      txCalls.push({ sql, params });
+      return { rows: [{ id: "tx-row" }], rowCount: 1 };
+    },
+  };
+  return {
+    outerCalls,
+    txClient,
+    async query(sql, params = []) {
+      outerCalls.push({ sql, params });
+      return { rows: [{ id: "outer-row" }], rowCount: 1 };
+    },
+    async transaction(callback) {
+      return callback(txClient);
+    },
+  };
+}
+
 function assertParameterized(call, unexpectedInlineValue) {
   assert.ok(call.sql.includes("$1"), "query should use positional placeholders");
   assert.ok(Array.isArray(call.params), "query params should be an array");
   assert.doesNotMatch(call.sql, new RegExp(unexpectedInlineValue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.ok(call.params.includes(unexpectedInlineValue), "caller value should be passed as a parameter");
+}
+
+function assertNoInlineValues(calls, values) {
+  for (const call of calls) {
+    for (const value of values) {
+      assert.doesNotMatch(call.sql, new RegExp(String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    }
+  }
 }
 
 test("PostgreSQL repositories satisfy the core rental repository contract", () => {
@@ -76,6 +107,49 @@ test("supplier, asset, listing, availability, booking, idempotency, and audit op
   assertParameterized(client.calls[6], "booking.created");
 });
 
+test("all dynamic values remain parameterized and customer-provided values are not interpolated", async () => {
+  const dangerousValues = [
+    "tenant'; DELETE FROM audit_logs; --",
+    "asset'); DROP TABLE assets; --",
+    "customer@example.com' OR '1'='1",
+    "booking\nUNION SELECT * FROM users",
+  ];
+  const client = createFakeClient({
+    rows: [
+      { id: "asset-created" },
+      [],
+      [{ id: "booking-created" }],
+      { id: "idem-created" },
+    ],
+  });
+  const repositories = createCoreRentalPostgresRepositories(client);
+  await repositories.assets.create({
+    tenant_id: dangerousValues[0],
+    owner_id: dangerousValues[2],
+    title: dangerousValues[1],
+    availability_status: "available",
+  });
+  await repositories.bookings.createWithAvailabilityCheck({
+    asset_id: dangerousValues[1],
+    customer_id: dangerousValues[2],
+    supplier_id: "supplier-safe",
+    start_at: "2026-08-01T10:00:00.000Z",
+    end_at: "2026-08-02T10:00:00.000Z",
+  });
+  await repositories.core_rental_idempotency_records.record({
+    actor_id: dangerousValues[2],
+    actor_role: "customer",
+    action: "booking.create",
+    resource_type: "booking",
+    idempotency_key: dangerousValues[3],
+    request_hash: "hash-safe",
+  });
+
+  assertNoInlineValues(client.calls, dangerousValues);
+  assert.ok(client.calls.some((call) => call.params.includes(dangerousValues[0])));
+  assert.ok(client.calls.some((call) => call.params.includes(dangerousValues[3])));
+});
+
 test("transaction callback support commits on success and rolls back on failure", async () => {
   const successClient = createFakeClient({ rows: [{ id: "booking-created" }] });
   const successAdapter = createCoreRentalPostgresRepositoryAdapter(successClient);
@@ -94,6 +168,29 @@ test("transaction callback support commits on success and rolls back on failure"
     (error) => error.code === "unique_idempotency_conflict",
   );
   assert.equal(failingClient.calls.at(-1).sql, "ROLLBACK");
+});
+
+test("original PostgreSQL errors are preserved as causes after translation", async () => {
+  const failingClient = createFakeClient({
+    failOn: [{ includes: "INSERT INTO public.core_rental_idempotency_records", code: "23505", message: "duplicate key value violates unique constraint" }],
+  });
+  const repositories = createCoreRentalPostgresRepositories(failingClient);
+  await assert.rejects(
+    () =>
+      repositories.core_rental_idempotency_records.record({
+        actor_id: "customer-demo",
+        actor_role: "customer",
+        action: "booking.create",
+        resource_type: "booking",
+        idempotency_key: "repeat-key",
+        request_hash: "hash",
+      }),
+    (error) =>
+      error.code === "unique_idempotency_conflict" &&
+      error.statusCode === 409 &&
+      error.cause?.code === "23505" &&
+      error.cause?.message === "duplicate key value violates unique constraint",
+  );
 });
 
 test("optimistic version checks translate stale updates into stable conflicts", async () => {
@@ -126,6 +223,72 @@ test("overlap conflict handling uses a parameterized range check and stable conf
   assert.match(call.sql, /status = ANY\(\$5::text\[\]\)/);
   assert.equal(call.params[0], "asset-1");
   assert.equal(call.params[1], "2026-08-01T10:00:00.000Z");
+});
+
+test("PostgreSQL exclusion constraint errors are translated to overlap conflicts", async () => {
+  const client = createFakeClient({ failOn: [{ includes: "INSERT INTO public.bookings", code: "23P01", message: "conflicting key value violates exclusion constraint" }] });
+  const repositories = createCoreRentalPostgresRepositories(client);
+  await assert.rejects(
+    () =>
+      repositories.bookings.create({
+        asset_id: "asset-1",
+        customer_id: "customer-1",
+        supplier_id: "supplier-1",
+        start_at: "2026-08-01T10:00:00.000Z",
+        end_at: "2026-08-02T10:00:00.000Z",
+      }),
+    (error) => error.code === "booking_overlap_conflict" && error.cause?.code === "23P01",
+  );
+});
+
+test("missing records return null without being promoted to successful data", async () => {
+  const client = createFakeClient({ rows: [[]] });
+  const repositories = createCoreRentalPostgresRepositories(client);
+  const missing = await repositories.assets.findById("missing-asset-id");
+  assert.equal(missing, null);
+  assertParameterized(client.calls[0], "missing-asset-id");
+});
+
+test("transaction clients are used for every repository operation inside a transaction", async () => {
+  const client = createFakeTransactionClient();
+  const adapter = createCoreRentalPostgresRepositoryAdapter(client);
+  await adapter.transaction(async (repositories) => {
+    await repositories.assets.create({ id: "asset-tx", title: "Asset in transaction" });
+    await repositories.bookings.create({ id: "booking-tx", asset_id: "asset-tx" });
+  });
+  assert.equal(client.outerCalls.length, 0);
+  assert.equal(client.txClient.calls.length, 2);
+  assert.ok(client.txClient.calls.every((call) => call.sql.startsWith("INSERT INTO public.")));
+});
+
+test("audit-event writes participate in the same transaction client", async () => {
+  const client = createFakeTransactionClient();
+  const adapter = createCoreRentalPostgresRepositoryAdapter(client);
+  await adapter.transaction(async (repositories) => {
+    await repositories.bookings.create({ id: "booking-audit-tx", asset_id: "asset-audit" });
+    await repositories.audit_logs.record("booking.created", "booking", {
+      entity_id: "booking-audit-tx",
+      actor_id: "customer-audit",
+    });
+  });
+  assert.equal(client.outerCalls.length, 0);
+  assert.equal(client.txClient.calls.length, 2);
+  assert.match(client.txClient.calls[1].sql, /INSERT INTO public\.audit_logs/);
+  assert.ok(client.txClient.calls[1].params.includes("booking.created"));
+});
+
+test("repository methods reject malformed identifiers before query execution", async () => {
+  const client = createFakeClient();
+  const repositories = createCoreRentalPostgresRepositories(client);
+  await assert.rejects(
+    () => repositories.assets.create({ title: "Valid title", "title; DROP TABLE bookings; --": "invalid" }),
+    (error) => error.code === "unsupported_column" && error.statusCode === 400,
+  );
+  await assert.rejects(
+    () => repositories.bookings.list({ "customer_id OR 1=1": "customer-demo" }),
+    (error) => error.code === "unsupported_column",
+  );
+  assert.equal(client.calls.length, 0);
 });
 
 test("PostgreSQL error translation is stable for idempotency and exclusion conflicts", () => {
