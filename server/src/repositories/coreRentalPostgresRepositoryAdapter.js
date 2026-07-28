@@ -1,13 +1,14 @@
 const SOFT_DELETE_TABLES = new Set(["assets", "bookings", "supplier_profiles"]);
 
-const TABLE_COLUMNS = {
+export const CORE_RENTAL_POSTGRES_TABLE_COLUMNS = {
   supplier_profiles: [
     "id",
     "tenant_id",
-    "user_id",
-    "company_name",
-    "status",
-    "verification_status",
+    "supplier_id",
+    "business_name",
+    "supplier_type",
+    "service_areas_json",
+    "profile_json",
     "created_at",
     "updated_at",
     "deleted_at",
@@ -16,17 +17,24 @@ const TABLE_COLUMNS = {
     "id",
     "tenant_id",
     "owner_id",
-    "category_id",
+    "category",
+    "subcategory",
     "title",
     "description",
+    "location",
     "rental_type",
     "price_rate",
     "deposit_amount",
     "currency",
     "availability_status",
+    "verification_status",
+    "listing_type",
+    "sale_price",
+    "trade_value",
     "status",
     "version",
     "published_at",
+    "metadata_json",
     "created_at",
     "updated_at",
     "deleted_at",
@@ -142,14 +150,14 @@ function assertQueryClient(client) {
 }
 
 function assertTable(tableName) {
-  if (!TABLE_COLUMNS[tableName]) {
+  if (!CORE_RENTAL_POSTGRES_TABLE_COLUMNS[tableName]) {
     throw repositoryError({ code: "unsupported_table", statusCode: 500, message: `${tableName} is not supported by the core rental Postgres adapter.` });
   }
 }
 
 function allowedColumns(tableName, input = {}) {
   assertTable(tableName);
-  const allowed = new Set(TABLE_COLUMNS[tableName]);
+  const allowed = new Set(CORE_RENTAL_POSTGRES_TABLE_COLUMNS[tableName]);
   const keys = Object.keys(input);
   const invalid = keys.filter((key) => !allowed.has(key));
   if (invalid.length) {
@@ -165,7 +173,7 @@ function allowedColumns(tableName, input = {}) {
 
 function tableHasColumn(tableName, columnName) {
   assertTable(tableName);
-  return TABLE_COLUMNS[tableName].includes(columnName);
+  return CORE_RENTAL_POSTGRES_TABLE_COLUMNS[tableName].includes(columnName);
 }
 
 function orderByCreatedAtDesc() {
@@ -254,7 +262,8 @@ function createBasePostgresRepository(client, tableName, { idPrefix = tableName,
         throw repositoryError({ code: "soft_delete_not_supported", statusCode: 400, message: `Soft delete is not enabled for ${tableName}.` });
       }
       const timestamp = now();
-      const sql = `UPDATE public.${tableName} SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND deleted_at IS NULL RETURNING *`;
+      const setClause = tableHasColumn(tableName, "updated_at") ? "deleted_at = $1, updated_at = $1" : "deleted_at = $1";
+      const sql = `UPDATE public.${tableName} SET ${setClause} WHERE id = $2 AND deleted_at IS NULL RETURNING *`;
       return firstRow(await runQuery(client, sql, [timestamp, id]));
     },
   };

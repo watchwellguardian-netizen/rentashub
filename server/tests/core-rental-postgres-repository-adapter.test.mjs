@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
+  CORE_RENTAL_POSTGRES_TABLE_COLUMNS,
   createCoreRentalPostgresRepositories,
   createCoreRentalPostgresRepositoryAdapter,
   translatePostgresRepositoryError,
@@ -66,6 +67,26 @@ function assertNoInlineValues(calls, values) {
   }
 }
 
+function combinedCoreRentalSql() {
+  return [
+    "server/migrations/001_initial_schema.sql",
+    "server/migrations/007_audit_logging_activation.sql",
+    "server/migrations/008_core_rental_production_readiness_bridge.sql",
+    "server/migrations/009_core_rental_postgres_repository_adapter.sql",
+  ].map((file) => readFileSync(file, "utf8")).join("\n");
+}
+
+function migrationDefinesColumn(sql, tableName, columnName) {
+  const createTablePattern = new RegExp(`CREATE TABLE IF NOT EXISTS (?:public\\.)?${tableName}\\s*\\(([\\s\\S]*?)\\n\\);`, "i");
+  const createTableMatch = sql.match(createTablePattern);
+  const createTableColumns = createTableMatch?.[1] || "";
+  const escapedColumn = columnName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return (
+    new RegExp(`\\n\\s*${escapedColumn}\\s+`, "i").test(createTableColumns) ||
+    new RegExp(`ALTER TABLE public\\.${tableName} ADD COLUMN IF NOT EXISTS ${escapedColumn}\\s+`, "i").test(sql)
+  );
+}
+
 test("PostgreSQL repositories satisfy the core rental repository contract", () => {
   const repositories = createCoreRentalPostgresRepositories(createFakeClient());
   const validation = validateCoreRentalRepositoryContract(repositories);
@@ -88,7 +109,7 @@ test("supplier, asset, listing, availability, booking, idempotency, and audit op
     ],
   });
   const repositories = createCoreRentalPostgresRepositories(client);
-  await repositories.supplier_profiles.create({ id: "supplier-unsafe", company_name: "ACME'; DROP TABLE bookings; --" });
+  await repositories.supplier_profiles.create({ id: "supplier-unsafe", business_name: "ACME'; DROP TABLE bookings; --", supplier_id: "supplier-unsafe", supplier_type: "equipment" });
   await repositories.assets.listByOwner("supplier-unsafe");
   await repositories.assets.listAvailable();
   await repositories.bookings.listByCustomer("customer-unsafe");
@@ -311,4 +332,67 @@ test("migration 009 prepares idempotency uniqueness and booking overlap constrai
     assert.match(serverSql, new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
   assert.doesNotMatch(serverSql, /SUPABASE_SERVICE_ROLE_KEY|postgresql:\/\/|DATABASE_URL\s*=/);
+});
+
+test("migrations 008 and 009 are mirrored between server and Supabase directories", () => {
+  for (const name of ["008_core_rental_production_readiness_bridge.sql", "009_core_rental_postgres_repository_adapter.sql"]) {
+    assert.equal(
+      readFileSync(`server/migrations/${name}`, "utf8"),
+      readFileSync(`supabase/migrations/${name}`, "utf8"),
+      `${name} should be mirrored exactly`,
+    );
+  }
+});
+
+test("repository table and column contract is covered by prepared migrations", () => {
+  const sql = combinedCoreRentalSql();
+  for (const [tableName, columns] of Object.entries(CORE_RENTAL_POSTGRES_TABLE_COLUMNS)) {
+    assert.match(sql, new RegExp(`(?:CREATE TABLE IF NOT EXISTS|ALTER TABLE) (?:public\\.)?${tableName}\\b`, "i"), `${tableName} should exist`);
+    for (const column of columns) {
+      assert.ok(migrationDefinesColumn(sql, tableName, column), `${tableName}.${column} should be created or added by migrations`);
+    }
+  }
+});
+
+test("optimistic locking, idempotency, overlap, and audit indexes align with adapter expectations", () => {
+  const sql = combinedCoreRentalSql();
+  for (const needle of [
+    "ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS version integer NOT NULL DEFAULT 1",
+    "ALTER TABLE public.assets ADD COLUMN IF NOT EXISTS version integer NOT NULL DEFAULT 1",
+    "UNIQUE(actor_id, action, idempotency_key)",
+    "idx_core_rental_idempotency_actor_action_key",
+    "idx_bookings_customer_idempotency_active",
+    "idx_bookings_asset_window",
+    "bookings_no_core_rental_blocking_overlap",
+    "EXCLUDE USING gist",
+    "tstzrange(start_at::timestamptz, end_at::timestamptz, '[)') WITH &&",
+    "ALTER TABLE public.audit_logs ADD COLUMN IF NOT EXISTS previous_hash text",
+    "ALTER TABLE public.audit_logs ADD COLUMN IF NOT EXISTS immutable_hash text",
+    "CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON public.audit_logs(entity_type, entity_id)",
+  ]) {
+    assert.match(sql, new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `${needle} should be present`);
+  }
+});
+
+test("repository queries do not depend on columns absent from prepared migrations", () => {
+  const sql = combinedCoreRentalSql();
+  const adapterSource = readFileSync("server/src/repositories/coreRentalPostgresRepositoryAdapter.js", "utf8");
+  for (const [tableName, columns] of Object.entries(CORE_RENTAL_POSTGRES_TABLE_COLUMNS)) {
+    for (const column of columns) {
+      assert.ok(migrationDefinesColumn(sql, tableName, column), `${tableName}.${column} should be migrated before adapter query use`);
+    }
+  }
+  for (const retiredColumn of ["company_name", "category_id"]) {
+    assert.doesNotMatch(adapterSource, new RegExp(`"${retiredColumn}"`), `${retiredColumn} should not be an adapter dependency`);
+  }
+});
+
+test("core rental relationship and deletion rules are explicit and non-production bounded", () => {
+  const sql = combinedCoreRentalSql();
+  assert.match(sql, /WHERE deleted_at IS NULL/i);
+  assert.match(sql, /idx_assets_tenant_owner/i);
+  assert.match(sql, /idx_bookings_tenant_customer/i);
+  assert.match(sql, /idx_bookings_tenant_supplier/i);
+  assert.match(sql, /Prepared SQL only/);
+  assert.doesNotMatch(sql, /SUPABASE_SERVICE_ROLE_KEY|postgresql:\/\/|DATABASE_URL\s*=/);
 });

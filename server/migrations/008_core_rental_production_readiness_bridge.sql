@@ -6,9 +6,14 @@
 ALTER TABLE public.assets ADD COLUMN IF NOT EXISTS tenant_id uuid;
 ALTER TABLE public.assets ADD COLUMN IF NOT EXISTS version integer NOT NULL DEFAULT 1;
 ALTER TABLE public.assets ADD COLUMN IF NOT EXISTS published_at timestamptz;
+ALTER TABLE public.assets ADD COLUMN IF NOT EXISTS currency text NOT NULL DEFAULT 'JMD';
+ALTER TABLE public.assets ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active';
 
 ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS tenant_id uuid;
 ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS version integer NOT NULL DEFAULT 1;
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS currency text NOT NULL DEFAULT 'JMD';
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS subtotal numeric(14,2) NOT NULL DEFAULT 0;
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS deposit_amount numeric(14,2) NOT NULL DEFAULT 0;
 ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS idempotency_key text;
 ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS payment_intent_id text;
 ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS contract_status text NOT NULL DEFAULT 'not_generated';
@@ -17,6 +22,8 @@ ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS checkin_at timestamptz;
 ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS checkout_at timestamptz;
 ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS recipient_id text;
 UPDATE public.notifications SET recipient_id = user_id WHERE recipient_id IS NULL AND user_id IS NOT NULL;
+
+ALTER TABLE public.supplier_profiles ADD COLUMN IF NOT EXISTS tenant_id uuid;
 
 ALTER TABLE public.payment_ledger ADD COLUMN IF NOT EXISTS tenant_id uuid;
 ALTER TABLE public.payment_ledger ADD COLUMN IF NOT EXISTS provider_event_id text;
