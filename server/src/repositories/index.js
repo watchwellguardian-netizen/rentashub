@@ -5,6 +5,12 @@ import { createBaseRepository } from "./baseRepository.js";
 import { createBookingRepository } from "./bookingRepository.js";
 import { createFileMetadataRepository } from "./fileMetadataRepository.js";
 
+export {
+  createCoreRentalPostgresRepositories,
+  createCoreRentalPostgresRepositoryAdapter,
+  translatePostgresRepositoryError,
+} from "./coreRentalPostgresRepositoryAdapter.js";
+
 export function createRepositories(database) {
   const repositories = Object.fromEntries(
     TABLES.filter((table) => table !== "schema_migrations").map((table) => [table, createBaseRepository(database, table)]),
