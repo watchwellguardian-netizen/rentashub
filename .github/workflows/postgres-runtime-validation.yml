@@ -1,0 +1,72 @@
+name: PostgreSQL Runtime Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pg006-runtime-validation:
+    name: ACCEL-MICRO-PG-006 disposable PostgreSQL runtime validation
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: rentashub_pg005_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rentashub_pg005_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      ACCEL_PG005_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/rentashub_pg005_test
+      ACCEL_PG005_CONFIRM_DISPOSABLE: "true"
+      SUPABASE_CLI_VERSION: "2.81.3"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Install Supabase CLI
+        run: npm install -g "supabase@${SUPABASE_CLI_VERSION}"
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Guard against production database targets
+        run: |
+          case "${ACCEL_PG005_DATABASE_URL}" in
+            *supabase.co*|*supabase.com*)
+              echo "Refusing hosted Supabase database target for PG-006."
+              exit 1
+              ;;
+          esac
+
+      - name: Verify runtime tools
+        run: |
+          node --version
+          npm --version
+          psql --version
+          supabase --version
+
+      - name: Detect PG-005 harness readiness
+        run: node scripts/accel-micro-pg-005-postgres-harness.mjs detect
+
+      - name: Execute PG-006 runtime validation
+        run: node scripts/accel-micro-pg-005-postgres-harness.mjs run

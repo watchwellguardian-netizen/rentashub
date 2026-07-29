@@ -1,0 +1,25 @@
+{
+  "name": "RentasHub PostgreSQL Runtime Validation",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "SUPABASE_CLI_VERSION": "2.81.3"
+    }
+  },
+  "remoteUser": "node",
+  "forwardPorts": [5173, 5432],
+  "postCreateCommand": "bash -lc \"sed -i 's/\\r$//' .devcontainer/post-create.sh && bash .devcontainer/post-create.sh\"",
+  "remoteEnv": {
+    "ACCEL_PG005_DATABASE_URL": "postgresql://postgres:postgres@127.0.0.1:5432/rentashub_pg005_test",
+    "ACCEL_PG005_CONFIRM_DISPOSABLE": "true",
+    "NODE_ENV": "development"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "GitHub.vscode-github-actions",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  }
+}
