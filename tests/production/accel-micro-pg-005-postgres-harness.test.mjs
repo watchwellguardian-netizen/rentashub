@@ -72,11 +72,24 @@ test("PG-005 detect command reports BLOCKED until disposable PostgreSQL executio
 test("PG-005 script contains required runtime checks and no production activation commands", () => {
   const source = readFileSync("scripts/accel-micro-pg-005-postgres-harness.mjs", "utf8");
   for (const required of [
-    "schema_constraint_introspection",
-    "repository_smoke_insert",
-    "idempotency_uniqueness",
+    "table_catalog",
+    "column_catalog",
+    "primary_key_catalog",
+    "index_catalog",
+    "constraint_catalog",
+    "rls_enabled_catalog",
+    "rls_policy_catalog",
+    "fixture_creation",
+    "same_tenant_owner_access",
+    "cross_tenant_denial",
+    "anonymous_access_denial",
+    "privileged_role_access",
+    "transaction_commit",
     "transaction_rollback",
-    "cleanup",
+    "idempotency_first_insert",
+    "duplicate_idempotency_rejection",
+    "overlapping_booking_rejection",
+    "deterministic_cleanup",
     "PASS_POSTGRES_EXECUTION",
     "FAIL_POSTGRES_EXECUTION",
     "BLOCKED_NO_EXECUTABLE_POSTGRES",
@@ -84,4 +97,30 @@ test("PG-005 script contains required runtime checks and no production activatio
     assert.match(source, new RegExp(required));
   }
   assert.doesNotMatch(source, /supabase\s+link|supabase\s+db\s+push|SUPABASE_SERVICE_ROLE_KEY\s*=|DATABASE_URL\s*=/i);
+});
+
+test("S5-S3B runtime suite declares required schema, RLS, and constraint coverage", () => {
+  const source = readFileSync("scripts/accel-micro-pg-005-postgres-harness.mjs", "utf8");
+  for (const required of [
+    "REQUIRED_RUNTIME_COLUMNS",
+    "REQUIRED_RUNTIME_INDEXES",
+    "REQUIRED_RUNTIME_CONSTRAINTS",
+    "REQUIRED_RLS_TABLES",
+    "REQUIRED_RLS_POLICIES",
+    "bookings_no_core_rental_blocking_overlap",
+    "idx_core_rental_idempotency_actor_action_key",
+    "core_assets_supplier_admin_select",
+    "core_bookings_party_admin_select",
+    "core_idempotency_actor_admin_select",
+  ]) {
+    assert.match(source, new RegExp(required));
+  }
+});
+
+test("S5-S3B runtime suite is implemented but remains blocked without executable PostgreSQL", async () => {
+  const result = await collectPg005Harness("run", {});
+  assert.equal(result.status, "BLOCKED_NO_EXECUTABLE_POSTGRES");
+  assert.equal(result.productionTouched ?? result.environment?.productionBlocked, true);
+  assert.equal(result.liveSupabaseTouched ?? result.environment?.liveSupabaseBlocked, true);
+  assert.doesNotMatch(JSON.stringify(result), /SUPABASE_SERVICE_ROLE_KEY|postgresql:\/\/postgres:[^R]/);
 });
