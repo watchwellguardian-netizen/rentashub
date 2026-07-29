@@ -1,0 +1,49 @@
+name: Object Storage Export Runtime Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  s5-s3d-object-storage-validation:
+    name: S5-S3D disposable object storage and export validation
+    runs-on: ubuntu-latest
+    services:
+      s3mock:
+        image: adobe/s3mock
+        ports:
+          - 9090:9090
+    env:
+      OBJECT_STORAGE_PROVIDER: s3
+      OBJECT_STORAGE_ENDPOINT: http://localhost:9090
+      OBJECT_STORAGE_BUCKET: rentashub-runtime-test
+      OBJECT_STORAGE_CONFIRM_DISPOSABLE: "true"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Guard against production object-storage targets
+        run: |
+          case "${OBJECT_STORAGE_ENDPOINT}" in
+            *amazonaws.com*|*cloudflarestorage.com*|*storage.googleapis.com*|*prod*|*production*)
+              echo "Refusing production-like object-storage target for S5-S3D."
+              exit 1
+              ;;
+          esac
+
+      - name: Run S5-S3D focused tests
+        run: node --test tests/production/s5-s3d-object-storage-export-readiness.test.mjs
+
+      - name: Generate S5-S3D machine-readable evidence
+        run: node scripts/s5-s3d-object-storage-export-readiness.mjs json
