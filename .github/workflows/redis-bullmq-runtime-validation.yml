@@ -1,0 +1,61 @@
+name: Redis BullMQ Runtime Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  s5-s3c-redis-bullmq-validation:
+    name: S5-S3C disposable Redis and BullMQ-compatible validation
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      REDIS_PROVIDER: redis
+      REDIS_URL: redis://localhost:6379/0
+      REDIS_CONFIRM_DISPOSABLE: "true"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Install Redis client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y redis-tools
+
+      - name: Guard against production Redis targets
+        run: |
+          case "${REDIS_URL}" in
+            *upstash*|*redis.com*|*amazonaws.com*|*prod*|*production*)
+              echo "Refusing production-like Redis target for S5-S3C."
+              exit 1
+              ;;
+          esac
+
+      - name: Verify Redis service
+        run: redis-cli -u "${REDIS_URL}" ping
+
+      - name: Run S5-S3C focused tests
+        run: node --test tests/production/s5-s3c-redis-bullmq-readiness.test.mjs
+
+      - name: Generate S5-S3C machine-readable evidence
+        run: node scripts/s5-s3c-redis-bullmq-readiness.mjs json
