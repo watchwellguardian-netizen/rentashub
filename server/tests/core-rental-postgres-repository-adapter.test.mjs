@@ -87,6 +87,47 @@ function migrationDefinesColumn(sql, tableName, columnName) {
   );
 }
 
+function stripSqlComments(sql) {
+  return sql.replace(/--.*$/gm, "");
+}
+
+function splitSqlStatements(sql) {
+  const statements = [];
+  let current = "";
+  let inSingleQuote = false;
+  let inDollarQuote = false;
+  for (let index = 0; index < sql.length; index += 1) {
+    const char = sql[index];
+    const next = sql[index + 1];
+    if (!inDollarQuote && char === "'" && sql[index - 1] !== "\\") inSingleQuote = !inSingleQuote;
+    if (!inSingleQuote && char === "$" && next === "$") {
+      inDollarQuote = !inDollarQuote;
+      current += "$$";
+      index += 1;
+      continue;
+    }
+    current += char;
+    if (char === ";" && !inSingleQuote && !inDollarQuote) {
+      statements.push(current.trim());
+      current = "";
+    }
+  }
+  if (current.trim()) statements.push(current.trim());
+  return statements.filter(Boolean);
+}
+
+function extractNames(sql, pattern) {
+  return [...sql.matchAll(pattern)].map((match) => match[1]);
+}
+
+function assertUniqueNames(names, label) {
+  const seen = new Set();
+  for (const name of names) {
+    assert.equal(seen.has(name), false, `${label} should be unique: ${name}`);
+    seen.add(name);
+  }
+}
+
 test("PostgreSQL repositories satisfy the core rental repository contract", () => {
   const repositories = createCoreRentalPostgresRepositories(createFakeClient());
   const validation = validateCoreRentalRepositoryContract(repositories);
@@ -395,4 +436,78 @@ test("core rental relationship and deletion rules are explicit and non-productio
   assert.match(sql, /idx_bookings_tenant_supplier/i);
   assert.match(sql, /Prepared SQL only/);
   assert.doesNotMatch(sql, /SUPABASE_SERVICE_ROLE_KEY|postgresql:\/\/|DATABASE_URL\s*=/);
+});
+
+test("migration 008 and 009 SQL statements are complete and terminated", () => {
+  for (const name of ["008_core_rental_production_readiness_bridge.sql", "009_core_rental_postgres_repository_adapter.sql"]) {
+    const sql = stripSqlComments(readFileSync(`server/migrations/${name}`, "utf8"));
+    const statements = splitSqlStatements(sql);
+    assert.ok(statements.length > 0, `${name} should contain executable statements`);
+    assert.ok(statements.every((statement) => statement.endsWith(";")), `${name} statements should terminate with semicolons`);
+    assert.equal((sql.match(/\$\$/g) || []).length % 2, 0, `${name} dollar-quoted blocks should be balanced`);
+  }
+});
+
+test("migration 008 and 009 reference tables and columns after they are prepared", () => {
+  const sql = combinedCoreRentalSql();
+  const ordered = stripSqlComments(sql);
+  const tablePositions = new Map();
+  for (const match of ordered.matchAll(/CREATE TABLE IF NOT EXISTS (?:public\.)?([a-z_]+)|ALTER TABLE public\.([a-z_]+) ADD COLUMN IF NOT EXISTS ([a-z_]+)/gi)) {
+    const table = match[1] || match[2];
+    if (!tablePositions.has(table)) tablePositions.set(table, match.index);
+  }
+  for (const tableName of ["assets", "bookings", "supplier_profiles", "audit_logs", "core_rental_idempotency_records"]) {
+    assert.ok(tablePositions.has(tableName), `${tableName} should be prepared before contract use`);
+  }
+  for (const [tableName, columns] of Object.entries(CORE_RENTAL_POSTGRES_TABLE_COLUMNS)) {
+    for (const column of columns) {
+      assert.ok(migrationDefinesColumn(sql, tableName, column), `${tableName}.${column} should exist before adapter use`);
+    }
+  }
+});
+
+test("migration 008 and 009 maintain unique constraint and index names", () => {
+  const sql = readFileSync("server/migrations/008_core_rental_production_readiness_bridge.sql", "utf8")
+    + "\n"
+    + readFileSync("server/migrations/009_core_rental_postgres_repository_adapter.sql", "utf8");
+  assertUniqueNames(extractNames(sql, /CREATE (?:UNIQUE )?INDEX IF NOT EXISTS ([a-z_]+)/gi), "index names");
+  assertUniqueNames(extractNames(sql, /conname = '([a-z_]+)'/gi), "constraint names");
+  assertUniqueNames(extractNames(sql, /ADD CONSTRAINT ([a-z_]+)/gi), "added constraint names");
+});
+
+test("foreign-key references in migration 008 and 009 target prepared tables", () => {
+  const sql = readFileSync("server/migrations/008_core_rental_production_readiness_bridge.sql", "utf8")
+    + "\n"
+    + readFileSync("server/migrations/009_core_rental_postgres_repository_adapter.sql", "utf8");
+  const references = [...sql.matchAll(/REFERENCES public\.([a-z_]+)\s*\(/gi)].map((match) => match[1]);
+  for (const tableName of references) {
+    assert.match(combinedCoreRentalSql(), new RegExp(`CREATE TABLE IF NOT EXISTS (?:public\\.)?${tableName}\\b`, "i"), `${tableName} FK target should exist`);
+  }
+});
+
+test("check constraints align with core rental states, currency, amount, and timestamp assumptions", () => {
+  const sql = readFileSync("server/migrations/009_core_rental_postgres_repository_adapter.sql", "utf8");
+  for (const status of ["pending", "approved", "confirmed", "checked_in", "active", "extension_requested", "completed", "cancelled", "declined", "disputed"]) {
+    assert.match(sql, new RegExp(`'${status}'`), `${status} should be in the booking status check`);
+  }
+  assert.match(sql, /bookings_core_rental_amounts_non_negative/);
+  assert.match(sql, /subtotal >= 0 AND deposit_amount >= 0 AND total_amount >= 0/);
+  assert.match(sql, /bookings_core_rental_currency_code_check/);
+  assert.match(sql, /currency ~ '\^\[A-Z\]\{3\}\$'/);
+  assert.match(sql, /bookings_core_rental_time_window_check/);
+  assert.match(sql, /start_at::timestamptz < end_at::timestamptz/);
+});
+
+test("JSON defaults, timestamp semantics, and destructive operation boundaries are explicit", () => {
+  const sql = readFileSync("server/migrations/008_core_rental_production_readiness_bridge.sql", "utf8")
+    + "\n"
+    + readFileSync("server/migrations/009_core_rental_postgres_repository_adapter.sql", "utf8");
+  assert.match(sql, /metadata_json jsonb NOT NULL DEFAULT '\{\}'::jsonb/);
+  assert.match(sql, /created_at timestamptz NOT NULL DEFAULT NOW\(\)/);
+  assert.match(sql, /expires_at timestamptz/);
+  assert.match(sql, /deleted_at timestamptz/);
+  assert.doesNotMatch(sql, /\bDROP\s+(TABLE|COLUMN|DATABASE|SCHEMA)\b/i);
+  assert.doesNotMatch(sql, /\bTRUNCATE\b/i);
+  assert.doesNotMatch(sql, /\bDELETE\s+FROM\b/i);
+  assert.match(sql, /Rollback note: these constraints should be removed through a compensating/);
 });
