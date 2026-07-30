@@ -1,0 +1,62 @@
+name: Browser Accessibility Runtime Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  s5-s3e-browser-accessibility:
+    name: S5-S3E browser journey and accessibility validation
+    runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:4174
+      VITE_AUTH_MODE: local
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Build app for browser validation
+        run: npm run build
+
+      - name: Guard against external browser targets
+        run: |
+          case "${PLAYWRIGHT_BASE_URL}" in
+            http://127.0.0.1:*|http://localhost:*)
+              echo "Browser validation target is local."
+              ;;
+            *)
+              echo "Refusing non-local browser validation target for S5-S3E."
+              exit 1
+              ;;
+          esac
+
+      - name: Run S5-S3E browser and accessibility journeys
+        run: npx playwright test
+
+      - name: Generate S5-S3E machine-readable evidence
+        if: always()
+        run: node scripts/s5-s3e-browser-accessibility-readiness.mjs json
+
+      - name: Upload browser runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-runtime-results
+          path: |
+            artifacts/browser-results
+            artifacts/browser-report
+          retention-days: 14
