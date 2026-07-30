@@ -1,0 +1,40 @@
+name: Auth Authorization Runtime Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  s5-s3f-auth-authorization:
+    name: S5-S3F authentication and authorization validation
+    runs-on: ubuntu-latest
+    env:
+      OIDC_PROVIDER_MODE: mock
+      LIVE_IDENTITY_PROVIDER_PENDING: "true"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Guard against live identity provider mode
+        run: |
+          if [ "${OIDC_PROVIDER_MODE}" != "mock" ]; then
+            echo "Refusing live identity provider mode for S5-S3F."
+            exit 1
+          fi
+
+      - name: Run S5-S3F auth and authorization tests
+        run: node --test tests/production/s5-s3f-auth-authorization-readiness.test.mjs
+
+      - name: Generate S5-S3F machine-readable evidence
+        run: node scripts/s5-s3f-auth-authorization-readiness.mjs json
