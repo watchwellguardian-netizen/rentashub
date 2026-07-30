@@ -6,10 +6,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: postgres-runtime-validation-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   pg006-runtime-validation:
     name: ACCEL-MICRO-PG-006 disposable PostgreSQL runtime validation
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:16
@@ -69,4 +74,14 @@ jobs:
         run: node scripts/accel-micro-pg-005-postgres-harness.mjs detect
 
       - name: Execute PG-006 runtime validation
-        run: node scripts/accel-micro-pg-005-postgres-harness.mjs run
+        run: |
+          mkdir -p artifacts/runtime-evidence
+          node scripts/accel-micro-pg-005-postgres-harness.mjs run --json > artifacts/runtime-evidence/postgres-pg006.json
+
+      - name: Upload PostgreSQL runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-rls-runtime-evidence
+          path: artifacts/runtime-evidence/postgres-pg006.json
+          retention-days: 14

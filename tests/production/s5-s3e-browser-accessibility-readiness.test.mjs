@@ -25,7 +25,8 @@ test("browser accessibility workflow prepares runtime execution and artifact ret
     "npm run build",
     "npx playwright test",
     "actions/upload-artifact",
-    "browser-runtime-results",
+    "browser-accessibility-runtime-evidence",
+    "artifacts/runtime-evidence/browser-accessibility-s5-s3e.json",
     "PLAYWRIGHT_BASE_URL: http://127.0.0.1:4174",
   ]) {
     assert.match(workflow, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));

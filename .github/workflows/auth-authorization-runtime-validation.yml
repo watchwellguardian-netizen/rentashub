@@ -6,10 +6,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: auth-authorization-runtime-validation-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   s5-s3f-auth-authorization:
     name: S5-S3F authentication and authorization validation
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       OIDC_PROVIDER_MODE: mock
       LIVE_IDENTITY_PROVIDER_PENDING: "true"
@@ -37,4 +42,14 @@ jobs:
         run: node --test tests/production/s5-s3f-auth-authorization-readiness.test.mjs
 
       - name: Generate S5-S3F machine-readable evidence
-        run: node scripts/s5-s3f-auth-authorization-readiness.mjs json
+        run: |
+          mkdir -p artifacts/runtime-evidence
+          node scripts/s5-s3f-auth-authorization-readiness.mjs json > artifacts/runtime-evidence/auth-authorization-s5-s3f.json
+
+      - name: Upload auth authorization runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-authorization-runtime-evidence
+          path: artifacts/runtime-evidence/auth-authorization-s5-s3f.json
+          retention-days: 14

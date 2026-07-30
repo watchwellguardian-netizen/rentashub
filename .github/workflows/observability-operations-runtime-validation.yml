@@ -6,10 +6,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: observability-operations-runtime-validation-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   s5-s3g-observability-operations:
     name: S5-S3G observability and operations validation
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       OBSERVABILITY_MODE: local
       LIVE_TELEMETRY_DESTINATION_PENDING: "true"
@@ -37,4 +42,14 @@ jobs:
         run: node --test tests/production/s5-s3g-observability-operations-readiness.test.mjs
 
       - name: Generate S5-S3G machine-readable evidence
-        run: node scripts/s5-s3g-observability-operations-readiness.mjs json
+        run: |
+          mkdir -p artifacts/runtime-evidence
+          node scripts/s5-s3g-observability-operations-readiness.mjs json > artifacts/runtime-evidence/observability-operations-s5-s3g.json
+
+      - name: Upload observability operations runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: observability-operations-runtime-evidence
+          path: artifacts/runtime-evidence/observability-operations-s5-s3g.json
+          retention-days: 14

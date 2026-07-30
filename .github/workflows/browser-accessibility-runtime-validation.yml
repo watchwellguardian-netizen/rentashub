@@ -6,10 +6,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: browser-accessibility-runtime-validation-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   s5-s3e-browser-accessibility:
     name: S5-S3E browser journey and accessibility validation
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     env:
       PLAYWRIGHT_BASE_URL: http://127.0.0.1:4174
       VITE_AUTH_MODE: local
@@ -49,14 +54,17 @@ jobs:
 
       - name: Generate S5-S3E machine-readable evidence
         if: always()
-        run: node scripts/s5-s3e-browser-accessibility-readiness.mjs json
+        run: |
+          mkdir -p artifacts/runtime-evidence
+          node scripts/s5-s3e-browser-accessibility-readiness.mjs json > artifacts/runtime-evidence/browser-accessibility-s5-s3e.json
 
       - name: Upload browser runtime evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: browser-runtime-results
+          name: browser-accessibility-runtime-evidence
           path: |
+            artifacts/runtime-evidence/browser-accessibility-s5-s3e.json
             artifacts/browser-results
             artifacts/browser-report
           retention-days: 14

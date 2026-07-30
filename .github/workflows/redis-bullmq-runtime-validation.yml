@@ -6,10 +6,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: redis-bullmq-runtime-validation-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   s5-s3c-redis-bullmq-validation:
     name: S5-S3C disposable Redis and BullMQ-compatible validation
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     services:
       redis:
         image: redis:7
@@ -58,4 +63,14 @@ jobs:
         run: node --test tests/production/s5-s3c-redis-bullmq-readiness.test.mjs
 
       - name: Generate S5-S3C machine-readable evidence
-        run: node scripts/s5-s3c-redis-bullmq-readiness.mjs json
+        run: |
+          mkdir -p artifacts/runtime-evidence
+          node scripts/s5-s3c-redis-bullmq-readiness.mjs json > artifacts/runtime-evidence/redis-bullmq-s5-s3c.json
+
+      - name: Upload Redis BullMQ runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: redis-bullmq-runtime-evidence
+          path: artifacts/runtime-evidence/redis-bullmq-s5-s3c.json
+          retention-days: 14

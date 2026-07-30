@@ -6,10 +6,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: object-storage-export-runtime-validation-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   s5-s3d-object-storage-validation:
     name: S5-S3D disposable object storage and export validation
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     services:
       s3mock:
         image: adobe/s3mock
@@ -46,4 +51,14 @@ jobs:
         run: node --test tests/production/s5-s3d-object-storage-export-readiness.test.mjs
 
       - name: Generate S5-S3D machine-readable evidence
-        run: node scripts/s5-s3d-object-storage-export-readiness.mjs json
+        run: |
+          mkdir -p artifacts/runtime-evidence
+          node scripts/s5-s3d-object-storage-export-readiness.mjs json > artifacts/runtime-evidence/object-storage-export-s5-s3d.json
+
+      - name: Upload object storage and export runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: object-storage-export-runtime-evidence
+          path: artifacts/runtime-evidence/object-storage-export-s5-s3d.json
+          retention-days: 14
