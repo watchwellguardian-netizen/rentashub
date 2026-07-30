@@ -2,6 +2,7 @@ import { config } from "../config/env.js";
 import { getIntegrationReadiness } from "../config/integrationReadiness.js";
 import { getDatabaseProviderReadiness } from "../db/databaseProvider.js";
 import { getMonitoringReadiness } from "../monitoring/monitoringProvider.js";
+import { buildHealthEndpoints } from "../monitoring/observabilityOperationsReadiness.js";
 
 export function getHealth() {
   return {
@@ -41,14 +42,24 @@ export function getDatabaseReadiness() {
 
 export function getObservabilityReadiness() {
   const monitoring = getMonitoringReadiness();
+  const endpoints = buildHealthEndpoints();
   return {
     ok: monitoring.ready,
     service: "rentashub-api",
     module: "observability-readiness",
     monitoring,
+    endpoints,
     note: monitoring.ready
       ? "Monitoring credentials are shaped. Live provider delivery still requires SDK/log drain verification."
       : "Monitoring is not active. Sentry and/or Better Stack credentials and alert routing are required.",
     timestamp: new Date().toISOString(),
   };
+}
+
+export function getLiveness() {
+  return buildHealthEndpoints().liveness;
+}
+
+export function getOperationalReadiness() {
+  return buildHealthEndpoints().readiness;
 }

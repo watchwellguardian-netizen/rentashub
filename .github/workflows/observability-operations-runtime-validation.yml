@@ -1,0 +1,40 @@
+name: Observability Operations Runtime Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  s5-s3g-observability-operations:
+    name: S5-S3G observability and operations validation
+    runs-on: ubuntu-latest
+    env:
+      OBSERVABILITY_MODE: local
+      LIVE_TELEMETRY_DESTINATION_PENDING: "true"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Guard against live telemetry mode
+        run: |
+          if [ "${OBSERVABILITY_MODE}" != "local" ]; then
+            echo "Refusing live telemetry mode for S5-S3G."
+            exit 1
+          fi
+
+      - name: Run S5-S3G observability and operations tests
+        run: node --test tests/production/s5-s3g-observability-operations-readiness.test.mjs
+
+      - name: Generate S5-S3G machine-readable evidence
+        run: node scripts/s5-s3g-observability-operations-readiness.mjs json
