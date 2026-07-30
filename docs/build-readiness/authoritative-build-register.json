@@ -1,0 +1,948 @@
+{
+  "summary": {
+    "sprint": "S5-ABW-001",
+    "classification": "provider-independent core product build readiness",
+    "currentRelease": "RC-0.6A",
+    "a4Status": "A4-01 open",
+    "productionReady": false,
+    "formula": "sum(weight * completion) / sum(weight)",
+    "totalFeatures": 31,
+    "totalWeightedPoints": 120,
+    "verifiedWeightedPoints": 72.85,
+    "remainingWeightedPoints": 47.15,
+    "completedPercent": 60.7,
+    "remainingPercent": 39.3,
+    "byClassification": {
+      "locally-functional": 9,
+      "blocked-externally": 9,
+      "backend-implemented": 7,
+      "simulated": 2,
+      "documented-only": 2,
+      "not-started": 2
+    },
+    "byModule": {
+      "Marketplace": {
+        "totalPoints": 5,
+        "verifiedPoints": 4.5,
+        "features": 1,
+        "remainingPoints": 0.5,
+        "completedPercent": 90
+      },
+      "Authentication": {
+        "totalPoints": 5,
+        "verifiedPoints": 2.75,
+        "features": 1,
+        "remainingPoints": 2.25,
+        "completedPercent": 55
+      },
+      "Authorization": {
+        "totalPoints": 5,
+        "verifiedPoints": 3.75,
+        "features": 1,
+        "remainingPoints": 1.25,
+        "completedPercent": 75
+      },
+      "Supplier": {
+        "totalPoints": 3,
+        "verifiedPoints": 2.25,
+        "features": 1,
+        "remainingPoints": 0.75,
+        "completedPercent": 75
+      },
+      "Listings": {
+        "totalPoints": 5,
+        "verifiedPoints": 4.25,
+        "features": 1,
+        "remainingPoints": 0.75,
+        "completedPercent": 85
+      },
+      "Core Rental": {
+        "totalPoints": 15,
+        "verifiedPoints": 12,
+        "features": 3,
+        "remainingPoints": 3,
+        "completedPercent": 80
+      },
+      "Database": {
+        "totalPoints": 5,
+        "verifiedPoints": 3,
+        "features": 1,
+        "remainingPoints": 2,
+        "completedPercent": 60
+      },
+      "Database Security": {
+        "totalPoints": 5,
+        "verifiedPoints": 2.25,
+        "features": 1,
+        "remainingPoints": 2.75,
+        "completedPercent": 45
+      },
+      "Trust": {
+        "totalPoints": 3,
+        "verifiedPoints": 2.25,
+        "features": 1,
+        "remainingPoints": 0.75,
+        "completedPercent": 75
+      },
+      "Communications": {
+        "totalPoints": 3,
+        "verifiedPoints": 2.1,
+        "features": 1,
+        "remainingPoints": 0.9,
+        "completedPercent": 70
+      },
+      "Claims and Disputes": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.95,
+        "features": 1,
+        "remainingPoints": 1.05,
+        "completedPercent": 65
+      },
+      "Revenue": {
+        "totalPoints": 5,
+        "verifiedPoints": 2.25,
+        "features": 1,
+        "remainingPoints": 2.75,
+        "completedPercent": 45
+      },
+      "Escrow": {
+        "totalPoints": 5,
+        "verifiedPoints": 2,
+        "features": 1,
+        "remainingPoints": 3,
+        "completedPercent": 40
+      },
+      "Auctions": {
+        "totalPoints": 5,
+        "verifiedPoints": 2.75,
+        "features": 1,
+        "remainingPoints": 2.25,
+        "completedPercent": 55
+      },
+      "Inspections": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.95,
+        "features": 1,
+        "remainingPoints": 1.05,
+        "completedPercent": 65
+      },
+      "Transport": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.95,
+        "features": 1,
+        "remainingPoints": 1.05,
+        "completedPercent": 65
+      },
+      "Financing": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.8,
+        "features": 1,
+        "remainingPoints": 1.2,
+        "completedPercent": 60
+      },
+      "AI Studio Consolidation": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.95,
+        "features": 1,
+        "remainingPoints": 1.05,
+        "completedPercent": 65
+      },
+      "AI": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.65,
+        "features": 1,
+        "remainingPoints": 1.35,
+        "completedPercent": 55
+      },
+      "Files and Storage": {
+        "totalPoints": 5,
+        "verifiedPoints": 2.25,
+        "features": 1,
+        "remainingPoints": 2.75,
+        "completedPercent": 45
+      },
+      "Security": {
+        "totalPoints": 5,
+        "verifiedPoints": 3.25,
+        "features": 1,
+        "remainingPoints": 1.75,
+        "completedPercent": 65
+      },
+      "Compliance": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.65,
+        "features": 1,
+        "remainingPoints": 1.35,
+        "completedPercent": 55
+      },
+      "Operations": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.8,
+        "features": 1,
+        "remainingPoints": 1.2,
+        "completedPercent": 60
+      },
+      "Queues": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.35,
+        "features": 1,
+        "remainingPoints": 1.65,
+        "completedPercent": 45
+      },
+      "Release": {
+        "totalPoints": 2,
+        "verifiedPoints": 1.7,
+        "features": 1,
+        "remainingPoints": 0.3,
+        "completedPercent": 85
+      },
+      "Browser and Accessibility": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.5,
+        "features": 1,
+        "remainingPoints": 1.5,
+        "completedPercent": 50
+      },
+      "Runtime Evidence": {
+        "totalPoints": 5,
+        "verifiedPoints": 2,
+        "features": 1,
+        "remainingPoints": 3,
+        "completedPercent": 40
+      },
+      "Mobile": {
+        "totalPoints": 2,
+        "verifiedPoints": 0,
+        "features": 1,
+        "remainingPoints": 2,
+        "completedPercent": 0
+      },
+      "External Integrations": {
+        "totalPoints": 2,
+        "verifiedPoints": 0,
+        "features": 1,
+        "remainingPoints": 2,
+        "completedPercent": 0
+      }
+    },
+    "credentialReadyItems": [
+      "auth-local-session",
+      "postgres-runtime-readiness",
+      "rls-policy-readiness",
+      "payments-wallet-payouts",
+      "escrow-ledger",
+      "file-storage-readiness",
+      "redis-bullmq-readiness",
+      "browser-accessibility-readiness",
+      "runtime-evidence-wave"
+    ],
+    "runtimeBlockedItems": [
+      "auth-local-session",
+      "supplier-verification",
+      "core-rental-lifecycle",
+      "booking-integrity",
+      "postgres-runtime-readiness",
+      "rls-policy-readiness",
+      "messaging-notifications",
+      "claims-disputes",
+      "payments-wallet-payouts",
+      "escrow-ledger",
+      "transport-marketplace",
+      "financing-marketplace",
+      "file-storage-readiness",
+      "security-hardening",
+      "compliance-readiness",
+      "observability-operations",
+      "redis-bullmq-readiness",
+      "release-governance",
+      "browser-accessibility-readiness",
+      "runtime-evidence-wave",
+      "mobile-apps",
+      "government-integrations"
+    ]
+  },
+  "features": [
+    {
+      "id": "ux-public-marketplace",
+      "module": "Marketplace",
+      "feature": "Public landing, search, categories, and asset discovery",
+      "weight": 5,
+      "completion": 0.9,
+      "frontendStatus": "Active",
+      "backendStatus": "Partial",
+      "databaseStatus": "Local/demo data and repository paths",
+      "apiStatus": "Assets API present",
+      "integrationStatus": "Provider independent",
+      "testStatus": "Verified by production frontend tests",
+      "classification": "locally-functional",
+      "evidenceFiles": [
+        "src/App.jsx",
+        "src/pages/LandingPage.jsx",
+        "tests/production/search-discovery.test.mjs",
+        "tests/production/asset-listing.test.mjs"
+      ],
+      "verifiedPoints": 4.5,
+      "remainingPoints": 0.5,
+      "verified": true
+    },
+    {
+      "id": "auth-local-session",
+      "module": "Authentication",
+      "feature": "Local authentication routes and session readiness",
+      "weight": 5,
+      "completion": 0.55,
+      "frontendStatus": "Active local login flow",
+      "backendStatus": "Implemented local auth API",
+      "databaseStatus": "Local repository only",
+      "apiStatus": "Auth API routes present",
+      "integrationStatus": "Live identity provider pending",
+      "testStatus": "Backend and readiness tests pass",
+      "classification": "blocked-externally",
+      "evidenceFiles": [
+        "server/src/routes/authRoutes.js",
+        "server/tests/auth.test.mjs",
+        "tests/production/s5-s3f-auth-authorization-readiness.test.mjs"
+      ],
+      "verifiedPoints": 2.75,
+      "remainingPoints": 2.25,
+      "verified": false
+    },
+    {
+      "id": "rbac-route-guards",
+      "module": "Authorization",
+      "feature": "Protected routes, API role guards, and role-aware access controls",
+      "weight": 5,
+      "completion": 0.75,
+      "frontendStatus": "ProtectedRoute and role shell active",
+      "backendStatus": "Role middleware active",
+      "databaseStatus": "RLS runtime not yet executed",
+      "apiStatus": "Role-protected API routes present",
+      "integrationStatus": "Provider independent",
+      "testStatus": "Auth/RBAC and core rental authorization tests pass",
+      "classification": "backend-implemented",
+      "evidenceFiles": [
+        "src/components/ProtectedRoute.jsx",
+        "server/src/middleware/authMiddleware.js",
+        "server/tests/core-rental-api.test.mjs",
+        "tests/production/auth-rbac.test.mjs"
+      ],
+      "verifiedPoints": 3.75,
+      "remainingPoints": 1.25,
+      "verified": true
+    },
+    {
+      "id": "supplier-verification",
+      "module": "Supplier",
+      "feature": "Supplier profile, verification workflow, and status evidence",
+      "weight": 3,
+      "completion": 0.75,
+      "frontendStatus": "Active supplier profile and verification pages",
+      "backendStatus": "Provider-independent validation path",
+      "databaseStatus": "Local persistence",
+      "apiStatus": "Core rental supplier validation endpoint present",
+      "integrationStatus": "KYC provider pending",
+      "testStatus": "Supplier profile tests pass",
+      "classification": "locally-functional",
+      "evidenceFiles": [
+        "src/pages/SupplierProfile.jsx",
+        "server/src/routes/coreRentalRoutes.js",
+        "tests/production/supplier-profile-verification.test.mjs"
+      ],
+      "verifiedPoints": 2.25,
+      "remainingPoints": 0.75,
+      "verified": true
+    },
+    {
+      "id": "asset-listing-management",
+      "module": "Listings",
+      "feature": "Asset and listing create, edit, publish, moderate, and browse",
+      "weight": 5,
+      "completion": 0.85,
+      "frontendStatus": "Active list/edit/my listings pages",
+      "backendStatus": "Resource and core rental asset endpoints implemented",
+      "databaseStatus": "Local repository; PostgreSQL adapter static-ready",
+      "apiStatus": "Assets and rental listing routes present",
+      "integrationStatus": "Provider independent",
+      "testStatus": "Listing and core rental API tests pass",
+      "classification": "locally-functional",
+      "evidenceFiles": [
+        "src/pages/ListAsset.jsx",
+        "src/pages/MyListings.jsx",
+        "server/src/routes/resourceRoutes.js",
+        "server/src/routes/coreRentalRoutes.js",
+        "tests/production/asset-listing.test.mjs"
+      ],
+      "verifiedPoints": 4.25,
+      "remainingPoints": 0.75,
+      "verified": true
+    },
+    {
+      "id": "core-rental-lifecycle",
+      "module": "Core Rental",
+      "feature": "Booking request through review eligibility provider-independent lifecycle",
+      "weight": 5,
+      "completion": 0.85,
+      "frontendStatus": "API adapter and dashboard paths present",
+      "backendStatus": "Core rental state machine implemented",
+      "databaseStatus": "Local transaction strategy; PostgreSQL runtime pending",
+      "apiStatus": "Versioned rental API present",
+      "integrationStatus": "Provider independent",
+      "testStatus": "Core rental service/API/adapter tests pass",
+      "classification": "locally-functional",
+      "evidenceFiles": [
+        "server/src/services/coreRentalService.js",
+        "server/src/controllers/coreRentalController.js",
+        "server/tests/core-rental-api.test.mjs",
+        "tests/production/core-rental-api-adapter.test.mjs"
+      ],
+      "verifiedPoints": 4.25,
+      "remainingPoints": 0.75,
+      "verified": true
+    },
+    {
+      "id": "availability-pricing",
+      "module": "Core Rental",
+      "feature": "Availability checks, deterministic pricing, and booking quote",
+      "weight": 5,
+      "completion": 0.8,
+      "frontendStatus": "Adapter-supported",
+      "backendStatus": "Implemented",
+      "databaseStatus": "Local repository",
+      "apiStatus": "Availability and quote endpoints present",
+      "integrationStatus": "Provider independent",
+      "testStatus": "Core rental API tests pass",
+      "classification": "backend-implemented",
+      "evidenceFiles": [
+        "server/src/services/coreRentalService.js",
+        "server/tests/core-rental-api.test.mjs"
+      ],
+      "verifiedPoints": 4,
+      "remainingPoints": 1,
+      "verified": true
+    },
+    {
+      "id": "booking-integrity",
+      "module": "Core Rental",
+      "feature": "Idempotency, optimistic versioning, overlap prevention, and audit participation",
+      "weight": 5,
+      "completion": 0.75,
+      "frontendStatus": "Adapter conveys idempotent requests",
+      "backendStatus": "Implemented in repository/service contracts",
+      "databaseStatus": "PostgreSQL execution pending",
+      "apiStatus": "Core rental endpoints present",
+      "integrationStatus": "Provider independent local",
+      "testStatus": "Static adapter and local API tests pass",
+      "classification": "backend-implemented",
+      "evidenceFiles": [
+        "server/src/repositories/coreRentalPostgresRepositoryAdapter.js",
+        "server/tests/core-rental-postgres-repository-adapter.test.mjs",
+        "server/tests/core-rental-api.test.mjs"
+      ],
+      "verifiedPoints": 3.75,
+      "remainingPoints": 1.25,
+      "verified": true
+    },
+    {
+      "id": "postgres-runtime-readiness",
+      "module": "Database",
+      "feature": "PostgreSQL adapter, migrations, and execution harness",
+      "weight": 5,
+      "completion": 0.6,
+      "frontendStatus": "Not applicable",
+      "backendStatus": "Adapter and harness implemented",
+      "databaseStatus": "Static-ready; no executable PostgreSQL available",
+      "apiStatus": "Repository contract aligned",
+      "integrationStatus": "Runtime execution blocked",
+      "testStatus": "Focused static harness tests pass",
+      "classification": "blocked-externally",
+      "evidenceFiles": [
+        "server/src/repositories/coreRentalPostgresRepositoryAdapter.js",
+        "scripts/accel-micro-pg-005-postgres-harness.mjs",
+        "tests/production/accel-micro-pg-005-postgres-harness.test.mjs"
+      ],
+      "verifiedPoints": 3,
+      "remainingPoints": 2,
+      "verified": false
+    },
+    {
+      "id": "rls-policy-readiness",
+      "module": "Database Security",
+      "feature": "RLS/RBAC policy preparation and cross-tenant evidence harness",
+      "weight": 5,
+      "completion": 0.45,
+      "frontendStatus": "Not applicable",
+      "backendStatus": "Policy checks and tests prepared",
+      "databaseStatus": "RLS runtime blocked",
+      "apiStatus": "Authorization contracts present",
+      "integrationStatus": "Runtime PostgreSQL required",
+      "testStatus": "Static readiness tests pass",
+      "classification": "blocked-externally",
+      "evidenceFiles": [
+        "scripts/check-rls-rbac-sql.mjs",
+        "tests/production/s5-s3h-runtime-evidence-orchestrator.test.mjs"
+      ],
+      "verifiedPoints": 2.25,
+      "remainingPoints": 2.75,
+      "verified": false
+    },
+    {
+      "id": "reviews-ratings",
+      "module": "Trust",
+      "feature": "Reviews, ratings, eligibility, and moderation",
+      "weight": 3,
+      "completion": 0.75,
+      "frontendStatus": "Active customer/supplier review pages",
+      "backendStatus": "Review API implemented",
+      "databaseStatus": "Local repository",
+      "apiStatus": "Review routes present",
+      "integrationStatus": "Provider independent",
+      "testStatus": "Review tests pass",
+      "classification": "locally-functional",
+      "evidenceFiles": [
+        "server/src/routes/reviewApiRoutes.js",
+        "src/pages/ReviewsPage.jsx",
+        "tests/production/reviews-ratings.test.mjs"
+      ],
+      "verifiedPoints": 2.25,
+      "remainingPoints": 0.75,
+      "verified": true
+    },
+    {
+      "id": "messaging-notifications",
+      "module": "Communications",
+      "feature": "Messages, notifications, local delivery/audit framework",
+      "weight": 3,
+      "completion": 0.7,
+      "frontendStatus": "Active message and notification pages",
+      "backendStatus": "Message/notification API implemented",
+      "databaseStatus": "Local repository",
+      "apiStatus": "Routes present",
+      "integrationStatus": "Live delivery provider pending",
+      "testStatus": "Messaging and notification tests pass",
+      "classification": "backend-implemented",
+      "evidenceFiles": [
+        "server/src/routes/messageNotificationRoutes.js",
+        "src/pages/MessagesPage.jsx",
+        "src/pages/NotificationsPage.jsx",
+        "tests/production/messaging-notifications.test.mjs"
+      ],
+      "verifiedPoints": 2.1,
+      "remainingPoints": 0.9,
+      "verified": false
+    },
+    {
+      "id": "claims-disputes",
+      "module": "Claims and Disputes",
+      "feature": "Claims, disputes, admin queues, and local workflow transitions",
+      "weight": 3,
+      "completion": 0.65,
+      "frontendStatus": "Active pages",
+      "backendStatus": "Claims/disputes APIs implemented",
+      "databaseStatus": "Local repository",
+      "apiStatus": "Routes present",
+      "integrationStatus": "Legal/provider evidence pending",
+      "testStatus": "Protection/dispute tests pass",
+      "classification": "backend-implemented",
+      "evidenceFiles": [
+        "server/src/routes/protectionClaimsApiRoutes.js",
+        "server/src/routes/disputeApiRoutes.js",
+        "tests/production/protection-framework.test.mjs"
+      ],
+      "verifiedPoints": 1.95,
+      "remainingPoints": 1.05,
+      "verified": false
+    },
+    {
+      "id": "payments-wallet-payouts",
+      "module": "Revenue",
+      "feature": "Payment intent, wallet, earnings, payout, refund placeholder workflow",
+      "weight": 5,
+      "completion": 0.45,
+      "frontendStatus": "Active pages",
+      "backendStatus": "Provider-ready API placeholders",
+      "databaseStatus": "Local ledger only",
+      "apiStatus": "Payment routes present",
+      "integrationStatus": "Payment provider blocked",
+      "testStatus": "Payment ledger and revenue readiness tests pass",
+      "classification": "blocked-externally",
+      "evidenceFiles": [
+        "server/src/routes/paymentApiRoutes.js",
+        "src/pages/PaymentsPage.jsx",
+        "src/pages/WalletPage.jsx",
+        "tests/production/payment-ledger.test.mjs",
+        "tests/production/revenue-readiness-tooling.test.mjs"
+      ],
+      "verifiedPoints": 2.25,
+      "remainingPoints": 2.75,
+      "verified": false
+    },
+    {
+      "id": "escrow-ledger",
+      "module": "Escrow",
+      "feature": "Escrow intake, ledger, release, refund, and dispute readiness",
+      "weight": 5,
+      "completion": 0.4,
+      "frontendStatus": "Auction escrow surfaces present",
+      "backendStatus": "Provider-ready escrow API",
+      "databaseStatus": "Local ledger only",
+      "apiStatus": "Escrow routes present",
+      "integrationStatus": "Legal trust/provider blocked",
+      "testStatus": "Escrow readiness tests pass",
+      "classification": "blocked-externally",
+      "evidenceFiles": [
+        "server/src/routes/escrowRoutes.js",
+        "server/tests/escrow.test.mjs",
+        "tests/production/escrow-readiness-tooling.test.mjs"
+      ],
+      "verifiedPoints": 2,
+      "remainingPoints": 3,
+      "verified": false
+    },
+    {
+      "id": "auction-platform",
+      "module": "Auctions",
+      "feature": "Auction landing, lots, bidding UI, supplier/admin/dealer surfaces",
+      "weight": 5,
+      "completion": 0.55,
+      "frontendStatus": "Active route surface",
+      "backendStatus": "Mostly frontend/local service",
+      "databaseStatus": "Local/simulated data",
+      "apiStatus": "No live auction exchange API certified",
+      "integrationStatus": "Provider independent and simulated",
+      "testStatus": "Auction tests pass",
+      "classification": "simulated",
+      "evidenceFiles": [
+        "src/pages/AuctionPages.jsx",
+        "src/lib/auctionService.js",
+        "tests/production/auction-module.test.mjs"
+      ],
+      "verifiedPoints": 2.75,
+      "remainingPoints": 2.25,
+      "verified": false
+    },
+    {
+      "id": "inspection-marketplace",
+      "module": "Inspections",
+      "feature": "Inspector directory, registration, quote, booking, report workflow",
+      "weight": 3,
+      "completion": 0.65,
+      "frontendStatus": "Active pages",
+      "backendStatus": "Local/service implementation",
+      "databaseStatus": "Local",
+      "apiStatus": "Inspection resource API present",
+      "integrationStatus": "Provider independent",
+      "testStatus": "Inspection tests pass",
+      "classification": "locally-functional",
+      "evidenceFiles": [
+        "src/pages/InspectionMarketplacePages.jsx",
+        "server/src/routes/resourceRoutes.js",
+        "tests/production/inspection-marketplace.test.mjs",
+        "tests/production/inspection-engine.test.mjs"
+      ],
+      "verifiedPoints": 1.95,
+      "remainingPoints": 1.05,
+      "verified": false
+    },
+    {
+      "id": "transport-marketplace",
+      "module": "Transport",
+      "feature": "Transport directory, provider registration, quote and booking readiness",
+      "weight": 3,
+      "completion": 0.65,
+      "frontendStatus": "Active pages",
+      "backendStatus": "Local/service implementation",
+      "databaseStatus": "Local",
+      "apiStatus": "Provider-independent",
+      "integrationStatus": "Provider blocked",
+      "testStatus": "Transport tests pass",
+      "classification": "locally-functional",
+      "evidenceFiles": [
+        "src/pages/TransportMarketplacePages.jsx",
+        "src/lib/transportMarketplaceService.js",
+        "tests/production/transport-marketplace.test.mjs"
+      ],
+      "verifiedPoints": 1.95,
+      "remainingPoints": 1.05,
+      "verified": false
+    },
+    {
+      "id": "financing-marketplace",
+      "module": "Financing",
+      "feature": "Financing directory, partner registration, referral readiness",
+      "weight": 3,
+      "completion": 0.6,
+      "frontendStatus": "Active pages",
+      "backendStatus": "Local/service implementation",
+      "databaseStatus": "Local",
+      "apiStatus": "Provider-independent",
+      "integrationStatus": "Lender/provider blocked",
+      "testStatus": "Financing tests pass",
+      "classification": "locally-functional",
+      "evidenceFiles": [
+        "src/pages/FinancingMarketplacePages.jsx",
+        "src/lib/financingMarketplaceService.js",
+        "tests/production/financing-marketplace.test.mjs"
+      ],
+      "verifiedPoints": 1.8,
+      "remainingPoints": 1.2,
+      "verified": false
+    },
+    {
+      "id": "ai-assistant-docs-workflows",
+      "module": "AI Studio Consolidation",
+      "feature": "Role-aware AI assistant, documentation, workflow guides, and admin system status",
+      "weight": 3,
+      "completion": 0.65,
+      "frontendStatus": "Active pages",
+      "backendStatus": "Provider-independent knowledge features",
+      "databaseStatus": "Local/static content",
+      "apiStatus": "No external AI provider required",
+      "integrationStatus": "Provider independent",
+      "testStatus": "AI Studio consolidation tests pass",
+      "classification": "locally-functional",
+      "evidenceFiles": [
+        "src/pages/AiStudioConsolidationPages.jsx",
+        "tests/production/ai-studio-consolidation.test.mjs"
+      ],
+      "verifiedPoints": 1.95,
+      "remainingPoints": 1.05,
+      "verified": false
+    },
+    {
+      "id": "ai-listing-valuation",
+      "module": "AI",
+      "feature": "AI listing assistant, valuation engine, rental advisor, market insights",
+      "weight": 3,
+      "completion": 0.55,
+      "frontendStatus": "Active pages",
+      "backendStatus": "Deterministic/provider-independent logic",
+      "databaseStatus": "Local/static",
+      "apiStatus": "No live AI provider certified",
+      "integrationStatus": "Simulated/readiness",
+      "testStatus": "AI foundation tests pass",
+      "classification": "simulated",
+      "evidenceFiles": [
+        "src/pages/AiAssistant.jsx",
+        "tests/production/ai-listing-assistant-foundation.test.mjs",
+        "tests/production/ai-valuation-engine-foundation.test.mjs"
+      ],
+      "verifiedPoints": 1.65,
+      "remainingPoints": 1.35,
+      "verified": false
+    },
+    {
+      "id": "file-storage-readiness",
+      "module": "Files and Storage",
+      "feature": "File metadata, upload intent, signed URL and bucket readiness",
+      "weight": 5,
+      "completion": 0.45,
+      "frontendStatus": "Document/file surfaces present",
+      "backendStatus": "File API and storage readiness tooling",
+      "databaseStatus": "Local metadata repository",
+      "apiStatus": "File routes present",
+      "integrationStatus": "Live object storage blocked",
+      "testStatus": "File and storage readiness tests pass",
+      "classification": "blocked-externally",
+      "evidenceFiles": [
+        "server/src/routes/fileRoutes.js",
+        "server/tests/files.test.mjs",
+        "tests/production/storage-readiness-tooling.test.mjs"
+      ],
+      "verifiedPoints": 2.25,
+      "remainingPoints": 2.75,
+      "verified": false
+    },
+    {
+      "id": "security-hardening",
+      "module": "Security",
+      "feature": "Security headers, secret scanning, dependency/security readiness evidence",
+      "weight": 5,
+      "completion": 0.65,
+      "frontendStatus": "Headers and UI practices present",
+      "backendStatus": "Security middleware and scanners present",
+      "databaseStatus": "RLS runtime pending",
+      "apiStatus": "Middleware active",
+      "integrationStatus": "WAF/MFA/live cert pending",
+      "testStatus": "Security tests and scan pass",
+      "classification": "backend-implemented",
+      "evidenceFiles": [
+        "server/src/main/app.js",
+        "server/src/middleware/securityHeaders.js",
+        "scripts/secret-scan.mjs",
+        "tests/production/security-hardening-program.test.mjs"
+      ],
+      "verifiedPoints": 3.25,
+      "remainingPoints": 1.75,
+      "verified": false
+    },
+    {
+      "id": "compliance-readiness",
+      "module": "Compliance",
+      "feature": "Privacy, DSAR, retention, KYC, DPA/GDPR evidence readiness",
+      "weight": 3,
+      "completion": 0.55,
+      "frontendStatus": "Admin compliance dashboard present",
+      "backendStatus": "Compliance readiness tooling",
+      "databaseStatus": "Persistence evidence pending",
+      "apiStatus": "Readiness/reporting only",
+      "integrationStatus": "Legal and KYC provider blocked",
+      "testStatus": "Compliance tests pass",
+      "classification": "documented-only",
+      "evidenceFiles": [
+        "scripts/compliance-readiness-tooling.mjs",
+        "tests/production/compliance-readiness-tooling.test.mjs",
+        "tests/production/compliance-activation.test.mjs"
+      ],
+      "verifiedPoints": 1.65,
+      "remainingPoints": 1.35,
+      "verified": false
+    },
+    {
+      "id": "observability-operations",
+      "module": "Operations",
+      "feature": "Health, readiness, liveness, observability and operator evidence",
+      "weight": 3,
+      "completion": 0.6,
+      "frontendStatus": "Admin system status page present",
+      "backendStatus": "Health and observability endpoints",
+      "databaseStatus": "Dependency checks prepared",
+      "apiStatus": "Health routes present",
+      "integrationStatus": "Telemetry destination blocked",
+      "testStatus": "Operations readiness tests pass",
+      "classification": "backend-implemented",
+      "evidenceFiles": [
+        "server/src/routes/healthRoutes.js",
+        "server/src/routes/monitoringRoutes.js",
+        "tests/production/s5-s3g-observability-operations-readiness.test.mjs"
+      ],
+      "verifiedPoints": 1.8,
+      "remainingPoints": 1.2,
+      "verified": false
+    },
+    {
+      "id": "redis-bullmq-readiness",
+      "module": "Queues",
+      "feature": "Redis and BullMQ queue readiness, retries, DLQ and metrics contracts",
+      "weight": 3,
+      "completion": 0.45,
+      "frontendStatus": "Not applicable",
+      "backendStatus": "Engineering complete",
+      "databaseStatus": "Redis runtime pending",
+      "apiStatus": "Queue diagnostics prepared",
+      "integrationStatus": "CI/live execution pending",
+      "testStatus": "Focused readiness tests pass",
+      "classification": "blocked-externally",
+      "evidenceFiles": [
+        "tests/production/s5-s3c-redis-bullmq-readiness.test.mjs"
+      ],
+      "verifiedPoints": 1.35,
+      "remainingPoints": 1.65,
+      "verified": false
+    },
+    {
+      "id": "release-governance",
+      "module": "Release",
+      "feature": "Release governance, launch dashboard, evidence indexes and owner action register",
+      "weight": 2,
+      "completion": 0.85,
+      "frontendStatus": "Not applicable",
+      "backendStatus": "Tooling complete",
+      "databaseStatus": "Not applicable",
+      "apiStatus": "Not applicable",
+      "integrationStatus": "Runtime evidence pending",
+      "testStatus": "Release readiness tests pass",
+      "classification": "documented-only",
+      "evidenceFiles": [
+        "scripts/s5-lrw-001-release-readiness.mjs",
+        "scripts/s5-lrw-002-security-compliance.mjs",
+        "tests/production/s5-lrw-001-release-readiness.test.mjs",
+        "tests/production/s5-lrw-002-security-compliance.test.mjs"
+      ],
+      "verifiedPoints": 1.7,
+      "remainingPoints": 0.3,
+      "verified": false
+    },
+    {
+      "id": "browser-accessibility-readiness",
+      "module": "Browser and Accessibility",
+      "feature": "Playwright browser journey and accessibility runtime suite",
+      "weight": 3,
+      "completion": 0.5,
+      "frontendStatus": "Suite prepared",
+      "backendStatus": "Not applicable",
+      "databaseStatus": "Not applicable",
+      "apiStatus": "Not applicable",
+      "integrationStatus": "CI runtime pending",
+      "testStatus": "Focused readiness tests pass",
+      "classification": "blocked-externally",
+      "evidenceFiles": [
+        "tests/browser/s5-s3e-browser-accessibility.spec.mjs",
+        "tests/production/s5-s3e-browser-accessibility-readiness.test.mjs"
+      ],
+      "verifiedPoints": 1.5,
+      "remainingPoints": 1.5,
+      "verified": false
+    },
+    {
+      "id": "runtime-evidence-wave",
+      "module": "Runtime Evidence",
+      "feature": "CI workflow orchestration for PostgreSQL, Redis, storage, browser, auth and operations",
+      "weight": 5,
+      "completion": 0.4,
+      "frontendStatus": "Not applicable",
+      "backendStatus": "Orchestrator complete",
+      "databaseStatus": "Runtime evidence pending",
+      "apiStatus": "Not applicable",
+      "integrationStatus": "GitHub/runtime environment blocked",
+      "testStatus": "Orchestrator tests pass",
+      "classification": "blocked-externally",
+      "evidenceFiles": [
+        "scripts/s5-s3h-runtime-evidence-orchestrator.mjs",
+        "tests/production/s5-s3h-runtime-evidence-orchestrator.test.mjs"
+      ],
+      "verifiedPoints": 2,
+      "remainingPoints": 3,
+      "verified": false
+    },
+    {
+      "id": "mobile-apps",
+      "module": "Mobile",
+      "feature": "Native mobile applications",
+      "weight": 2,
+      "completion": 0,
+      "frontendStatus": "Not started",
+      "backendStatus": "Not started",
+      "databaseStatus": "Not started",
+      "apiStatus": "Not started",
+      "integrationStatus": "Blocked by roadmap",
+      "testStatus": "No tests",
+      "classification": "not-started",
+      "evidenceFiles": [
+        "docs/program-state.md"
+      ],
+      "verifiedPoints": 0,
+      "remainingPoints": 2,
+      "verified": false
+    },
+    {
+      "id": "government-integrations",
+      "module": "External Integrations",
+      "feature": "Government, customs, court and public-sector integrations",
+      "weight": 2,
+      "completion": 0,
+      "frontendStatus": "Deferred",
+      "backendStatus": "Deferred",
+      "databaseStatus": "Deferred",
+      "apiStatus": "Deferred",
+      "integrationStatus": "Blocked by governance",
+      "testStatus": "No tests",
+      "classification": "not-started",
+      "evidenceFiles": [
+        "docs/program-state.md"
+      ],
+      "verifiedPoints": 0,
+      "remainingPoints": 2,
+      "verified": false
+    }
+  ]
+}

@@ -1,0 +1,526 @@
+{
+  "sprint": "S5-ABW-001",
+  "generatedAt": "2026-07-30T18:14:24.531Z",
+  "outputs": [
+    "docs/build-readiness/authoritative-build-register.json",
+    "docs/build-readiness/module-completion-matrix.md",
+    "docs/build-readiness/feature-verification-manifest.json",
+    "docs/build-readiness/remaining-build-gap-register.md"
+  ],
+  "rules": [
+    "No placeholder-only, simulated, credential-blocked, runtime-blocked, or documented-only item may count as fully complete.",
+    "Live Supabase, PostgreSQL runtime, payments, escrow, telemetry, storage, and production certification remain blocked until external evidence exists.",
+    "RC-0.6A and A4-01 remain unchanged."
+  ],
+  "summary": {
+    "sprint": "S5-ABW-001",
+    "classification": "provider-independent core product build readiness",
+    "currentRelease": "RC-0.6A",
+    "a4Status": "A4-01 open",
+    "productionReady": false,
+    "formula": "sum(weight * completion) / sum(weight)",
+    "totalFeatures": 31,
+    "totalWeightedPoints": 120,
+    "verifiedWeightedPoints": 72.85,
+    "remainingWeightedPoints": 47.15,
+    "completedPercent": 60.7,
+    "remainingPercent": 39.3,
+    "byClassification": {
+      "locally-functional": 9,
+      "blocked-externally": 9,
+      "backend-implemented": 7,
+      "simulated": 2,
+      "documented-only": 2,
+      "not-started": 2
+    },
+    "byModule": {
+      "Marketplace": {
+        "totalPoints": 5,
+        "verifiedPoints": 4.5,
+        "features": 1,
+        "remainingPoints": 0.5,
+        "completedPercent": 90
+      },
+      "Authentication": {
+        "totalPoints": 5,
+        "verifiedPoints": 2.75,
+        "features": 1,
+        "remainingPoints": 2.25,
+        "completedPercent": 55
+      },
+      "Authorization": {
+        "totalPoints": 5,
+        "verifiedPoints": 3.75,
+        "features": 1,
+        "remainingPoints": 1.25,
+        "completedPercent": 75
+      },
+      "Supplier": {
+        "totalPoints": 3,
+        "verifiedPoints": 2.25,
+        "features": 1,
+        "remainingPoints": 0.75,
+        "completedPercent": 75
+      },
+      "Listings": {
+        "totalPoints": 5,
+        "verifiedPoints": 4.25,
+        "features": 1,
+        "remainingPoints": 0.75,
+        "completedPercent": 85
+      },
+      "Core Rental": {
+        "totalPoints": 15,
+        "verifiedPoints": 12,
+        "features": 3,
+        "remainingPoints": 3,
+        "completedPercent": 80
+      },
+      "Database": {
+        "totalPoints": 5,
+        "verifiedPoints": 3,
+        "features": 1,
+        "remainingPoints": 2,
+        "completedPercent": 60
+      },
+      "Database Security": {
+        "totalPoints": 5,
+        "verifiedPoints": 2.25,
+        "features": 1,
+        "remainingPoints": 2.75,
+        "completedPercent": 45
+      },
+      "Trust": {
+        "totalPoints": 3,
+        "verifiedPoints": 2.25,
+        "features": 1,
+        "remainingPoints": 0.75,
+        "completedPercent": 75
+      },
+      "Communications": {
+        "totalPoints": 3,
+        "verifiedPoints": 2.1,
+        "features": 1,
+        "remainingPoints": 0.9,
+        "completedPercent": 70
+      },
+      "Claims and Disputes": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.95,
+        "features": 1,
+        "remainingPoints": 1.05,
+        "completedPercent": 65
+      },
+      "Revenue": {
+        "totalPoints": 5,
+        "verifiedPoints": 2.25,
+        "features": 1,
+        "remainingPoints": 2.75,
+        "completedPercent": 45
+      },
+      "Escrow": {
+        "totalPoints": 5,
+        "verifiedPoints": 2,
+        "features": 1,
+        "remainingPoints": 3,
+        "completedPercent": 40
+      },
+      "Auctions": {
+        "totalPoints": 5,
+        "verifiedPoints": 2.75,
+        "features": 1,
+        "remainingPoints": 2.25,
+        "completedPercent": 55
+      },
+      "Inspections": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.95,
+        "features": 1,
+        "remainingPoints": 1.05,
+        "completedPercent": 65
+      },
+      "Transport": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.95,
+        "features": 1,
+        "remainingPoints": 1.05,
+        "completedPercent": 65
+      },
+      "Financing": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.8,
+        "features": 1,
+        "remainingPoints": 1.2,
+        "completedPercent": 60
+      },
+      "AI Studio Consolidation": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.95,
+        "features": 1,
+        "remainingPoints": 1.05,
+        "completedPercent": 65
+      },
+      "AI": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.65,
+        "features": 1,
+        "remainingPoints": 1.35,
+        "completedPercent": 55
+      },
+      "Files and Storage": {
+        "totalPoints": 5,
+        "verifiedPoints": 2.25,
+        "features": 1,
+        "remainingPoints": 2.75,
+        "completedPercent": 45
+      },
+      "Security": {
+        "totalPoints": 5,
+        "verifiedPoints": 3.25,
+        "features": 1,
+        "remainingPoints": 1.75,
+        "completedPercent": 65
+      },
+      "Compliance": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.65,
+        "features": 1,
+        "remainingPoints": 1.35,
+        "completedPercent": 55
+      },
+      "Operations": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.8,
+        "features": 1,
+        "remainingPoints": 1.2,
+        "completedPercent": 60
+      },
+      "Queues": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.35,
+        "features": 1,
+        "remainingPoints": 1.65,
+        "completedPercent": 45
+      },
+      "Release": {
+        "totalPoints": 2,
+        "verifiedPoints": 1.7,
+        "features": 1,
+        "remainingPoints": 0.3,
+        "completedPercent": 85
+      },
+      "Browser and Accessibility": {
+        "totalPoints": 3,
+        "verifiedPoints": 1.5,
+        "features": 1,
+        "remainingPoints": 1.5,
+        "completedPercent": 50
+      },
+      "Runtime Evidence": {
+        "totalPoints": 5,
+        "verifiedPoints": 2,
+        "features": 1,
+        "remainingPoints": 3,
+        "completedPercent": 40
+      },
+      "Mobile": {
+        "totalPoints": 2,
+        "verifiedPoints": 0,
+        "features": 1,
+        "remainingPoints": 2,
+        "completedPercent": 0
+      },
+      "External Integrations": {
+        "totalPoints": 2,
+        "verifiedPoints": 0,
+        "features": 1,
+        "remainingPoints": 2,
+        "completedPercent": 0
+      }
+    },
+    "credentialReadyItems": [
+      "auth-local-session",
+      "postgres-runtime-readiness",
+      "rls-policy-readiness",
+      "payments-wallet-payouts",
+      "escrow-ledger",
+      "file-storage-readiness",
+      "redis-bullmq-readiness",
+      "browser-accessibility-readiness",
+      "runtime-evidence-wave"
+    ],
+    "runtimeBlockedItems": [
+      "auth-local-session",
+      "supplier-verification",
+      "core-rental-lifecycle",
+      "booking-integrity",
+      "postgres-runtime-readiness",
+      "rls-policy-readiness",
+      "messaging-notifications",
+      "claims-disputes",
+      "payments-wallet-payouts",
+      "escrow-ledger",
+      "transport-marketplace",
+      "financing-marketplace",
+      "file-storage-readiness",
+      "security-hardening",
+      "compliance-readiness",
+      "observability-operations",
+      "redis-bullmq-readiness",
+      "release-governance",
+      "browser-accessibility-readiness",
+      "runtime-evidence-wave",
+      "mobile-apps",
+      "government-integrations"
+    ]
+  },
+  "verifiedFeatures": [
+    {
+      "id": "ux-public-marketplace",
+      "module": "Marketplace",
+      "feature": "Public landing, search, categories, and asset discovery",
+      "evidenceFiles": [
+        "src/App.jsx",
+        "src/pages/LandingPage.jsx",
+        "tests/production/search-discovery.test.mjs",
+        "tests/production/asset-listing.test.mjs"
+      ]
+    },
+    {
+      "id": "rbac-route-guards",
+      "module": "Authorization",
+      "feature": "Protected routes, API role guards, and role-aware access controls",
+      "evidenceFiles": [
+        "src/components/ProtectedRoute.jsx",
+        "server/src/middleware/authMiddleware.js",
+        "server/tests/core-rental-api.test.mjs",
+        "tests/production/auth-rbac.test.mjs"
+      ]
+    },
+    {
+      "id": "supplier-verification",
+      "module": "Supplier",
+      "feature": "Supplier profile, verification workflow, and status evidence",
+      "evidenceFiles": [
+        "src/pages/SupplierProfile.jsx",
+        "server/src/routes/coreRentalRoutes.js",
+        "tests/production/supplier-profile-verification.test.mjs"
+      ]
+    },
+    {
+      "id": "asset-listing-management",
+      "module": "Listings",
+      "feature": "Asset and listing create, edit, publish, moderate, and browse",
+      "evidenceFiles": [
+        "src/pages/ListAsset.jsx",
+        "src/pages/MyListings.jsx",
+        "server/src/routes/resourceRoutes.js",
+        "server/src/routes/coreRentalRoutes.js",
+        "tests/production/asset-listing.test.mjs"
+      ]
+    },
+    {
+      "id": "core-rental-lifecycle",
+      "module": "Core Rental",
+      "feature": "Booking request through review eligibility provider-independent lifecycle",
+      "evidenceFiles": [
+        "server/src/services/coreRentalService.js",
+        "server/src/controllers/coreRentalController.js",
+        "server/tests/core-rental-api.test.mjs",
+        "tests/production/core-rental-api-adapter.test.mjs"
+      ]
+    },
+    {
+      "id": "availability-pricing",
+      "module": "Core Rental",
+      "feature": "Availability checks, deterministic pricing, and booking quote",
+      "evidenceFiles": [
+        "server/src/services/coreRentalService.js",
+        "server/tests/core-rental-api.test.mjs"
+      ]
+    },
+    {
+      "id": "booking-integrity",
+      "module": "Core Rental",
+      "feature": "Idempotency, optimistic versioning, overlap prevention, and audit participation",
+      "evidenceFiles": [
+        "server/src/repositories/coreRentalPostgresRepositoryAdapter.js",
+        "server/tests/core-rental-postgres-repository-adapter.test.mjs",
+        "server/tests/core-rental-api.test.mjs"
+      ]
+    },
+    {
+      "id": "reviews-ratings",
+      "module": "Trust",
+      "feature": "Reviews, ratings, eligibility, and moderation",
+      "evidenceFiles": [
+        "server/src/routes/reviewApiRoutes.js",
+        "src/pages/ReviewsPage.jsx",
+        "tests/production/reviews-ratings.test.mjs"
+      ]
+    }
+  ],
+  "unverifiedFeatures": [
+    {
+      "id": "auth-local-session",
+      "module": "Authentication",
+      "feature": "Local authentication routes and session readiness",
+      "classification": "blocked-externally",
+      "remainingPoints": 2.25
+    },
+    {
+      "id": "postgres-runtime-readiness",
+      "module": "Database",
+      "feature": "PostgreSQL adapter, migrations, and execution harness",
+      "classification": "blocked-externally",
+      "remainingPoints": 2
+    },
+    {
+      "id": "rls-policy-readiness",
+      "module": "Database Security",
+      "feature": "RLS/RBAC policy preparation and cross-tenant evidence harness",
+      "classification": "blocked-externally",
+      "remainingPoints": 2.75
+    },
+    {
+      "id": "messaging-notifications",
+      "module": "Communications",
+      "feature": "Messages, notifications, local delivery/audit framework",
+      "classification": "backend-implemented",
+      "remainingPoints": 0.9
+    },
+    {
+      "id": "claims-disputes",
+      "module": "Claims and Disputes",
+      "feature": "Claims, disputes, admin queues, and local workflow transitions",
+      "classification": "backend-implemented",
+      "remainingPoints": 1.05
+    },
+    {
+      "id": "payments-wallet-payouts",
+      "module": "Revenue",
+      "feature": "Payment intent, wallet, earnings, payout, refund placeholder workflow",
+      "classification": "blocked-externally",
+      "remainingPoints": 2.75
+    },
+    {
+      "id": "escrow-ledger",
+      "module": "Escrow",
+      "feature": "Escrow intake, ledger, release, refund, and dispute readiness",
+      "classification": "blocked-externally",
+      "remainingPoints": 3
+    },
+    {
+      "id": "auction-platform",
+      "module": "Auctions",
+      "feature": "Auction landing, lots, bidding UI, supplier/admin/dealer surfaces",
+      "classification": "simulated",
+      "remainingPoints": 2.25
+    },
+    {
+      "id": "inspection-marketplace",
+      "module": "Inspections",
+      "feature": "Inspector directory, registration, quote, booking, report workflow",
+      "classification": "locally-functional",
+      "remainingPoints": 1.05
+    },
+    {
+      "id": "transport-marketplace",
+      "module": "Transport",
+      "feature": "Transport directory, provider registration, quote and booking readiness",
+      "classification": "locally-functional",
+      "remainingPoints": 1.05
+    },
+    {
+      "id": "financing-marketplace",
+      "module": "Financing",
+      "feature": "Financing directory, partner registration, referral readiness",
+      "classification": "locally-functional",
+      "remainingPoints": 1.2
+    },
+    {
+      "id": "ai-assistant-docs-workflows",
+      "module": "AI Studio Consolidation",
+      "feature": "Role-aware AI assistant, documentation, workflow guides, and admin system status",
+      "classification": "locally-functional",
+      "remainingPoints": 1.05
+    },
+    {
+      "id": "ai-listing-valuation",
+      "module": "AI",
+      "feature": "AI listing assistant, valuation engine, rental advisor, market insights",
+      "classification": "simulated",
+      "remainingPoints": 1.35
+    },
+    {
+      "id": "file-storage-readiness",
+      "module": "Files and Storage",
+      "feature": "File metadata, upload intent, signed URL and bucket readiness",
+      "classification": "blocked-externally",
+      "remainingPoints": 2.75
+    },
+    {
+      "id": "security-hardening",
+      "module": "Security",
+      "feature": "Security headers, secret scanning, dependency/security readiness evidence",
+      "classification": "backend-implemented",
+      "remainingPoints": 1.75
+    },
+    {
+      "id": "compliance-readiness",
+      "module": "Compliance",
+      "feature": "Privacy, DSAR, retention, KYC, DPA/GDPR evidence readiness",
+      "classification": "documented-only",
+      "remainingPoints": 1.35
+    },
+    {
+      "id": "observability-operations",
+      "module": "Operations",
+      "feature": "Health, readiness, liveness, observability and operator evidence",
+      "classification": "backend-implemented",
+      "remainingPoints": 1.2
+    },
+    {
+      "id": "redis-bullmq-readiness",
+      "module": "Queues",
+      "feature": "Redis and BullMQ queue readiness, retries, DLQ and metrics contracts",
+      "classification": "blocked-externally",
+      "remainingPoints": 1.65
+    },
+    {
+      "id": "release-governance",
+      "module": "Release",
+      "feature": "Release governance, launch dashboard, evidence indexes and owner action register",
+      "classification": "documented-only",
+      "remainingPoints": 0.3
+    },
+    {
+      "id": "browser-accessibility-readiness",
+      "module": "Browser and Accessibility",
+      "feature": "Playwright browser journey and accessibility runtime suite",
+      "classification": "blocked-externally",
+      "remainingPoints": 1.5
+    },
+    {
+      "id": "runtime-evidence-wave",
+      "module": "Runtime Evidence",
+      "feature": "CI workflow orchestration for PostgreSQL, Redis, storage, browser, auth and operations",
+      "classification": "blocked-externally",
+      "remainingPoints": 3
+    },
+    {
+      "id": "mobile-apps",
+      "module": "Mobile",
+      "feature": "Native mobile applications",
+      "classification": "not-started",
+      "remainingPoints": 2
+    },
+    {
+      "id": "government-integrations",
+      "module": "External Integrations",
+      "feature": "Government, customs, court and public-sector integrations",
+      "classification": "not-started",
+      "remainingPoints": 2
+    }
+  ]
+}

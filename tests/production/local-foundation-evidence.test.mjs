@@ -14,7 +14,8 @@ test("local foundation evidence runs migration reset in memory without provider 
   assert.equal(result.reset.filePath, ":memory:");
   assert.equal(result.reset.liveProviderTouched, false);
   assert.equal(result.reset.productionTouched, false);
-  assert.equal(result.reset.migrationsApplied.length, 8);
+  assert.equal(result.reset.migrationsApplied.length, result.migrationOrder.names.length);
+  assert.ok(result.reset.migrationsApplied.length >= 9);
   assert.ok(result.reset.seedRecordCount >= 10);
 });
 
@@ -29,6 +30,7 @@ test("migration ledger covers required migrations and keeps production activatio
     "006_supabase_storage_activation.sql",
     "007_audit_logging_activation.sql",
     "008_core_rental_production_readiness_bridge.sql",
+    "009_core_rental_postgres_repository_adapter.sql",
   ]) {
     assert.ok(result.migrationOrder.names.includes(migration), `${migration} should be present`);
   }

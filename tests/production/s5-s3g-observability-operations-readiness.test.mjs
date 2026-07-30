@@ -32,8 +32,8 @@ test("request context generates trace identifiers and redacts tenant-safe metada
   assert.equal(context.metadata.token, "[REDACTED]");
   assert.equal(context.metadata.safe, "visible");
 
-  const safe = tenantSafeLogContext({ metadata: { SUPABASE_SERVICE_ROLE_KEY: "sb_secret_bad", nested: { password: "bad" } } });
-  assert.doesNotMatch(JSON.stringify(safe), /sb_secret_bad|password":"bad/);
+  const safe = tenantSafeLogContext({ metadata: { apiKey: "redaction-fixture-value", nested: { password: "bad" } } });
+  assert.doesNotMatch(JSON.stringify(safe), /redaction-fixture-value|password":"bad/);
 });
 
 test("structured logger redacts common token and credential patterns", () => {
