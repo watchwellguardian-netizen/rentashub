@@ -144,7 +144,7 @@ Overall remaining build scope: 39.3%
 - Classification: backend-implemented
 - Dependency/blocker: Provider independent
 - Required action: advance from backend-implemented to verified runtime or production evidence where applicable.
-- Evidence required: src/components/ProtectedRoute.jsx, server/src/middleware/authMiddleware.js, server/tests/core-rental-api.test.mjs, tests/production/auth-rbac.test.mjs
+- Evidence required: src/components/ProtectedRoute.jsx, server/src/middleware/auth.js, server/tests/core-rental-api.test.mjs, tests/production/auth-rbac.test.mjs
 
 ## Core Rental: Idempotency, optimistic versioning, overlap prevention, and audit participation
 

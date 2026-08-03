@@ -65,7 +65,7 @@ const featureRegister = [
     integrationStatus: "Provider independent",
     testStatus: "Auth/RBAC and core rental authorization tests pass",
     classification: "backend-implemented",
-    evidenceFiles: ["src/components/ProtectedRoute.jsx", "server/src/middleware/authMiddleware.js", "server/tests/core-rental-api.test.mjs", "tests/production/auth-rbac.test.mjs"],
+    evidenceFiles: ["src/components/ProtectedRoute.jsx", "server/src/middleware/auth.js", "server/tests/core-rental-api.test.mjs", "tests/production/auth-rbac.test.mjs"],
   },
   {
     id: "supplier-verification",

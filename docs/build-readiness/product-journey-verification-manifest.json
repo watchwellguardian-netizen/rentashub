@@ -1,0 +1,1386 @@
+{
+  "generatedAt": "2026-08-03T11:42:56.566Z",
+  "summary": {
+    "sprint": "S5-ABW-002",
+    "status": "PASS_REPOSITORY_JOURNEY_EVIDENCE",
+    "currentRelease": "RC-0.6A",
+    "a4Status": "A4-01 open",
+    "productionReady": false,
+    "liveProviderActivation": false,
+    "totalJourneys": 13,
+    "repositoryPass": 13,
+    "runtimeBlocked": 11,
+    "failed": 0,
+    "repositoryJourneyCoveragePercent": 100,
+    "providerIndependentCoveragePercent": 16.3,
+    "weighted": {
+      "total": 49,
+      "repositoryVerified": 49,
+      "providerIndependentVerified": 8
+    }
+  },
+  "journeys": [
+    {
+      "id": "public_marketplace_discovery",
+      "name": "Public marketplace discovery",
+      "userJourney": "Visitor searches, filters, opens marketplace/category/asset pages, and sees truthful provider-independent copy.",
+      "type": "critical_user_journey",
+      "routes": [
+        "/",
+        "/search",
+        "/marketplace",
+        "/assets",
+        "/category/:categorySlug",
+        "/asset/:id"
+      ],
+      "apiRoutes": [
+        "/api/assets",
+        "/api/assets/:id"
+      ],
+      "routeFiles": [
+        "src/App.jsx"
+      ],
+      "apiFiles": [
+        "server/src/routes/resourceRoutes.js"
+      ],
+      "tests": [
+        "tests/production/search-discovery.test.mjs",
+        "tests/production/asset-listing.test.mjs"
+      ],
+      "blockers": [],
+      "verifiedAt": "2026-08-03T11:42:56.566Z",
+      "repositoryStatus": "PASS",
+      "runtimeStatus": "PROVIDER_INDEPENDENT_VERIFIED",
+      "routeChecks": [
+        {
+          "route": "/",
+          "present": true
+        },
+        {
+          "route": "/search",
+          "present": true
+        },
+        {
+          "route": "/marketplace",
+          "present": true
+        },
+        {
+          "route": "/assets",
+          "present": true
+        },
+        {
+          "route": "/category/:categorySlug",
+          "present": true
+        },
+        {
+          "route": "/asset/:id",
+          "present": true
+        }
+      ],
+      "apiChecks": [
+        {
+          "route": "/api/assets",
+          "present": true
+        },
+        {
+          "route": "/api/assets/:id",
+          "present": true
+        }
+      ],
+      "testChecks": [
+        {
+          "path": "tests/production/search-discovery.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/asset-listing.test.mjs",
+          "present": true
+        }
+      ],
+      "optionalTestChecks": [],
+      "sourceChecks": [
+        {
+          "path": "src/App.jsx",
+          "present": true
+        },
+        {
+          "path": "server/src/routes/resourceRoutes.js",
+          "present": true
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "supplier_asset_listing",
+      "name": "Supplier asset listing management",
+      "userJourney": "Supplier lists, edits, verifies, publishes, and manages asset listings with role protection.",
+      "type": "critical_user_journey",
+      "routes": [
+        "/list-asset",
+        "/my-listings",
+        "/asset/:id/edit",
+        "/supplier-profile",
+        "/verification/status"
+      ],
+      "apiRoutes": [
+        "/api/assets",
+        "/api/v1/rentals/assets",
+        "/api/v1/rentals/listings/:id/:action"
+      ],
+      "routeFiles": [
+        "src/App.jsx"
+      ],
+      "apiFiles": [
+        "server/src/routes/resourceRoutes.js",
+        "server/src/routes/coreRentalRoutes.js"
+      ],
+      "tests": [
+        "tests/production/asset-listing.test.mjs",
+        "tests/production/supplier-profile-verification.test.mjs",
+        "server/tests/core-rental-api.test.mjs"
+      ],
+      "blockers": [
+        "Live KYC evidence still required before production trust certification."
+      ],
+      "verifiedAt": "2026-08-03T11:42:56.566Z",
+      "repositoryStatus": "PASS",
+      "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
+      "routeChecks": [
+        {
+          "route": "/list-asset",
+          "present": true
+        },
+        {
+          "route": "/my-listings",
+          "present": true
+        },
+        {
+          "route": "/asset/:id/edit",
+          "present": true
+        },
+        {
+          "route": "/supplier-profile",
+          "present": true
+        },
+        {
+          "route": "/verification/status",
+          "present": true
+        }
+      ],
+      "apiChecks": [
+        {
+          "route": "/api/assets",
+          "present": true
+        },
+        {
+          "route": "/api/v1/rentals/assets",
+          "present": true
+        },
+        {
+          "route": "/api/v1/rentals/listings/:id/:action",
+          "present": true
+        }
+      ],
+      "testChecks": [
+        {
+          "path": "tests/production/asset-listing.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/supplier-profile-verification.test.mjs",
+          "present": true
+        },
+        {
+          "path": "server/tests/core-rental-api.test.mjs",
+          "present": true
+        }
+      ],
+      "optionalTestChecks": [],
+      "sourceChecks": [
+        {
+          "path": "src/App.jsx",
+          "present": true
+        },
+        {
+          "path": "server/src/routes/resourceRoutes.js",
+          "present": true
+        },
+        {
+          "path": "server/src/routes/coreRentalRoutes.js",
+          "present": true
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "core_rental_booking_lifecycle",
+      "name": "Core rental booking lifecycle",
+      "userJourney": "Customer requests booking; supplier accepts; payment marker, contract trigger, check-in, activation, extension, check-out, settlement, review eligibility, and dispute paths execute locally.",
+      "type": "critical_user_journey",
+      "routes": [
+        "/asset/:id/book",
+        "/booking/:id",
+        "/booking/:id/payment",
+        "/booking/:id/check-in",
+        "/booking/:id/check-out",
+        "/reviews/write/:bookingId"
+      ],
+      "apiRoutes": [
+        "/api/v1/rentals/bookings",
+        "/api/v1/rentals/bookings/:id",
+        "/api/v1/rentals/bookings/:id/:action",
+        "/api/v1/rentals/quote",
+        "/api/v1/rentals/availability"
+      ],
+      "routeFiles": [
+        "src/App.jsx"
+      ],
+      "apiFiles": [
+        "server/src/routes/coreRentalRoutes.js",
+        "server/src/controllers/coreRentalController.js"
+      ],
+      "tests": [
+        "server/tests/core-rental-api.test.mjs",
+        "server/tests/core-rental-service.test.mjs",
+        "tests/production/core-rental-api-adapter.test.mjs"
+      ],
+      "blockers": [
+        "PostgreSQL runtime execution and RLS evidence are pending."
+      ],
+      "verifiedAt": "2026-08-03T11:42:56.566Z",
+      "repositoryStatus": "PASS",
+      "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
+      "routeChecks": [
+        {
+          "route": "/asset/:id/book",
+          "present": true
+        },
+        {
+          "route": "/booking/:id",
+          "present": true
+        },
+        {
+          "route": "/booking/:id/payment",
+          "present": true
+        },
+        {
+          "route": "/booking/:id/check-in",
+          "present": true
+        },
+        {
+          "route": "/booking/:id/check-out",
+          "present": true
+        },
+        {
+          "route": "/reviews/write/:bookingId",
+          "present": true
+        }
+      ],
+      "apiChecks": [
+        {
+          "route": "/api/v1/rentals/bookings",
+          "present": true
+        },
+        {
+          "route": "/api/v1/rentals/bookings/:id",
+          "present": true
+        },
+        {
+          "route": "/api/v1/rentals/bookings/:id/:action",
+          "present": true
+        },
+        {
+          "route": "/api/v1/rentals/quote",
+          "present": true
+        },
+        {
+          "route": "/api/v1/rentals/availability",
+          "present": true
+        }
+      ],
+      "testChecks": [
+        {
+          "path": "server/tests/core-rental-api.test.mjs",
+          "present": true
+        },
+        {
+          "path": "server/tests/core-rental-service.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/core-rental-api-adapter.test.mjs",
+          "present": true
+        }
+      ],
+      "optionalTestChecks": [],
+      "sourceChecks": [
+        {
+          "path": "src/App.jsx",
+          "present": true
+        },
+        {
+          "path": "server/src/routes/coreRentalRoutes.js",
+          "present": true
+        },
+        {
+          "path": "server/src/controllers/coreRentalController.js",
+          "present": true
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "auth_rbac_access",
+      "name": "Authentication and authorization access",
+      "userJourney": "Users register, log in locally, navigate role-protected routes, and receive controlled denial for unauthorized role access.",
+      "type": "critical_user_journey",
+      "routes": [
+        "/login",
+        "/customer-dashboard",
+        "/supplier-dashboard",
+        "/admin"
+      ],
+      "apiRoutes": [
+        "/api/auth/register",
+        "/api/auth/login",
+        "/api/auth/logout",
+        "/api/auth/me",
+        "/api/auth/refresh"
+      ],
+      "routeFiles": [
+        "src/App.jsx",
+        "src/components/ProtectedRoute.jsx"
+      ],
+      "apiFiles": [
+        "server/src/routes/authRoutes.js",
+        "server/src/middleware/auth.js"
+      ],
+      "tests": [
+        "server/tests/auth.test.mjs",
+        "tests/production/auth-rbac.test.mjs",
+        "tests/production/s5-s3f-auth-authorization-readiness.test.mjs"
+      ],
+      "blockers": [
+        "Live OIDC or Supabase Auth provider evidence remains pending."
+      ],
+      "verifiedAt": "2026-08-03T11:42:56.566Z",
+      "repositoryStatus": "PASS",
+      "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
+      "routeChecks": [
+        {
+          "route": "/login",
+          "present": true
+        },
+        {
+          "route": "/customer-dashboard",
+          "present": true
+        },
+        {
+          "route": "/supplier-dashboard",
+          "present": true
+        },
+        {
+          "route": "/admin",
+          "present": true
+        }
+      ],
+      "apiChecks": [
+        {
+          "route": "/api/auth/register",
+          "present": true
+        },
+        {
+          "route": "/api/auth/login",
+          "present": true
+        },
+        {
+          "route": "/api/auth/logout",
+          "present": true
+        },
+        {
+          "route": "/api/auth/me",
+          "present": true
+        },
+        {
+          "route": "/api/auth/refresh",
+          "present": true
+        }
+      ],
+      "testChecks": [
+        {
+          "path": "server/tests/auth.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/auth-rbac.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/s5-s3f-auth-authorization-readiness.test.mjs",
+          "present": true
+        }
+      ],
+      "optionalTestChecks": [],
+      "sourceChecks": [
+        {
+          "path": "src/App.jsx",
+          "present": true
+        },
+        {
+          "path": "src/components/ProtectedRoute.jsx",
+          "present": true
+        },
+        {
+          "path": "server/src/routes/authRoutes.js",
+          "present": true
+        },
+        {
+          "path": "server/src/middleware/auth.js",
+          "present": true
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "reviews_trust_reputation",
+      "name": "Reviews, trust, and reputation",
+      "userJourney": "Completed rentals can create reviews, supplier responses are scoped, and trust signals render for assets, suppliers, and customers.",
+      "type": "core_module_workflow",
+      "routes": [
+        "/reviews",
+        "/asset/:id/reviews",
+        "/supplier/:supplierId/reviews",
+        "/trust",
+        "/trust/supplier/:supplierId",
+        "/trust/asset/:assetId"
+      ],
+      "apiRoutes": [
+        "/api/reviews",
+        "/api/reviews/:id",
+        "/api/trust",
+        "/api/trust/:entityType/:entityId"
+      ],
+      "routeFiles": [
+        "src/App.jsx"
+      ],
+      "apiFiles": [
+        "server/src/routes/reviewApiRoutes.js",
+        "server/src/routes/trustApiRoutes.js"
+      ],
+      "tests": [
+        "tests/production/reviews-ratings.test.mjs",
+        "tests/production/trust-engine.test.mjs"
+      ],
+      "blockers": [],
+      "verifiedAt": "2026-08-03T11:42:56.566Z",
+      "repositoryStatus": "PASS",
+      "runtimeStatus": "PROVIDER_INDEPENDENT_VERIFIED",
+      "routeChecks": [
+        {
+          "route": "/reviews",
+          "present": true
+        },
+        {
+          "route": "/asset/:id/reviews",
+          "present": true
+        },
+        {
+          "route": "/supplier/:supplierId/reviews",
+          "present": true
+        },
+        {
+          "route": "/trust",
+          "present": true
+        },
+        {
+          "route": "/trust/supplier/:supplierId",
+          "present": true
+        },
+        {
+          "route": "/trust/asset/:assetId",
+          "present": true
+        }
+      ],
+      "apiChecks": [
+        {
+          "route": "/api/reviews",
+          "present": true
+        },
+        {
+          "route": "/api/reviews/:id",
+          "present": true
+        },
+        {
+          "route": "/api/trust",
+          "present": true
+        },
+        {
+          "route": "/api/trust/:entityType/:entityId",
+          "present": true
+        }
+      ],
+      "testChecks": [
+        {
+          "path": "tests/production/reviews-ratings.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/trust-engine.test.mjs",
+          "present": true
+        }
+      ],
+      "optionalTestChecks": [],
+      "sourceChecks": [
+        {
+          "path": "src/App.jsx",
+          "present": true
+        },
+        {
+          "path": "server/src/routes/reviewApiRoutes.js",
+          "present": true
+        },
+        {
+          "path": "server/src/routes/trustApiRoutes.js",
+          "present": true
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "claims_disputes_protection",
+      "name": "Claims, disputes, and protection",
+      "userJourney": "Customer/supplier create claims and disputes, admin reviews queues, and protection selections remain provider-safe.",
+      "type": "core_module_workflow",
+      "routes": [
+        "/claims",
+        "/claims/new/:bookingId",
+        "/claim/:id",
+        "/disputes",
+        "/disputes/new/:bookingId",
+        "/dispute/:id",
+        "/protection"
+      ],
+      "apiRoutes": [
+        "/api/claims",
+        "/api/claims/:id",
+        "/api/disputes",
+        "/api/disputes/:id",
+        "/api/protection"
+      ],
+      "routeFiles": [
+        "src/App.jsx"
+      ],
+      "apiFiles": [
+        "server/src/routes/protectionClaimsApiRoutes.js",
+        "server/src/routes/disputeApiRoutes.js"
+      ],
+      "tests": [
+        "tests/production/protection-framework.test.mjs"
+      ],
+      "blockers": [
+        "Legal/provider evidence required before production claim or insurance certification."
+      ],
+      "verifiedAt": "2026-08-03T11:42:56.566Z",
+      "repositoryStatus": "PASS",
+      "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
+      "routeChecks": [
+        {
+          "route": "/claims",
+          "present": true
+        },
+        {
+          "route": "/claims/new/:bookingId",
+          "present": true
+        },
+        {
+          "route": "/claim/:id",
+          "present": true
+        },
+        {
+          "route": "/disputes",
+          "present": true
+        },
+        {
+          "route": "/disputes/new/:bookingId",
+          "present": true
+        },
+        {
+          "route": "/dispute/:id",
+          "present": true
+        },
+        {
+          "route": "/protection",
+          "present": true
+        }
+      ],
+      "apiChecks": [
+        {
+          "route": "/api/claims",
+          "present": true
+        },
+        {
+          "route": "/api/claims/:id",
+          "present": true
+        },
+        {
+          "route": "/api/disputes",
+          "present": true
+        },
+        {
+          "route": "/api/disputes/:id",
+          "present": true
+        },
+        {
+          "route": "/api/protection",
+          "present": true
+        }
+      ],
+      "testChecks": [
+        {
+          "path": "tests/production/protection-framework.test.mjs",
+          "present": true
+        }
+      ],
+      "optionalTestChecks": [],
+      "sourceChecks": [
+        {
+          "path": "src/App.jsx",
+          "present": true
+        },
+        {
+          "path": "server/src/routes/protectionClaimsApiRoutes.js",
+          "present": true
+        },
+        {
+          "path": "server/src/routes/disputeApiRoutes.js",
+          "present": true
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "auction_buyer_supplier_admin",
+      "name": "Auction buyer, supplier, dealer, and admin journeys",
+      "userJourney": "Auction discovery, lot detail, local bid controls, supplier auction surfaces, dealer surfaces, and admin queues remain locally controlled.",
+      "type": "critical_user_journey",
+      "routes": [
+        "/auctions",
+        "/auction/:auctionId",
+        "/auction/:auctionId/bid",
+        "/supplier/auctions",
+        "/dealer/auction-dashboard",
+        "/admin/auctions"
+      ],
+      "apiRoutes": [],
+      "routeFiles": [
+        "src/App.jsx",
+        "src/pages/AuctionPages.jsx"
+      ],
+      "apiFiles": [
+        "src/lib/auctionService.js"
+      ],
+      "tests": [
+        "tests/production/auction-module.test.mjs",
+        "tests/production/auction-analytics.test.mjs",
+        "tests/production/auction-document-engine.test.mjs"
+      ],
+      "blockers": [
+        "Live auction exchange, payment, escrow, and legal transfer evidence remain pending."
+      ],
+      "verifiedAt": "2026-08-03T11:42:56.566Z",
+      "repositoryStatus": "PASS",
+      "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
+      "routeChecks": [
+        {
+          "route": "/auctions",
+          "present": true
+        },
+        {
+          "route": "/auction/:auctionId",
+          "present": true
+        },
+        {
+          "route": "/auction/:auctionId/bid",
+          "present": true
+        },
+        {
+          "route": "/supplier/auctions",
+          "present": true
+        },
+        {
+          "route": "/dealer/auction-dashboard",
+          "present": true
+        },
+        {
+          "route": "/admin/auctions",
+          "present": true
+        }
+      ],
+      "apiChecks": [],
+      "testChecks": [
+        {
+          "path": "tests/production/auction-module.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/auction-analytics.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/auction-document-engine.test.mjs",
+          "present": true
+        }
+      ],
+      "optionalTestChecks": [],
+      "sourceChecks": [
+        {
+          "path": "src/App.jsx",
+          "present": true
+        },
+        {
+          "path": "src/pages/AuctionPages.jsx",
+          "present": true
+        },
+        {
+          "path": "src/lib/auctionService.js",
+          "present": true
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "inspection_transport_financing",
+      "name": "Inspection, transport, and financing marketplace support",
+      "userJourney": "Users discover providers, suppliers/register providers, and provider-independent requests/referrals are recorded locally.",
+      "type": "core_module_workflow",
+      "routes": [
+        "/inspectors",
+        "/inspectors/register",
+        "/transport",
+        "/transport/register",
+        "/financing",
+        "/financing/register",
+        "/financing/products"
+      ],
+      "apiRoutes": [
+        "/api/inspections",
+        "/api/inspections/:id"
+      ],
+      "routeFiles": [
+        "src/App.jsx"
+      ],
+      "apiFiles": [
+        "server/src/routes/resourceRoutes.js",
+        "src/lib/inspectionMarketplaceService.js",
+        "src/lib/transportMarketplaceService.js",
+        "src/lib/financingMarketplaceService.js"
+      ],
+      "tests": [
+        "tests/production/inspection-marketplace.test.mjs",
+        "tests/production/inspection-engine.test.mjs",
+        "tests/production/transport-marketplace.test.mjs",
+        "tests/production/financing-marketplace.test.mjs"
+      ],
+      "blockers": [
+        "External provider onboarding and operational evidence remain pending."
+      ],
+      "verifiedAt": "2026-08-03T11:42:56.566Z",
+      "repositoryStatus": "PASS",
+      "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
+      "routeChecks": [
+        {
+          "route": "/inspectors",
+          "present": true
+        },
+        {
+          "route": "/inspectors/register",
+          "present": true
+        },
+        {
+          "route": "/transport",
+          "present": true
+        },
+        {
+          "route": "/transport/register",
+          "present": true
+        },
+        {
+          "route": "/financing",
+          "present": true
+        },
+        {
+          "route": "/financing/register",
+          "present": true
+        },
+        {
+          "route": "/financing/products",
+          "present": true
+        }
+      ],
+      "apiChecks": [
+        {
+          "route": "/api/inspections",
+          "present": true
+        },
+        {
+          "route": "/api/inspections/:id",
+          "present": true
+        }
+      ],
+      "testChecks": [
+        {
+          "path": "tests/production/inspection-marketplace.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/inspection-engine.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/transport-marketplace.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/financing-marketplace.test.mjs",
+          "present": true
+        }
+      ],
+      "optionalTestChecks": [],
+      "sourceChecks": [
+        {
+          "path": "src/App.jsx",
+          "present": true
+        },
+        {
+          "path": "server/src/routes/resourceRoutes.js",
+          "present": true
+        },
+        {
+          "path": "src/lib/inspectionMarketplaceService.js",
+          "present": true
+        },
+        {
+          "path": "src/lib/transportMarketplaceService.js",
+          "present": true
+        },
+        {
+          "path": "src/lib/financingMarketplaceService.js",
+          "present": true
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "payments_wallet_revenue",
+      "name": "Payments, wallet, revenue, and payout readiness",
+      "userJourney": "Customer payment intent and supplier payout surfaces use provider-ready placeholders without live money movement.",
+      "type": "critical_user_journey",
+      "routes": [
+        "/payments",
+        "/wallet",
+        "/booking/:id/payment",
+        "/earnings",
+        "/payouts",
+        "/admin/revenue"
+      ],
+      "apiRoutes": [
+        "/api/payments",
+        "/api/payments/intent",
+        "/api/wallet",
+        "/api/earnings",
+        "/api/payouts",
+        "/api/payouts/request"
+      ],
+      "routeFiles": [
+        "src/App.jsx"
+      ],
+      "apiFiles": [
+        "server/src/routes/paymentApiRoutes.js"
+      ],
+      "tests": [
+        "tests/production/payment-ledger.test.mjs",
+        "tests/production/revenue-readiness-tooling.test.mjs"
+      ],
+      "blockers": [
+        "Payment provider sandbox evidence, webhook evidence, payout validation, and Tax/GCT signoff remain pending."
+      ],
+      "verifiedAt": "2026-08-03T11:42:56.566Z",
+      "repositoryStatus": "PASS",
+      "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
+      "routeChecks": [
+        {
+          "route": "/payments",
+          "present": true
+        },
+        {
+          "route": "/wallet",
+          "present": true
+        },
+        {
+          "route": "/booking/:id/payment",
+          "present": true
+        },
+        {
+          "route": "/earnings",
+          "present": true
+        },
+        {
+          "route": "/payouts",
+          "present": true
+        },
+        {
+          "route": "/admin/revenue",
+          "present": true
+        }
+      ],
+      "apiChecks": [
+        {
+          "route": "/api/payments",
+          "present": true
+        },
+        {
+          "route": "/api/payments/intent",
+          "present": true
+        },
+        {
+          "route": "/api/wallet",
+          "present": true
+        },
+        {
+          "route": "/api/earnings",
+          "present": true
+        },
+        {
+          "route": "/api/payouts",
+          "present": true
+        },
+        {
+          "route": "/api/payouts/request",
+          "present": true
+        }
+      ],
+      "testChecks": [
+        {
+          "path": "tests/production/payment-ledger.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/revenue-readiness-tooling.test.mjs",
+          "present": true
+        }
+      ],
+      "optionalTestChecks": [],
+      "sourceChecks": [
+        {
+          "path": "src/App.jsx",
+          "present": true
+        },
+        {
+          "path": "server/src/routes/paymentApiRoutes.js",
+          "present": true
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "files_storage_documents",
+      "name": "Files, storage, and document evidence",
+      "userJourney": "File metadata, upload intent, auction documents, and storage readiness remain credential-safe and provider-independent.",
+      "type": "core_module_workflow",
+      "routes": [
+        "/auction/:auctionId/documents",
+        "/auction/:auctionId/document-engine"
+      ],
+      "apiRoutes": [
+        "/api/files/upload-intent",
+        "/api/files/metadata",
+        "/api/files",
+        "/api/files/:id"
+      ],
+      "routeFiles": [
+        "src/App.jsx",
+        "src/pages/AuctionDocumentEnginePages.jsx"
+      ],
+      "apiFiles": [
+        "server/src/routes/fileRoutes.js"
+      ],
+      "tests": [
+        "server/tests/files.test.mjs",
+        "tests/production/storage-readiness-tooling.test.mjs",
+        "tests/production/auction-document-engine.test.mjs"
+      ],
+      "blockers": [
+        "Live object storage, signed URL, bucket policy, and unauthorized access evidence remain pending."
+      ],
+      "verifiedAt": "2026-08-03T11:42:56.566Z",
+      "repositoryStatus": "PASS",
+      "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
+      "routeChecks": [
+        {
+          "route": "/auction/:auctionId/documents",
+          "present": true
+        },
+        {
+          "route": "/auction/:auctionId/document-engine",
+          "present": true
+        }
+      ],
+      "apiChecks": [
+        {
+          "route": "/api/files/upload-intent",
+          "present": true
+        },
+        {
+          "route": "/api/files/metadata",
+          "present": true
+        },
+        {
+          "route": "/api/files",
+          "present": true
+        },
+        {
+          "route": "/api/files/:id",
+          "present": true
+        }
+      ],
+      "testChecks": [
+        {
+          "path": "server/tests/files.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/storage-readiness-tooling.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/auction-document-engine.test.mjs",
+          "present": true
+        }
+      ],
+      "optionalTestChecks": [],
+      "sourceChecks": [
+        {
+          "path": "src/App.jsx",
+          "present": true
+        },
+        {
+          "path": "src/pages/AuctionDocumentEnginePages.jsx",
+          "present": true
+        },
+        {
+          "path": "server/src/routes/fileRoutes.js",
+          "present": true
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "communications_notifications",
+      "name": "Messages and notifications",
+      "userJourney": "Customer, supplier, dealer, and admin notification/message surfaces are role-scoped and local-delivery safe.",
+      "type": "core_module_workflow",
+      "routes": [
+        "/messages",
+        "/messages/:threadId",
+        "/booking/:id/messages",
+        "/notifications"
+      ],
+      "apiRoutes": [
+        "/api/messages",
+        "/api/messages/:threadId",
+        "/api/notifications",
+        "/api/notifications/:id"
+      ],
+      "routeFiles": [
+        "src/App.jsx"
+      ],
+      "apiFiles": [
+        "server/src/routes/messageNotificationRoutes.js"
+      ],
+      "tests": [
+        "tests/production/messaging-notifications.test.mjs",
+        "tests/production/notification-framework.test.mjs"
+      ],
+      "blockers": [
+        "Live email/SMS/push delivery provider evidence remains pending."
+      ],
+      "verifiedAt": "2026-08-03T11:42:56.566Z",
+      "repositoryStatus": "PASS",
+      "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
+      "routeChecks": [
+        {
+          "route": "/messages",
+          "present": true
+        },
+        {
+          "route": "/messages/:threadId",
+          "present": true
+        },
+        {
+          "route": "/booking/:id/messages",
+          "present": true
+        },
+        {
+          "route": "/notifications",
+          "present": true
+        }
+      ],
+      "apiChecks": [
+        {
+          "route": "/api/messages",
+          "present": true
+        },
+        {
+          "route": "/api/messages/:threadId",
+          "present": true
+        },
+        {
+          "route": "/api/notifications",
+          "present": true
+        },
+        {
+          "route": "/api/notifications/:id",
+          "present": true
+        }
+      ],
+      "testChecks": [
+        {
+          "path": "tests/production/messaging-notifications.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/notification-framework.test.mjs",
+          "present": true
+        }
+      ],
+      "optionalTestChecks": [],
+      "sourceChecks": [
+        {
+          "path": "src/App.jsx",
+          "present": true
+        },
+        {
+          "path": "server/src/routes/messageNotificationRoutes.js",
+          "present": true
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "ai_documentation_workflows",
+      "name": "AI assistant, documentation, and workflow guides",
+      "userJourney": "Role-aware assistant, AI tools, documentation, workflow guides, and system status remain inside the canonical app.",
+      "type": "supporting_feature",
+      "routes": [
+        "/ai",
+        "/ai/search",
+        "/ai/listing-assistant",
+        "/ai/valuation",
+        "/documentation",
+        "/workflows",
+        "/admin/system-status"
+      ],
+      "apiRoutes": [],
+      "routeFiles": [
+        "src/App.jsx",
+        "src/pages/AiStudioConsolidationPages.jsx",
+        "src/pages/AiAssistant.jsx"
+      ],
+      "apiFiles": [],
+      "tests": [
+        "tests/production/ai-studio-consolidation.test.mjs",
+        "tests/production/ai-assistant.test.mjs",
+        "tests/production/ai-listing-assistant-foundation.test.mjs",
+        "tests/production/ai-valuation-engine-foundation.test.mjs"
+      ],
+      "blockers": [
+        "No live external AI model certification is claimed."
+      ],
+      "verifiedAt": "2026-08-03T11:42:56.566Z",
+      "repositoryStatus": "PASS",
+      "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
+      "routeChecks": [
+        {
+          "route": "/ai",
+          "present": true
+        },
+        {
+          "route": "/ai/search",
+          "present": true
+        },
+        {
+          "route": "/ai/listing-assistant",
+          "present": true
+        },
+        {
+          "route": "/ai/valuation",
+          "present": true
+        },
+        {
+          "route": "/documentation",
+          "present": true
+        },
+        {
+          "route": "/workflows",
+          "present": true
+        },
+        {
+          "route": "/admin/system-status",
+          "present": true
+        }
+      ],
+      "apiChecks": [],
+      "testChecks": [
+        {
+          "path": "tests/production/ai-studio-consolidation.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/ai-assistant.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/ai-listing-assistant-foundation.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/ai-valuation-engine-foundation.test.mjs",
+          "present": true
+        }
+      ],
+      "optionalTestChecks": [],
+      "sourceChecks": [
+        {
+          "path": "src/App.jsx",
+          "present": true
+        },
+        {
+          "path": "src/pages/AiStudioConsolidationPages.jsx",
+          "present": true
+        },
+        {
+          "path": "src/pages/AiAssistant.jsx",
+          "present": true
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "operations_security_release",
+      "name": "Operations, security, release, and readiness evidence",
+      "userJourney": "Operators can inspect health/readiness/security/release evidence while certification remains blocked pending runtime and owner evidence.",
+      "type": "supporting_feature",
+      "routes": [
+        "/admin/system-status",
+        "/admin/compliance",
+        "/admin/revenue"
+      ],
+      "apiRoutes": [
+        "/api/health",
+        "/api/health/readiness",
+        "/api/health/liveness",
+        "/api/health/operations",
+        "/api/health/observability",
+        "/api/audit/readiness"
+      ],
+      "routeFiles": [
+        "src/App.jsx"
+      ],
+      "apiFiles": [
+        "server/src/routes/healthRoutes.js",
+        "server/src/routes/monitoringRoutes.js",
+        "server/src/routes/auditRoutes.js"
+      ],
+      "tests": [
+        "tests/production/s5-s3g-observability-operations-readiness.test.mjs",
+        "tests/production/s5-lrw-001-release-readiness.test.mjs",
+        "tests/production/s5-lrw-002-security-compliance.test.mjs",
+        "tests/production/security-readiness-tooling.test.mjs"
+      ],
+      "blockers": [
+        "Runtime evidence wave, live telemetry, security certification, and production signoff remain pending."
+      ],
+      "verifiedAt": "2026-08-03T11:42:56.566Z",
+      "repositoryStatus": "PASS",
+      "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
+      "routeChecks": [
+        {
+          "route": "/admin/system-status",
+          "present": true
+        },
+        {
+          "route": "/admin/compliance",
+          "present": true
+        },
+        {
+          "route": "/admin/revenue",
+          "present": true
+        }
+      ],
+      "apiChecks": [
+        {
+          "route": "/api/health",
+          "present": true
+        },
+        {
+          "route": "/api/health/readiness",
+          "present": true
+        },
+        {
+          "route": "/api/health/liveness",
+          "present": true
+        },
+        {
+          "route": "/api/health/operations",
+          "present": true
+        },
+        {
+          "route": "/api/health/observability",
+          "present": true
+        },
+        {
+          "route": "/api/audit/readiness",
+          "present": true
+        }
+      ],
+      "testChecks": [
+        {
+          "path": "tests/production/s5-s3g-observability-operations-readiness.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/s5-lrw-001-release-readiness.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/s5-lrw-002-security-compliance.test.mjs",
+          "present": true
+        },
+        {
+          "path": "tests/production/security-readiness-tooling.test.mjs",
+          "present": true
+        }
+      ],
+      "optionalTestChecks": [],
+      "sourceChecks": [
+        {
+          "path": "src/App.jsx",
+          "present": true
+        },
+        {
+          "path": "server/src/routes/healthRoutes.js",
+          "present": true
+        },
+        {
+          "path": "server/src/routes/monitoringRoutes.js",
+          "present": true
+        },
+        {
+          "path": "server/src/routes/auditRoutes.js",
+          "present": true
+        }
+      ],
+      "missing": []
+    }
+  ]
+}
