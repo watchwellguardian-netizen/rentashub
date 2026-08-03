@@ -31,10 +31,10 @@ jobs:
       REDIS_CONFIRM_DISPOSABLE: "true"
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "24"
           cache: npm
@@ -74,7 +74,7 @@ jobs:
 
       - name: Upload Redis BullMQ runtime evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: redis-bullmq-runtime-evidence
           path: artifacts/runtime-evidence/redis-bullmq-s5-s3c.json

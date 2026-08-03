@@ -34,10 +34,10 @@ jobs:
       ACCEL_PG005_CONFIRM_DISPOSABLE: "true"
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "24"
           cache: npm
@@ -80,7 +80,7 @@ jobs:
 
       - name: Upload PostgreSQL runtime evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: postgres-rls-runtime-evidence
           path: artifacts/runtime-evidence/postgres-pg006.json

@@ -20,10 +20,10 @@ jobs:
       LIVE_IDENTITY_PROVIDER_PENDING: "true"
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
           cache: npm
@@ -48,7 +48,7 @@ jobs:
 
       - name: Upload auth authorization runtime evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: auth-authorization-runtime-evidence
           path: artifacts/runtime-evidence/auth-authorization-s5-s3f.json

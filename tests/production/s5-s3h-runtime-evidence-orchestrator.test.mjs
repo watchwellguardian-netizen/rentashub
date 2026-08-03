@@ -29,7 +29,7 @@ test("runtime workflows write machine-readable evidence to consistent artifact p
   for (const entry of matrix) {
     const source = readFileSync(entry.path, "utf8");
     assert.match(source, new RegExp(entry.evidenceFile.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-    assert.match(source, /actions\/upload-artifact@v4/);
+    assert.match(source, /actions\/upload-artifact@v6/);
     assert.match(source, /artifacts\/runtime-evidence/);
   }
 });

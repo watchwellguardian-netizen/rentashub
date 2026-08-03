@@ -21,7 +21,7 @@ test("package metadata and verification scripts are valid", () => {
 
 test("CI workflow runs clean install, tests, backend tests, and build on Node LTS", () => {
   const ci = read(".github/workflows/ci.yml");
-  assert.match(ci, /actions\/setup-node@v4/);
+  assert.match(ci, /actions\/setup-node@v5/);
   assert.match(ci, /node-version:\s*22/);
   assert.match(ci, /npm install|npm ci/);
   assert.match(ci, /npm run test/);

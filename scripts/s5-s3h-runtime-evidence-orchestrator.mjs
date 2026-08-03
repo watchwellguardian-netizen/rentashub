@@ -66,7 +66,7 @@ const REQUIRED_WORKFLOW_SNIPPETS = [
   "timeout-minutes:",
   "concurrency:",
   "artifacts/runtime-evidence",
-  "actions/upload-artifact@v4",
+  "actions/upload-artifact@v6",
   "retention-days: 14",
 ];
 
