@@ -1,0 +1,271 @@
+{
+  "platform": "RentasHub",
+  "sprint": "S5-ABW-004",
+  "status": "SUPABASE_REPLACEMENT_FOUNDATION_READY",
+  "objective": "Replace Supabase dependency with provider-neutral PostgreSQL, OIDC, S3-compatible storage, queue, event, and observability contracts.",
+  "productionReady": false,
+  "liveSupabaseRequired": false,
+  "liveProviderActivation": false,
+  "componentsTotal": 7,
+  "localReady": 7,
+  "credentialReady": 0,
+  "blockedCredentials": 0,
+  "components": [
+    {
+      "id": "database",
+      "replaces": [
+        "Supabase Postgres",
+        "Supabase Data API"
+      ],
+      "selectedBy": "DATABASE_PROVIDER",
+      "selectedMode": "json",
+      "defaultMode": "json",
+      "productionMode": "postgres",
+      "status": "READY_LOCAL",
+      "localMode": true,
+      "productionReady": false,
+      "liveProviderActive": false,
+      "requiredTechnologies": [
+        "PostgreSQL 16+",
+        "node-postgres or reviewed PostgreSQL driver",
+        "SQL migrations",
+        "repository contracts"
+      ],
+      "credentialEnvNames": [
+        "DATABASE_PROVIDER",
+        "DATABASE_URL",
+        "DATABASE_SSL_MODE",
+        "MIGRATION_TARGET_ENV"
+      ],
+      "missingCredentials": [],
+      "validationCommands": [
+        "npm run database:readiness",
+        "npm run accel:p1:db-validation"
+      ],
+      "failClosedRule": "DATABASE_PROVIDER=postgres must fail when DATABASE_URL or reviewed driver/runtime execution is absent.",
+      "manualIntervention": "Provide disposable PostgreSQL/UAT database credentials and execute migrations.",
+      "localCapability": "JSON adapter and repository contracts run without credentials."
+    },
+    {
+      "id": "authorization",
+      "replaces": [
+        "Supabase RLS",
+        "Supabase PostgREST role grants"
+      ],
+      "selectedBy": "AUTHZ_POLICY_PROVIDER",
+      "selectedMode": "application_policy",
+      "defaultMode": "application_policy",
+      "productionMode": "postgres_rls_plus_application_policy",
+      "status": "READY_LOCAL",
+      "localMode": true,
+      "productionReady": false,
+      "liveProviderActive": false,
+      "requiredTechnologies": [
+        "PostgreSQL RLS-compatible SQL",
+        "application operation grid",
+        "tenant ownership predicates",
+        "admin exception matrix"
+      ],
+      "credentialEnvNames": [
+        "AUTHZ_POLICY_PROVIDER",
+        "RLS_VALIDATION_MODE",
+        "AUTH_TEST_TENANT_IDS"
+      ],
+      "missingCredentials": [],
+      "validationCommands": [
+        "npm run a4:governance:rls-rbac",
+        "npm run auth-rbac:api-auth-guard-matrix"
+      ],
+      "failClosedRule": "Production authorization must not rely on role-only checks; tenant and ownership predicates are mandatory.",
+      "manualIntervention": "Run RLS policies against executable PostgreSQL/Supabase-compatible runtime.",
+      "localCapability": "Application role/tenant policy enforcement and static RLS SQL checks run without credentials."
+    },
+    {
+      "id": "authentication",
+      "replaces": [
+        "Supabase Auth"
+      ],
+      "selectedBy": "AUTH_PROVIDER",
+      "selectedMode": "local",
+      "defaultMode": "local",
+      "productionMode": "oidc",
+      "status": "READY_LOCAL",
+      "localMode": true,
+      "productionReady": false,
+      "liveProviderActive": false,
+      "requiredTechnologies": [
+        "OIDC provider",
+        "JWKS verification",
+        "short-lived access tokens",
+        "session revocation store",
+        "MFA provider"
+      ],
+      "credentialEnvNames": [
+        "AUTH_PROVIDER",
+        "OIDC_ISSUER_URL",
+        "OIDC_CLIENT_ID",
+        "OIDC_AUDIENCE",
+        "OIDC_JWKS_URL",
+        "OIDC_CLIENT_SECRET"
+      ],
+      "missingCredentials": [],
+      "validationCommands": [
+        "npm run auth-rbac:readiness",
+        "npm run auth-rbac:auth-evidence-report"
+      ],
+      "failClosedRule": "AUTH_PROVIDER=oidc must fail when issuer, audience, JWKS URL, or client ID is missing.",
+      "manualIntervention": "Configure live OIDC/Supabase Auth provider, MFA, email verification, and session lifecycle evidence.",
+      "localCapability": "Local auth service supports register, login, logout, refresh, password hashing, and role mapping."
+    },
+    {
+      "id": "object-storage",
+      "replaces": [
+        "Supabase Storage"
+      ],
+      "selectedBy": "FILE_STORAGE_PROVIDER",
+      "selectedMode": "local_placeholder",
+      "defaultMode": "local_placeholder",
+      "productionMode": "s3",
+      "status": "READY_LOCAL",
+      "localMode": true,
+      "productionReady": false,
+      "liveProviderActive": false,
+      "requiredTechnologies": [
+        "S3-compatible object storage",
+        "signed URL service",
+        "bucket policy matrix",
+        "file metadata repository",
+        "malware scan hook"
+      ],
+      "credentialEnvNames": [
+        "FILE_STORAGE_PROVIDER",
+        "FILE_STORAGE_BUCKET",
+        "FILE_STORAGE_REGION",
+        "FILE_STORAGE_ACCESS_KEY",
+        "FILE_STORAGE_SECRET_KEY"
+      ],
+      "missingCredentials": [],
+      "validationCommands": [
+        "npm run storage:readiness",
+        "npm run storage:access-evidence-package"
+      ],
+      "failClosedRule": "Private evidence files must never be routed to public buckets; signed URL TTL must be bounded.",
+      "manualIntervention": "Provision S3-compatible buckets or Supabase Storage buckets and execute access-denial tests.",
+      "localCapability": "Metadata-only upload intent and storage classification checks run without credentials."
+    },
+    {
+      "id": "realtime-events",
+      "replaces": [
+        "Supabase Realtime"
+      ],
+      "selectedBy": "EVENT_BUS_PROVIDER",
+      "selectedMode": "local_event_log",
+      "defaultMode": "local_event_log",
+      "productionMode": "redis_streams_or_websocket_gateway",
+      "status": "READY_LOCAL",
+      "localMode": true,
+      "productionReady": false,
+      "liveProviderActive": false,
+      "requiredTechnologies": [
+        "domain event contracts",
+        "Redis Streams or queue-backed fanout",
+        "WebSocket/SSE gateway",
+        "tenant-scoped channels"
+      ],
+      "credentialEnvNames": [
+        "EVENT_BUS_PROVIDER",
+        "REDIS_URL",
+        "WEBSOCKET_GATEWAY_URL",
+        "EVENT_CHANNEL_NAMESPACE"
+      ],
+      "missingCredentials": [],
+      "validationCommands": [
+        "npm run runtime:evidence",
+        "npm run operations:readiness"
+      ],
+      "failClosedRule": "Tenant event channels must include tenant-scoped names and deny cross-tenant subscriptions.",
+      "manualIntervention": "Provide Redis/WebSocket runtime and execute cross-tenant subscription tests.",
+      "localCapability": "Audit/domain event definitions and local notification flows run without credentials."
+    },
+    {
+      "id": "edge-functions",
+      "replaces": [
+        "Supabase Edge Functions"
+      ],
+      "selectedBy": "BACKGROUND_WORKER_PROVIDER",
+      "selectedMode": "local_worker",
+      "defaultMode": "local_worker",
+      "productionMode": "bullmq",
+      "status": "READY_LOCAL",
+      "localMode": true,
+      "productionReady": false,
+      "liveProviderActive": false,
+      "requiredTechnologies": [
+        "Express/API controllers",
+        "BullMQ workers",
+        "Redis",
+        "idempotent job handlers",
+        "dead-letter queue"
+      ],
+      "credentialEnvNames": [
+        "BACKGROUND_WORKER_PROVIDER",
+        "REDIS_URL",
+        "QUEUE_NAMESPACE",
+        "JOB_TIMEOUT_SECONDS"
+      ],
+      "missingCredentials": [],
+      "validationCommands": [
+        "npm run runtime:evidence",
+        "npm run operations:s5-s3g"
+      ],
+      "failClosedRule": "Production jobs must be idempotent and tenant-scoped, with retry, timeout, DLQ, and poison-message handling.",
+      "manualIntervention": "Provide Redis/BullMQ runtime and execute queue processing evidence.",
+      "localCapability": "Local job contracts, queue readiness, and failure-mode tests run without credentials."
+    },
+    {
+      "id": "observability",
+      "replaces": [
+        "Supabase Logs",
+        "Supabase dashboard evidence"
+      ],
+      "selectedBy": "MONITORING_PROVIDER",
+      "selectedMode": "local_logs",
+      "defaultMode": "local_logs",
+      "productionMode": "sentry_better_stack",
+      "status": "READY_LOCAL",
+      "localMode": true,
+      "productionReady": false,
+      "liveProviderActive": false,
+      "requiredTechnologies": [
+        "structured logs",
+        "request IDs",
+        "health/readiness/liveness endpoints",
+        "alert routing",
+        "log drain"
+      ],
+      "credentialEnvNames": [
+        "MONITORING_PROVIDER",
+        "SENTRY_DSN",
+        "BETTER_STACK_SOURCE_TOKEN",
+        "ALERT_WEBHOOK_URL"
+      ],
+      "missingCredentials": [],
+      "validationCommands": [
+        "npm run monitoring:readiness",
+        "npm run operations:s5-s3g"
+      ],
+      "failClosedRule": "Production readiness must fail without live alert routing and incident notification evidence.",
+      "manualIntervention": "Provision telemetry destinations and execute alert notification tests.",
+      "localCapability": "Structured log redaction and health endpoint readiness run without credentials."
+    }
+  ],
+  "architectureDecision": "RentasHub should depend on open standards and replaceable providers, while retaining Supabase compatibility as one possible PostgreSQL/Auth/Storage implementation.",
+  "manualInterventionStillRequired": [
+    "Executable PostgreSQL runtime for migration/RLS evidence.",
+    "OIDC/Auth provider credentials for live authentication evidence.",
+    "S3-compatible or Supabase Storage credentials for object access evidence.",
+    "Redis/BullMQ runtime for realtime/events/background execution evidence.",
+    "Telemetry destination credentials for alerting evidence.",
+    "Legal/security/operations approval before production launch."
+  ]
+}

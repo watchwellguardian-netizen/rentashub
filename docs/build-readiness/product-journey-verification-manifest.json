@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-03T12:51:45.542Z",
+  "generatedAt": "2026-08-03T13:00:05.221Z",
   "summary": {
     "sprint": "S5-ABW-002",
     "status": "PASS_REPOSITORY_JOURNEY_EVIDENCE",
@@ -48,7 +48,7 @@
         "tests/production/asset-listing.test.mjs"
       ],
       "blockers": [],
-      "verifiedAt": "2026-08-03T12:51:45.542Z",
+      "verifiedAt": "2026-08-03T13:00:05.221Z",
       "repositoryStatus": "PASS",
       "runtimeStatus": "PROVIDER_INDEPENDENT_VERIFIED",
       "routeChecks": [
@@ -142,7 +142,7 @@
       "blockers": [
         "Live KYC evidence still required before production trust certification."
       ],
-      "verifiedAt": "2026-08-03T12:51:45.542Z",
+      "verifiedAt": "2026-08-03T13:00:05.221Z",
       "repositoryStatus": "PASS",
       "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
       "routeChecks": [
@@ -247,7 +247,7 @@
       "blockers": [
         "PostgreSQL runtime execution and RLS evidence are pending."
       ],
-      "verifiedAt": "2026-08-03T12:51:45.542Z",
+      "verifiedAt": "2026-08-03T13:00:05.221Z",
       "repositoryStatus": "PASS",
       "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
       "routeChecks": [
@@ -363,7 +363,7 @@
       "blockers": [
         "Live OIDC or Supabase Auth provider evidence remains pending."
       ],
-      "verifiedAt": "2026-08-03T12:51:45.542Z",
+      "verifiedAt": "2026-08-03T13:00:05.221Z",
       "repositoryStatus": "PASS",
       "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
       "routeChecks": [
@@ -472,7 +472,7 @@
         "tests/production/trust-engine.test.mjs"
       ],
       "blockers": [],
-      "verifiedAt": "2026-08-03T12:51:45.542Z",
+      "verifiedAt": "2026-08-03T13:00:05.221Z",
       "repositoryStatus": "PASS",
       "runtimeStatus": "PROVIDER_INDEPENDENT_VERIFIED",
       "routeChecks": [
@@ -580,7 +580,7 @@
       "blockers": [
         "Legal/provider evidence required before production claim or insurance certification."
       ],
-      "verifiedAt": "2026-08-03T12:51:45.542Z",
+      "verifiedAt": "2026-08-03T13:00:05.221Z",
       "repositoryStatus": "PASS",
       "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
       "routeChecks": [
@@ -687,7 +687,7 @@
       "blockers": [
         "Live auction exchange, payment, escrow, and legal transfer evidence remain pending."
       ],
-      "verifiedAt": "2026-08-03T12:51:45.542Z",
+      "verifiedAt": "2026-08-03T13:00:05.221Z",
       "repositoryStatus": "PASS",
       "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
       "routeChecks": [
@@ -784,7 +784,7 @@
       "blockers": [
         "External provider onboarding and operational evidence remain pending."
       ],
-      "verifiedAt": "2026-08-03T12:51:45.542Z",
+      "verifiedAt": "2026-08-03T13:00:05.221Z",
       "repositoryStatus": "PASS",
       "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
       "routeChecks": [
@@ -904,7 +904,7 @@
       "blockers": [
         "Payment provider sandbox evidence, webhook evidence, payout validation, and Tax/GCT signoff remain pending."
       ],
-      "verifiedAt": "2026-08-03T12:51:45.542Z",
+      "verifiedAt": "2026-08-03T13:00:05.221Z",
       "repositoryStatus": "PASS",
       "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
       "routeChecks": [
@@ -1012,7 +1012,7 @@
       "blockers": [
         "Live object storage, signed URL, bucket policy, and unauthorized access evidence remain pending."
       ],
-      "verifiedAt": "2026-08-03T12:51:45.542Z",
+      "verifiedAt": "2026-08-03T13:00:05.221Z",
       "repositoryStatus": "PASS",
       "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
       "routeChecks": [
@@ -1104,7 +1104,7 @@
       "blockers": [
         "Live email/SMS/push delivery provider evidence remains pending."
       ],
-      "verifiedAt": "2026-08-03T12:51:45.542Z",
+      "verifiedAt": "2026-08-03T13:00:05.221Z",
       "repositoryStatus": "PASS",
       "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
       "routeChecks": [
@@ -1196,7 +1196,7 @@
       "blockers": [
         "No live external AI model certification is claimed."
       ],
-      "verifiedAt": "2026-08-03T12:51:45.542Z",
+      "verifiedAt": "2026-08-03T13:00:05.221Z",
       "repositoryStatus": "PASS",
       "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
       "routeChecks": [
@@ -1300,7 +1300,7 @@
       "blockers": [
         "Runtime evidence wave, live telemetry, security certification, and production signoff remain pending."
       ],
-      "verifiedAt": "2026-08-03T12:51:45.542Z",
+      "verifiedAt": "2026-08-03T13:00:05.221Z",
       "repositoryStatus": "PASS",
       "runtimeStatus": "BLOCKED_EXTERNAL_EVIDENCE",
       "routeChecks": [
