@@ -25,8 +25,13 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: npm
+
+      - name: Prepare runtime evidence directory
+        run: |
+          mkdir -p artifacts/runtime-evidence
+          printf '{"status":"STARTED","workflow":"browser-accessibility-runtime-validation","runtimeEvidenceGenerated":false}\n' > artifacts/runtime-evidence/browser-accessibility-s5-s3e.json
 
       - name: Install project dependencies
         run: npm ci
