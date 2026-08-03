@@ -1,8 +1,9 @@
-import { ASSET_CATEGORIES, loadAssetListings } from "./assetListing.js";
-import { loadBookings } from "./bookingService.js";
+import { ASSET_CATEGORIES, AVAILABILITY_STATUSES, loadAssetListings, saveAssetListings } from "./assetListing.js";
+import { BOOKING_STATUSES, BLOCKING_BOOKING_STATUSES, hasBlockingOverlap, loadBookings, saveBookings } from "./bookingService.js";
 import { loadInspections } from "./inspectionService.js";
 import { loadLedger } from "./paymentLedger.js";
 import { loadThreads } from "./messagingService.js";
+import { createNotification } from "./notificationService.js";
 import { loadReviews } from "./reviewService.js";
 import { REVIEW_USERS, normalizeRole } from "./rbac.js";
 import { VERIFICATION_STATUSES, loadSupplierProfiles, simulateVerificationStatus } from "./supplierProfile.js";
@@ -37,8 +38,36 @@ export function canAccessAdminCenter(role) {
   return normalizeRole(role) === "admin";
 }
 
+export const ADMIN_USER_STATUS_STORAGE_KEY = "rentashub_admin_user_statuses";
+export const ADMIN_USER_STATUSES = ["active", "suspended"];
+export const ADMIN_LISTING_MODERATION_STATUSES = ["available", "pending approval", "paused", "unavailable"];
+
+export function loadAdminUserStatuses(storage) {
+  if (!storage) return {};
+  const raw = storage.getItem(ADMIN_USER_STATUS_STORAGE_KEY);
+  if (!raw) {
+    storage.setItem(ADMIN_USER_STATUS_STORAGE_KEY, JSON.stringify({}));
+    return {};
+  }
+  return JSON.parse(raw);
+}
+
+export function saveAdminUserStatuses(storage, statuses) {
+  if (!storage) return statuses;
+  storage.setItem(ADMIN_USER_STATUS_STORAGE_KEY, JSON.stringify(statuses));
+  return statuses;
+}
+
+function requireAdmin(user) {
+  return canAccessAdminCenter(user?.role);
+}
+
 export function createAdminSnapshot(storage) {
-  const users = REVIEW_USERS;
+  const userStatuses = loadAdminUserStatuses(storage);
+  const users = REVIEW_USERS.map((user) => ({
+    ...user,
+    accountStatus: userStatuses[user.id] || "active",
+  }));
   const listings = loadAssetListings(storage);
   const bookings = loadBookings(storage);
   const ledger = loadLedger(storage);
@@ -152,4 +181,86 @@ export function createAdminSnapshot(storage) {
 
 export function adminSimulateVerification(storage, supplierId, status) {
   return simulateVerificationStatus(storage, supplierId, status);
+}
+
+export function adminSetUserAccountStatus(storage, userId, status, adminUser = { role: "admin" }) {
+  if (!requireAdmin(adminUser)) return { valid: false, error: "Only admins can manage local user account status." };
+  if (!ADMIN_USER_STATUSES.includes(status)) return { valid: false, error: "Choose a valid local account status." };
+  const user = REVIEW_USERS.find((item) => item.id === userId);
+  if (!user) return { valid: false, error: "User was not found." };
+  if (user.role === "admin" && status === "suspended") return { valid: false, error: "The review admin account cannot be suspended in local mode." };
+
+  const statuses = loadAdminUserStatuses(storage);
+  const nextStatuses = { ...statuses, [userId]: status };
+  saveAdminUserStatuses(storage, nextStatuses);
+  createNotification(storage, {
+    recipientId: userId,
+    type: "admin_account_status_changed",
+    title: "Account status updated",
+    body: `Your local RentasHub account status is now ${status}.`,
+    relatedRoute: "/profile",
+  });
+  return {
+    valid: true,
+    user: { ...user, accountStatus: status },
+    statuses: nextStatuses,
+  };
+}
+
+export function adminModerateListing(storage, listingId, status, adminUser = { role: "admin" }) {
+  if (!requireAdmin(adminUser)) return { valid: false, error: "Only admins can moderate local listings." };
+  if (!ADMIN_LISTING_MODERATION_STATUSES.includes(status) || !AVAILABILITY_STATUSES.includes(status)) {
+    return { valid: false, error: "Choose a valid listing moderation status." };
+  }
+  const listings = loadAssetListings(storage);
+  const listing = listings.find((item) => item.id === listingId);
+  if (!listing) return { valid: false, error: "Listing was not found." };
+
+  const nextListing = {
+    ...listing,
+    availabilityStatus: status,
+    adminModerationStatus: status,
+    adminModeratedAt: new Date().toISOString(),
+  };
+  const nextListings = listings.map((item) => (item.id === listingId ? nextListing : item));
+  saveAssetListings(storage, nextListings);
+  createNotification(storage, {
+    recipientId: listing.ownerSupplierId,
+    type: "admin_listing_moderated",
+    title: "Listing moderation updated",
+    body: `${listing.title} is now ${status}.`,
+    relatedRoute: `/asset/${listing.id}`,
+  });
+  return { valid: true, listing: nextListing, listings: nextListings };
+}
+
+export function adminOverrideBookingStatus(storage, bookingId, status, adminUser = { role: "admin" }) {
+  if (!requireAdmin(adminUser)) return { valid: false, error: "Only admins can override local booking status." };
+  if (!Object.keys(BOOKING_STATUSES).includes(status)) return { valid: false, error: "Choose a valid booking status." };
+  const bookings = loadBookings(storage);
+  const booking = bookings.find((item) => item.id === bookingId);
+  if (!booking) return { valid: false, error: "Booking was not found." };
+  if (BLOCKING_BOOKING_STATUSES.includes(status) && hasBlockingOverlap(bookings, { ...booking, status })) {
+    return { valid: false, error: "This booking overlaps an approved or active booking." };
+  }
+
+  const nextBooking = {
+    ...booking,
+    status,
+    adminOverride: true,
+    adminOverrideAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  const nextBookings = bookings.map((item) => (item.id === bookingId ? nextBooking : item));
+  saveBookings(storage, nextBookings);
+  for (const recipientId of [booking.customerId, booking.supplierId].filter(Boolean)) {
+    createNotification(storage, {
+      recipientId,
+      type: "admin_booking_status_changed",
+      title: "Booking status updated",
+      body: `${booking.assetTitle} is now ${BOOKING_STATUSES[status]}.`,
+      relatedRoute: `/booking/${booking.id}`,
+    });
+  }
+  return { valid: true, booking: nextBooking, bookings: nextBookings };
 }

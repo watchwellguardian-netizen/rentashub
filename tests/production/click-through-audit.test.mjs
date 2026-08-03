@@ -162,16 +162,14 @@ test("role-specific click-through destinations are protected for the intended ro
   assert.match(appSource, /path="\/supplier-info" element={<ModulePlaceholder moduleKey="supplier-info" \/>}/);
 });
 
-test("placeholder and unfinished admin actions are controlled instead of dead active buttons", () => {
+test("admin actions are either functional local controls or explicitly controlled placeholders", () => {
   const adminPage = readFileSync(join(root, "src/pages/AdminCenter.jsx"), "utf8");
-  for (const label of [
-    "Suspend/activate placeholder",
-    "Approve/reject/suspend placeholder",
-    "Admin override placeholder",
-  ]) {
-    const openingTag = new RegExp(`<Button[^>]*(?:disabled|onClick=)[^>]*>${escapeRegExp(label)}</Button>`);
-    assert.match(adminPage, openingTag, `${label} must be disabled or have an explicit controlled handler`);
+  for (const label of ["Activate local", "Suspend local", "Approve local", "Pause local", "Reject local", "Mark active", "Cancel local"]) {
+    assert.match(adminPage, new RegExp(`>${escapeRegExp(label)}</Button>`), `${label} must render as an admin action`);
   }
+  assert.match(adminPage, /adminSetUserAccountStatus/);
+  assert.match(adminPage, /adminModerateListing/);
+  assert.match(adminPage, /adminOverrideBookingStatus/);
 
   const pageFiles = [
     "src/pages/AdminCenter.jsx",

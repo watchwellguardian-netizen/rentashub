@@ -10,7 +10,14 @@ import { THREAD_STORAGE_KEY } from "../../src/lib/messagingService.js";
 import { NOTIFICATION_STORAGE_KEY, getUserNotifications } from "../../src/lib/notificationService.js";
 import { canAccessRole } from "../../src/lib/rbac.js";
 import { SUPPLIER_PROFILE_STORAGE_KEY } from "../../src/lib/supplierProfile.js";
-import { adminSimulateVerification, canAccessAdminCenter, createAdminSnapshot } from "../../src/lib/adminCenter.js";
+import {
+  adminModerateListing,
+  adminOverrideBookingStatus,
+  adminSetUserAccountStatus,
+  canAccessAdminCenter,
+  createAdminSnapshot,
+  adminSimulateVerification,
+} from "../../src/lib/adminCenter.js";
 
 const root = process.cwd();
 
@@ -104,6 +111,38 @@ test("admin can simulate verification status and supplier receives notification"
   assert.equal(getUserNotifications(local, "review-supplier").some((note) => note.type === "verification_status_changed"), true);
 });
 
+test("admin local operations manage user listing and booking state without live providers", () => {
+  const local = storage();
+  const admin = { id: "review-admin", role: "admin" };
+  const supplier = { id: "review-supplier", role: "supplier" };
+
+  const suspended = adminSetUserAccountStatus(local, "review-customer", "suspended", admin);
+  assert.equal(suspended.valid, true);
+  assert.equal(createAdminSnapshot(local).users.find((user) => user.id === "review-customer").accountStatus, "suspended");
+  assert.equal(adminSetUserAccountStatus(local, "review-customer", "suspended", supplier).valid, false);
+  assert.equal(adminSetUserAccountStatus(local, "review-admin", "suspended", admin).valid, false);
+
+  const moderated = adminModerateListing(local, "asset-seed-other-supplier", "available", admin);
+  assert.equal(moderated.valid, true);
+  assert.equal(createAdminSnapshot(local).listings.find((listing) => listing.id === "asset-seed-other-supplier").availabilityStatus, "available");
+  assert.equal(adminModerateListing(local, "asset-seed-other-supplier", "deleted", admin).valid, false);
+  assert.equal(adminModerateListing(local, "asset-seed-other-supplier", "paused", supplier).valid, false);
+
+  const approved = adminOverrideBookingStatus(local, "booking-seed-pending-1", "approved", admin);
+  assert.equal(approved.valid, true);
+  assert.equal(createAdminSnapshot(local).bookings.find((booking) => booking.id === "booking-seed-pending-1").adminOverride, true);
+  assert.equal(adminOverrideBookingStatus(local, "booking-seed-pending-1", "not_real", admin).valid, false);
+  assert.equal(adminOverrideBookingStatus(local, "booking-seed-pending-1", "cancelled", supplier).valid, false);
+
+  const customerNotifications = getUserNotifications(local, "review-customer");
+  const supplierNotifications = getUserNotifications(local, "review-supplier");
+  const ownerNotifications = getUserNotifications(local, "supplier-two");
+  assert.equal(customerNotifications.some((note) => note.type === "admin_account_status_changed"), true);
+  assert.equal(customerNotifications.some((note) => note.type === "admin_booking_status_changed"), true);
+  assert.equal(ownerNotifications.some((note) => note.type === "admin_listing_moderated"), true);
+  assert.equal(supplierNotifications.some((note) => note.type === "admin_booking_status_changed"), true);
+});
+
 test("admin pages render required local-management sections", () => {
   const page = readFileSync(join(root, "src/pages/AdminCenter.jsx"), "utf8");
   for (const text of [
@@ -117,9 +156,16 @@ test("admin pages render required local-management sections", () => {
     "Reports",
     "Settings",
     "simulated/local data only",
-    "Suspend/activate placeholder",
-    "Approve/reject/suspend placeholder",
-    "Admin override placeholder",
+    "Local account status controls",
+    "Activate local",
+    "Suspend local",
+    "Local listing moderation updates",
+    "Approve local",
+    "Pause local",
+    "Reject local",
+    "Local admin overrides",
+    "Mark active",
+    "Cancel local",
     "Simulated ledger overview",
     "Thread summaries only",
     "Privacy note",

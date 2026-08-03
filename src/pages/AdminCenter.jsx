@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import Button from "../components/Button.jsx";
-import { ADMIN_NAV, adminSimulateVerification, createAdminSnapshot } from "../lib/adminCenter.js";
+import { ADMIN_NAV, adminModerateListing, adminOverrideBookingStatus, adminSetUserAccountStatus, adminSimulateVerification, createAdminSnapshot } from "../lib/adminCenter.js";
 import { adminModerateReview } from "../lib/reviewService.js";
 
 function AdminShell({ title, children }) {
@@ -236,13 +236,18 @@ export function AdminRevenue() {
 
 export function AdminUsers() {
   const [role, setRole] = useState("all");
-  const snapshot = createAdminSnapshot(window.localStorage);
+  const [snapshot, setSnapshot] = useState(() => createAdminSnapshot(window.localStorage));
   const users = role === "all" ? snapshot.users : snapshot.users.filter((user) => user.role === role);
+  const setAccountStatus = (userId, status) => {
+    adminSetUserAccountStatus(window.localStorage, userId, status);
+    setSnapshot(createAdminSnapshot(window.localStorage));
+  };
   return (
     <AdminShell title="User management">
       <section className="panel wide">
         <div className="section-heading"><span>Local/demo users</span><select value={role} onChange={(event) => setRole(event.target.value)}><option value="all">All roles</option><option value="customer">Customer</option><option value="supplier">Supplier</option><option value="broker">Broker</option><option value="admin">Admin</option></select></div>
-        <div className="asset-list">{users.map((user) => <article className="asset-card" key={user.id}><div><h3>{user.full_name}</h3><p>{user.email} / {user.role}</p></div><Button variant="secondary" disabled title="Controlled placeholder until account suspension workflow is activated">Suspend/activate placeholder</Button></article>)}</div>
+        <p className="muted">Local account status controls are non-destructive and do not affect live identity providers.</p>
+        <div className="asset-list">{users.map((user) => <article className="asset-card" key={user.id}><div><span className="status-badge neutral">{user.accountStatus}</span><h3>{user.full_name}</h3><p>{user.email} / {user.role}</p></div><div className="card-actions"><Button variant="secondary" disabled={user.accountStatus === "active"} onClick={() => setAccountStatus(user.id, "active")}>Activate local</Button><Button variant="ghost" disabled={user.role === "admin" || user.accountStatus === "suspended"} onClick={() => setAccountStatus(user.id, "suspended")}>Suspend local</Button></div></article>)}</div>
       </section>
     </AdminShell>
   );
@@ -250,11 +255,15 @@ export function AdminUsers() {
 
 export function AdminListings() {
   const [category, setCategory] = useState("all");
-  const snapshot = createAdminSnapshot(window.localStorage);
+  const [snapshot, setSnapshot] = useState(() => createAdminSnapshot(window.localStorage));
   const listings = category === "all" ? snapshot.listings : snapshot.listings.filter((listing) => listing.category === category);
+  const moderate = (listingId, status) => {
+    adminModerateListing(window.localStorage, listingId, status);
+    setSnapshot(createAdminSnapshot(window.localStorage));
+  };
   return (
     <AdminShell title="Listing management">
-      <section className="panel wide"><div className="section-heading"><span>All listings</span><input value={category} onChange={(event) => setCategory(event.target.value)} placeholder="Filter by category or all" /></div><div className="asset-list">{listings.map((listing) => <article className="asset-card" key={listing.id}><div><h3>{listing.title}</h3><p>{listing.category} / {listing.availabilityStatus} / {listing.ownerSupplierId}</p></div><Button variant="secondary" disabled title="Controlled placeholder until listing moderation workflow is activated">Approve/reject/suspend placeholder</Button></article>)}</div></section>
+      <section className="panel wide"><div className="section-heading"><span>All listings</span><input value={category} onChange={(event) => setCategory(event.target.value)} placeholder="Filter by category or all" /></div><p className="muted">Local listing moderation updates marketplace visibility status only. No legal, KYC, or production listing certification is performed.</p><div className="asset-list">{listings.map((listing) => <article className="asset-card" key={listing.id}><div><span className="status-badge neutral">{listing.availabilityStatus}</span><h3>{listing.title}</h3><p>{listing.category} / {listing.ownerSupplierId}</p></div><div className="card-actions"><Button onClick={() => moderate(listing.id, "available")}>Approve local</Button><Button variant="secondary" onClick={() => moderate(listing.id, "paused")}>Pause local</Button><Button variant="ghost" onClick={() => moderate(listing.id, "unavailable")}>Reject local</Button></div></article>)}</div></section>
     </AdminShell>
   );
 }
@@ -262,11 +271,15 @@ export function AdminListings() {
 export function AdminBookings() {
   const [status, setStatus] = useState("all");
   const navigate = useNavigate();
-  const snapshot = createAdminSnapshot(window.localStorage);
+  const [snapshot, setSnapshot] = useState(() => createAdminSnapshot(window.localStorage));
   const bookings = status === "all" ? snapshot.bookings : snapshot.bookings.filter((booking) => booking.status === status);
+  const override = (bookingId, nextStatus) => {
+    adminOverrideBookingStatus(window.localStorage, bookingId, nextStatus);
+    setSnapshot(createAdminSnapshot(window.localStorage));
+  };
   return (
     <AdminShell title="Booking management">
-      <section className="panel wide"><div className="section-heading"><span>All bookings</span><input value={status} onChange={(event) => setStatus(event.target.value)} placeholder="Filter by status or all" /></div><div className="asset-list">{bookings.map((booking) => <article className="asset-card" key={booking.id}><div><h3>{booking.assetTitle}</h3><p>{booking.status} / {booking.customerName} / {booking.supplierName}</p></div><div className="card-actions"><Button variant="secondary" onClick={() => navigate(`/booking/${booking.id}`)}>View detail</Button><Button variant="ghost" disabled title="Controlled placeholder until admin booking override workflow is activated">Admin override placeholder</Button></div></article>)}</div></section>
+      <section className="panel wide"><div className="section-heading"><span>All bookings</span><input value={status} onChange={(event) => setStatus(event.target.value)} placeholder="Filter by status or all" /></div><p className="muted">Local admin overrides are audit-oriented development controls and do not authorize payments, escrow, or production operations.</p><div className="asset-list">{bookings.map((booking) => <article className="asset-card" key={booking.id}><div><span className="status-badge neutral">{booking.status}</span><h3>{booking.assetTitle}</h3><p>{booking.customerName} / {booking.supplierName}</p></div><div className="card-actions"><Button variant="secondary" onClick={() => navigate(`/booking/${booking.id}`)}>View detail</Button><Button onClick={() => override(booking.id, "approved")}>Approve local</Button><Button variant="secondary" onClick={() => override(booking.id, "active")}>Mark active</Button><Button variant="ghost" onClick={() => override(booking.id, "cancelled")}>Cancel local</Button></div></article>)}</div></section>
     </AdminShell>
   );
 }
