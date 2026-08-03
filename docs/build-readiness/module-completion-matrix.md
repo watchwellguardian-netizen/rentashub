@@ -5,8 +5,8 @@ A4 status: A4-01 open
 Production ready: No
 
 Completion formula: sum(weight * completion) / sum(weight)
-Verified build completion: 60.7%
-Remaining build scope: 39.3%
+Verified build completion: 61.5%
+Remaining build scope: 38.5%
 
 | Module | Feature | Classification | Weight | Completion | Verified points | Test status |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
@@ -21,7 +21,7 @@ Remaining build scope: 39.3%
 | Database | PostgreSQL adapter, migrations, and execution harness | blocked-externally | 5 | 0.6 | 3 | Focused static harness tests pass |
 | Database Security | RLS/RBAC policy preparation and cross-tenant evidence harness | blocked-externally | 5 | 0.45 | 2.25 | Static readiness tests pass |
 | Trust | Reviews, ratings, eligibility, and moderation | locally-functional | 3 | 0.75 | 2.25 | Review tests pass |
-| Communications | Messages, notifications, local delivery/audit framework | backend-implemented | 3 | 0.7 | 2.1 | Messaging and notification tests pass |
+| Communications | Messages, notifications, local support delivery, and audit framework | backend-implemented | 3 | 0.8 | 2.4 | Messaging, notification, and support operations tests pass |
 | Claims and Disputes | Claims, disputes, admin queues, and local workflow transitions | backend-implemented | 3 | 0.65 | 1.95 | Protection/dispute tests pass |
 | Revenue | Payment intent, wallet, earnings, payout, refund placeholder workflow | blocked-externally | 5 | 0.45 | 2.25 | Payment ledger and revenue readiness tests pass |
 | Escrow | Escrow intake, ledger, release, refund, and dispute readiness | blocked-externally | 5 | 0.4 | 2 | Escrow readiness tests pass |
@@ -34,7 +34,7 @@ Remaining build scope: 39.3%
 | Files and Storage | File metadata, upload intent, signed URL and bucket readiness | blocked-externally | 5 | 0.45 | 2.25 | File and storage readiness tests pass |
 | Security | Security headers, secret scanning, dependency/security readiness evidence | backend-implemented | 5 | 0.65 | 3.25 | Security tests and scan pass |
 | Compliance | Privacy, DSAR, retention, KYC, DPA/GDPR evidence readiness | documented-only | 3 | 0.55 | 1.65 | Compliance tests pass |
-| Operations | Health, readiness, liveness, observability and operator evidence | backend-implemented | 3 | 0.6 | 1.8 | Operations readiness tests pass |
+| Operations | Health, readiness, liveness, observability, support operations, and operator evidence | backend-implemented | 3 | 0.8 | 2.4 | Operations readiness and support operations tests pass |
 | Queues | Redis and BullMQ queue readiness, retries, DLQ and metrics contracts | blocked-externally | 3 | 0.45 | 1.35 | Focused readiness tests pass |
 | Release | Release governance, launch dashboard, evidence indexes and owner action register | documented-only | 2 | 0.85 | 1.7 | Release readiness tests pass |
 | Browser and Accessibility | Playwright browser journey and accessibility runtime suite | blocked-externally | 3 | 0.5 | 1.5 | Focused readiness tests pass |

@@ -8,10 +8,10 @@
     "formula": "sum(weight * completion) / sum(weight)",
     "totalFeatures": 31,
     "totalWeightedPoints": 120,
-    "verifiedWeightedPoints": 72.85,
-    "remainingWeightedPoints": 47.15,
-    "completedPercent": 60.7,
-    "remainingPercent": 39.3,
+    "verifiedWeightedPoints": 73.75,
+    "remainingWeightedPoints": 46.25,
+    "completedPercent": 61.5,
+    "remainingPercent": 38.5,
     "byClassification": {
       "locally-functional": 9,
       "blocked-externally": 9,
@@ -86,10 +86,10 @@
       },
       "Communications": {
         "totalPoints": 3,
-        "verifiedPoints": 2.1,
+        "verifiedPoints": 2.4,
         "features": 1,
-        "remainingPoints": 0.9,
-        "completedPercent": 70
+        "remainingPoints": 0.6,
+        "completedPercent": 80
       },
       "Claims and Disputes": {
         "totalPoints": 3,
@@ -177,10 +177,10 @@
       },
       "Operations": {
         "totalPoints": 3,
-        "verifiedPoints": 1.8,
+        "verifiedPoints": 2.4,
         "features": 1,
-        "remainingPoints": 1.2,
-        "completedPercent": 60
+        "remainingPoints": 0.6,
+        "completedPercent": 80
       },
       "Queues": {
         "totalPoints": 3,
@@ -510,25 +510,28 @@
     {
       "id": "messaging-notifications",
       "module": "Communications",
-      "feature": "Messages, notifications, local delivery/audit framework",
+      "feature": "Messages, notifications, local support delivery, and audit framework",
       "weight": 3,
-      "completion": 0.7,
-      "frontendStatus": "Active message and notification pages",
-      "backendStatus": "Message/notification API implemented",
+      "completion": 0.8,
+      "frontendStatus": "Active message, notification, and support pages",
+      "backendStatus": "Message/notification API and local support workflow implemented",
       "databaseStatus": "Local repository",
       "apiStatus": "Routes present",
       "integrationStatus": "Live delivery provider pending",
-      "testStatus": "Messaging and notification tests pass",
+      "testStatus": "Messaging, notification, and support operations tests pass",
       "classification": "backend-implemented",
       "evidenceFiles": [
         "server/src/routes/messageNotificationRoutes.js",
         "src/pages/MessagesPage.jsx",
         "src/pages/NotificationsPage.jsx",
-        "tests/production/messaging-notifications.test.mjs"
+        "src/pages/SupportPage.jsx",
+        "src/lib/supportService.js",
+        "tests/production/messaging-notifications.test.mjs",
+        "tests/production/support-operations.test.mjs"
       ],
-      "verifiedPoints": 2.1,
-      "remainingPoints": 0.9,
-      "verified": false
+      "verifiedPoints": 2.4,
+      "remainingPoints": 0.6,
+      "verified": true
     },
     {
       "id": "claims-disputes",
@@ -800,24 +803,27 @@
     {
       "id": "observability-operations",
       "module": "Operations",
-      "feature": "Health, readiness, liveness, observability and operator evidence",
+      "feature": "Health, readiness, liveness, observability, support operations, and operator evidence",
       "weight": 3,
-      "completion": 0.6,
-      "frontendStatus": "Admin system status page present",
-      "backendStatus": "Health and observability endpoints",
+      "completion": 0.8,
+      "frontendStatus": "Admin system status and support operations pages present",
+      "backendStatus": "Health, observability, and local support operations controls",
       "databaseStatus": "Dependency checks prepared",
       "apiStatus": "Health routes present",
       "integrationStatus": "Telemetry destination blocked",
-      "testStatus": "Operations readiness tests pass",
+      "testStatus": "Operations readiness and support operations tests pass",
       "classification": "backend-implemented",
       "evidenceFiles": [
         "server/src/routes/healthRoutes.js",
         "server/src/routes/monitoringRoutes.js",
-        "tests/production/s5-s3g-observability-operations-readiness.test.mjs"
+        "src/pages/SupportPage.jsx",
+        "src/lib/supportService.js",
+        "tests/production/s5-s3g-observability-operations-readiness.test.mjs",
+        "tests/production/support-operations.test.mjs"
       ],
-      "verifiedPoints": 1.8,
-      "remainingPoints": 1.2,
-      "verified": false
+      "verifiedPoints": 2.4,
+      "remainingPoints": 0.6,
+      "verified": true
     },
     {
       "id": "redis-bullmq-readiness",

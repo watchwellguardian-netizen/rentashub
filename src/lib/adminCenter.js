@@ -5,6 +5,7 @@ import { loadLedger } from "./paymentLedger.js";
 import { loadThreads } from "./messagingService.js";
 import { createNotification } from "./notificationService.js";
 import { loadReviews } from "./reviewService.js";
+import { getSupportOperationsSummary, loadSupportCases } from "./supportService.js";
 import { REVIEW_USERS, normalizeRole } from "./rbac.js";
 import { VERIFICATION_STATUSES, loadSupplierProfiles, simulateVerificationStatus } from "./supplierProfile.js";
 import { loadBrokerLeads, loadOffers, loadWantedRequests } from "./marketplaceExchange.js";
@@ -22,6 +23,7 @@ export const ADMIN_NAV = [
   { route: "/admin/verifications", label: "Verifications" },
   { route: "/admin/payments", label: "Payments" },
   { route: "/admin/messages", label: "Messages" },
+  { route: "/admin/support", label: "Support" },
   { route: "/admin/reviews", label: "Reviews" },
   { route: "/admin/claims", label: "Claims" },
   { route: "/admin/disputes", label: "Disputes" },
@@ -73,6 +75,8 @@ export function createAdminSnapshot(storage) {
   const ledger = loadLedger(storage);
   const threads = loadThreads(storage);
   const reviews = loadReviews(storage);
+  const supportCases = loadSupportCases(storage);
+  const supportSummary = getSupportOperationsSummary(storage);
   const profiles = loadSupplierProfiles(storage);
   const inspections = loadInspections(storage);
   const marketplaceOffers = loadOffers(storage);
@@ -99,6 +103,8 @@ export function createAdminSnapshot(storage) {
     ledger,
     threads,
     reviews,
+    supportCases,
+    supportSummary,
     profiles,
     inspections,
     marketplaceActivity: { offers: marketplaceOffers, wantedRequests, brokerLeads },
@@ -116,6 +122,10 @@ export function createAdminSnapshot(storage) {
       pendingVerifications: profiles.filter((profile) => profile.verificationStatus === "pending").length,
       openInspectionFlags: inspections.filter((inspection) => inspection.supplierReview?.status === "flagged").length,
       reviews: reviews.length,
+      supportCases: supportSummary.total,
+      openSupportCases: supportSummary.open,
+      escalatedSupportCases: supportSummary.escalated,
+      supportSlaAttention: supportSummary.breached,
       marketplaceOffers: marketplaceOffers.length,
       wantedRequests: wantedRequests.length,
       brokerLeads: brokerLeads.length,
@@ -149,12 +159,14 @@ export function createAdminSnapshot(storage) {
       ...ledger.slice(0, 3).map((transaction) => ({ id: transaction.id, label: `Transaction ${transaction.type}`, route: `/transaction/${transaction.id}` })),
       ...reviews.slice(0, 3).map((review) => ({ id: review.id, label: `Review ${review.status}`, route: "/admin/reviews" })),
       ...claims.slice(0, 3).map((claim) => ({ id: claim.id, label: `Claim ${claim.status}`, route: "/admin/claims" })),
+      ...supportCases.slice(0, 3).map((supportCase) => ({ id: supportCase.id, label: `Support ${supportCase.status}`, route: "/admin/support" })),
       ...auctionBids.slice(0, 3).map((bid) => ({ id: bid.bidId, label: `Auction bid ${bid.status}`, route: "/admin/bid-ledger" })),
     ],
     riskQueue: [
       ...profiles.filter((profile) => ["pending", "needs_more_info"].includes(profile.verificationStatus)).map((profile) => ({ id: profile.supplierId, label: `${profile.businessName || profile.supplierId} verification ${profile.verificationStatus}`, route: "/admin/verifications" })),
       ...inspections.filter((inspection) => inspection.supplierReview?.status === "flagged").map((inspection) => ({ id: inspection.id, label: `${inspection.assetTitle} inspection flagged`, route: `/inspection/${inspection.id}/review` })),
       ...claims.filter((claim) => ["submitted", "under_review", "escalated_placeholder"].includes(claim.status)).map((claim) => ({ id: claim.id, label: `${claim.claimType} claim ${claim.status}`, route: "/admin/claims" })),
+      ...supportCases.filter((supportCase) => ["open", "escalated"].includes(supportCase.status)).map((supportCase) => ({ id: supportCase.id, label: `${supportCase.title} support ${supportCase.status}`, route: "/admin/support" })),
       ...auctionListings.filter((auction) => ["pending_approval", "suspended", "under_investigation"].includes(auction.status)).map((auction) => ({ id: auction.id, label: `${auction.lotNumber} auction ${auction.status}`, route: "/admin/auction-approvals" })),
     ],
     settings: {
@@ -164,6 +176,7 @@ export function createAdminSnapshot(storage) {
       categorySettings: ASSET_CATEGORIES.map((category) => category.label).join(", "),
       auctionSettings: `${auctionListings.length} local/demo lots, ${auctionBids.length} bids, ${auctionKpis.sellThroughRate}% sell-through readiness`,
       notificationSettings: "In-app local notifications only",
+      supportSettings: `${supportSummary.open} open local support cases, ${supportSummary.escalated} escalated, ${supportSummary.breached} SLA attention items`,
       credentialReadiness: `${credentialReadiness.workstreams.length} workstreams documented to credential-level readiness`,
       securityBaseline: `${credentialReadiness.securityBaseline.length} baseline controls tracked`,
       deploymentReadiness: `${credentialReadiness.deploymentReadiness.length} deployment and operations gates tracked`,

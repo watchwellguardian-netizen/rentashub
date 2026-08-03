@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { LogOut, Search, CalendarCheck, MessageSquare, Bot, LayoutDashboard, Wallet, Bell, BadgeCheck, Home, Gavel, ClipboardCheck, Truck, Landmark, BarChart3, BookOpen, ListChecks, Activity } from "lucide-react";
+import { LogOut, Search, CalendarCheck, MessageSquare, Bot, LayoutDashboard, Wallet, Bell, BadgeCheck, Home, Gavel, ClipboardCheck, Truck, Landmark, BarChart3, BookOpen, ListChecks, Activity, LifeBuoy } from "lucide-react";
 import { useAuth } from "../state/AuthContext.jsx";
 import { messageAdapter } from "../lib/adapters/messageAdapter.js";
 import { notificationAdapter } from "../lib/adapters/notificationAdapter.js";
@@ -17,6 +17,7 @@ const navItems = [
   { to: "/bookings", label: "Bookings", icon: CalendarCheck },
   { to: "/wallet", label: "Wallet", icon: Wallet },
   { to: "/messages", label: "Messages", icon: MessageSquare },
+  { to: "/support", label: "Support", icon: LifeBuoy },
   { to: "/notifications", label: "Alerts", icon: Bell },
   { to: "/trust", label: "Trust", icon: BadgeCheck },
   { to: "/ai-assistant", label: "AI Help", icon: Bot },
@@ -69,6 +70,7 @@ export default function AppShell() {
         { to: "/admin/listings", label: "Listings", icon: Search },
         { to: "/admin/verifications", label: "Verify", icon: Bell },
         { to: "/admin/risk", label: "Risk", icon: BadgeCheck },
+        { to: "/admin/support", label: "Support", icon: LifeBuoy },
         { to: "/admin/inspectors", label: "Inspectors", icon: ClipboardCheck },
         { to: "/admin/transport", label: "Transport", icon: Truck },
         { to: "/admin/financing", label: "Financing", icon: Landmark },
@@ -92,6 +94,7 @@ export default function AppShell() {
         { to: "/documentation", label: "Docs", icon: BookOpen },
         { to: "/workflows", label: "Workflows", icon: ListChecks },
         { to: "/messages", label: "Messages", icon: MessageSquare },
+        { to: "/support", label: "Support", icon: LifeBuoy },
         { to: "/dealer/notifications", label: "Alerts", icon: Bell },
       ]
     : isSupplier
@@ -110,6 +113,7 @@ export default function AppShell() {
         { to: "/supplier-profile", label: "Profile", icon: BadgeCheck },
         { to: "/trust", label: "Trust", icon: BadgeCheck },
         { to: "/messages", label: "Messages", icon: MessageSquare },
+        { to: "/support", label: "Support", icon: LifeBuoy },
         { to: "/supplier/notifications", label: "Alerts", icon: Bell },
         { to: "/ai-assistant", label: "AI Help", icon: Bot },
         { to: "/documentation", label: "Docs", icon: BookOpen },

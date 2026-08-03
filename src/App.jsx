@@ -30,6 +30,8 @@ const PayoutsPage = lazyPage(() => import("./pages/PayoutsPage.jsx"));
 const TransactionDetail = lazyPage(() => import("./pages/TransactionDetail.jsx"));
 const MessagesPage = lazyPage(() => import("./pages/MessagesPage.jsx"));
 const NotificationsPage = lazyPage(() => import("./pages/NotificationsPage.jsx"));
+const SupportPage = lazyPage(() => import("./pages/SupportPage.jsx"));
+const AdminSupportPage = lazyPage(() => import("./pages/SupportPage.jsx"), "AdminSupportPage");
 const SupplierProfile = lazyPage(() => import("./pages/SupplierProfile.jsx"));
 const SupplierProfileEdit = lazyPage(() => import("./pages/SupplierProfileEdit.jsx"));
 const VerificationPage = lazyPage(() => import("./pages/VerificationPage.jsx"));
@@ -206,6 +208,7 @@ export default function App() {
             <Route path="/messages/:threadId" element={<MessagesPage />} />
             <Route path="/booking/:id/messages" element={<MessagesPage bookingMode />} />
             <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/support" element={<SupportPage />} />
             <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="/ai-help" element={<AiHome />} />
             <Route path="/ai-assistant" element={<RoleAwareAiAssistantPage />} />
@@ -321,6 +324,7 @@ export default function App() {
             <Route path="/admin/verifications" element={<AdminVerifications />} />
             <Route path="/admin/payments" element={<AdminPayments />} />
             <Route path="/admin/messages" element={<AdminMessages />} />
+            <Route path="/admin/support" element={<AdminSupportPage />} />
             <Route path="/admin/reports" element={<AdminReports />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/reviews" element={<AdminReviews />} />

@@ -1,6 +1,6 @@
 # S5-ABW-001 Remaining Build Gap Register
 
-Overall remaining build scope: 39.3%
+Overall remaining build scope: 38.5%
 
 ## Escrow: Escrow intake, ledger, release, refund, and dispute readiness
 
@@ -164,15 +164,6 @@ Overall remaining build scope: 39.3%
 - Required action: advance from locally-functional to verified runtime or production evidence where applicable.
 - Evidence required: src/pages/FinancingMarketplacePages.jsx, src/lib/financingMarketplaceService.js, tests/production/financing-marketplace.test.mjs
 
-## Operations: Health, readiness, liveness, observability and operator evidence
-
-- Priority weight: 3
-- Remaining weighted points: 1.2
-- Classification: backend-implemented
-- Dependency/blocker: Telemetry destination blocked
-- Required action: advance from backend-implemented to verified runtime or production evidence where applicable.
-- Evidence required: server/src/routes/healthRoutes.js, server/src/routes/monitoringRoutes.js, tests/production/s5-s3g-observability-operations-readiness.test.mjs
-
 ## Claims and Disputes: Claims, disputes, admin queues, and local workflow transitions
 
 - Priority weight: 3
@@ -218,15 +209,6 @@ Overall remaining build scope: 39.3%
 - Required action: advance from backend-implemented to verified runtime or production evidence where applicable.
 - Evidence required: server/src/services/coreRentalService.js, server/tests/core-rental-api.test.mjs
 
-## Communications: Messages, notifications, local delivery/audit framework
-
-- Priority weight: 3
-- Remaining weighted points: 0.9
-- Classification: backend-implemented
-- Dependency/blocker: Live delivery provider pending
-- Required action: advance from backend-implemented to verified runtime or production evidence where applicable.
-- Evidence required: server/src/routes/messageNotificationRoutes.js, src/pages/MessagesPage.jsx, src/pages/NotificationsPage.jsx, tests/production/messaging-notifications.test.mjs
-
 ## Supplier: Supplier profile, verification workflow, and status evidence
 
 - Priority weight: 3
@@ -262,6 +244,24 @@ Overall remaining build scope: 39.3%
 - Dependency/blocker: Provider independent
 - Required action: advance from locally-functional to verified runtime or production evidence where applicable.
 - Evidence required: server/src/routes/reviewApiRoutes.js, src/pages/ReviewsPage.jsx, tests/production/reviews-ratings.test.mjs
+
+## Communications: Messages, notifications, local support delivery, and audit framework
+
+- Priority weight: 3
+- Remaining weighted points: 0.6
+- Classification: backend-implemented
+- Dependency/blocker: Live delivery provider pending
+- Required action: advance from backend-implemented to verified runtime or production evidence where applicable.
+- Evidence required: server/src/routes/messageNotificationRoutes.js, src/pages/MessagesPage.jsx, src/pages/NotificationsPage.jsx, src/pages/SupportPage.jsx, src/lib/supportService.js, tests/production/messaging-notifications.test.mjs, tests/production/support-operations.test.mjs
+
+## Operations: Health, readiness, liveness, observability, support operations, and operator evidence
+
+- Priority weight: 3
+- Remaining weighted points: 0.6
+- Classification: backend-implemented
+- Dependency/blocker: Telemetry destination blocked
+- Required action: advance from backend-implemented to verified runtime or production evidence where applicable.
+- Evidence required: server/src/routes/healthRoutes.js, server/src/routes/monitoringRoutes.js, src/pages/SupportPage.jsx, src/lib/supportService.js, tests/production/s5-s3g-observability-operations-readiness.test.mjs, tests/production/support-operations.test.mjs
 
 ## Marketplace: Public landing, search, categories, and asset discovery
 

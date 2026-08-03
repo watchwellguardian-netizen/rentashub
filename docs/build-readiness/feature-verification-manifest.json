@@ -1,6 +1,6 @@
 {
   "sprint": "S5-ABW-001",
-  "generatedAt": "2026-08-03T13:00:04.084Z",
+  "generatedAt": "2026-08-03T19:26:05.827Z",
   "outputs": [
     "docs/build-readiness/authoritative-build-register.json",
     "docs/build-readiness/module-completion-matrix.md",
@@ -21,10 +21,10 @@
     "formula": "sum(weight * completion) / sum(weight)",
     "totalFeatures": 31,
     "totalWeightedPoints": 120,
-    "verifiedWeightedPoints": 72.85,
-    "remainingWeightedPoints": 47.15,
-    "completedPercent": 60.7,
-    "remainingPercent": 39.3,
+    "verifiedWeightedPoints": 73.75,
+    "remainingWeightedPoints": 46.25,
+    "completedPercent": 61.5,
+    "remainingPercent": 38.5,
     "byClassification": {
       "locally-functional": 9,
       "blocked-externally": 9,
@@ -99,10 +99,10 @@
       },
       "Communications": {
         "totalPoints": 3,
-        "verifiedPoints": 2.1,
+        "verifiedPoints": 2.4,
         "features": 1,
-        "remainingPoints": 0.9,
-        "completedPercent": 70
+        "remainingPoints": 0.6,
+        "completedPercent": 80
       },
       "Claims and Disputes": {
         "totalPoints": 3,
@@ -190,10 +190,10 @@
       },
       "Operations": {
         "totalPoints": 3,
-        "verifiedPoints": 1.8,
+        "verifiedPoints": 2.4,
         "features": 1,
-        "remainingPoints": 1.2,
-        "completedPercent": 60
+        "remainingPoints": 0.6,
+        "completedPercent": 80
       },
       "Queues": {
         "totalPoints": 3,
@@ -358,6 +358,33 @@
         "src/pages/ReviewsPage.jsx",
         "tests/production/reviews-ratings.test.mjs"
       ]
+    },
+    {
+      "id": "messaging-notifications",
+      "module": "Communications",
+      "feature": "Messages, notifications, local support delivery, and audit framework",
+      "evidenceFiles": [
+        "server/src/routes/messageNotificationRoutes.js",
+        "src/pages/MessagesPage.jsx",
+        "src/pages/NotificationsPage.jsx",
+        "src/pages/SupportPage.jsx",
+        "src/lib/supportService.js",
+        "tests/production/messaging-notifications.test.mjs",
+        "tests/production/support-operations.test.mjs"
+      ]
+    },
+    {
+      "id": "observability-operations",
+      "module": "Operations",
+      "feature": "Health, readiness, liveness, observability, support operations, and operator evidence",
+      "evidenceFiles": [
+        "server/src/routes/healthRoutes.js",
+        "server/src/routes/monitoringRoutes.js",
+        "src/pages/SupportPage.jsx",
+        "src/lib/supportService.js",
+        "tests/production/s5-s3g-observability-operations-readiness.test.mjs",
+        "tests/production/support-operations.test.mjs"
+      ]
     }
   ],
   "unverifiedFeatures": [
@@ -381,13 +408,6 @@
       "feature": "RLS/RBAC policy preparation and cross-tenant evidence harness",
       "classification": "blocked-externally",
       "remainingPoints": 2.75
-    },
-    {
-      "id": "messaging-notifications",
-      "module": "Communications",
-      "feature": "Messages, notifications, local delivery/audit framework",
-      "classification": "backend-implemented",
-      "remainingPoints": 0.9
     },
     {
       "id": "claims-disputes",
@@ -472,13 +492,6 @@
       "feature": "Privacy, DSAR, retention, KYC, DPA/GDPR evidence readiness",
       "classification": "documented-only",
       "remainingPoints": 1.35
-    },
-    {
-      "id": "observability-operations",
-      "module": "Operations",
-      "feature": "Health, readiness, liveness, observability and operator evidence",
-      "classification": "backend-implemented",
-      "remainingPoints": 1.2
     },
     {
       "id": "redis-bullmq-readiness",
