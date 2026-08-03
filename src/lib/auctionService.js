@@ -8,6 +8,7 @@ export const AUCTION_AUDIT_STORAGE_KEY = "rentashub_auction_audit";
 export const AUCTION_ESCROW_STORAGE_KEY = "rentashub_auction_escrow";
 export const AUCTION_KYC_STORAGE_KEY = "rentashub_auction_kyc";
 export const AUCTION_DISPUTES_STORAGE_KEY = "rentashub_auction_disputes";
+export const AUCTION_IDEMPOTENCY_STORAGE_KEY = "rentashub_auction_idempotency_records";
 
 export const AUCTION_CATEGORIES = [
   { id: "cars", label: "Cars" },
@@ -113,6 +114,7 @@ export const AUCTION_ROUTE_GROUPS = {
   dealer: ["/dealer/auction-dashboard", "/dealer/bulk-bidding", "/dealer/fleet-purchases", "/dealer/dealer-only-auctions", "/dealer/market-intelligence"],
   admin: ["/admin/auctions", "/admin/auction-approvals", "/admin/auction-compliance", "/admin/kyc-review", "/admin/fraud-alerts", "/admin/bid-ledger", "/admin/auction-disputes", "/admin/gct-reports", "/admin/government-auctions", "/admin/court-sales", "/admin/customs-auctions", "/admin/auction-settings"],
 };
+export const AUCTION_CONTRACT_REQUIRED_FIELDS = ["id", "lotNumber", "title", "category", "sellerId", "auctionType", "status", "startingBid", "minimumIncrement", "endTime"];
 
 const now = new Date("2026-06-13T12:00:00.000Z");
 
@@ -379,6 +381,27 @@ export function saveAuctionDisputes(storage, disputes) {
   return writeJson(storage, AUCTION_DISPUTES_STORAGE_KEY, disputes);
 }
 
+export function loadAuctionIdempotencyRecords(storage) {
+  return readJson(storage, AUCTION_IDEMPOTENCY_STORAGE_KEY, []);
+}
+
+export function saveAuctionIdempotencyRecords(storage, records) {
+  return writeJson(storage, AUCTION_IDEMPOTENCY_STORAGE_KEY, records);
+}
+
+function findAuctionIdempotencyRecord(storage, key) {
+  if (!key) return null;
+  return loadAuctionIdempotencyRecords(storage).find((record) => record.key === key) || null;
+}
+
+function recordAuctionIdempotency(storage, record) {
+  if (!record?.key) return null;
+  const records = loadAuctionIdempotencyRecords(storage).filter((item) => item.key !== record.key);
+  const next = { createdAt: new Date().toISOString(), ...record };
+  saveAuctionIdempotencyRecords(storage, [next, ...records]);
+  return next;
+}
+
 export function getBidderVerification(storage, user) {
   return loadAuctionKycRecords(storage).find((record) => record.userId === user?.id) || { userId: user?.id || "", tier: "none", status: "not_started", trnCaptured: false, governmentIdUploaded: false, electronicConsent: false, enhanced: false };
 }
@@ -434,6 +457,76 @@ export function validateAuctionInput(input = {}) {
   if (Number(input.minimumIncrement || 0) <= 0) errors.minimumIncrement = "Minimum increment must be greater than zero.";
   if (!String(input.endTime || "").trim()) errors.endTime = "End time is required.";
   return { valid: Object.keys(errors).length === 0, errors };
+}
+
+export function calculateAuctionFinancials(auction = {}, winningAmount = 0) {
+  const hammerPrice = Number(winningAmount || auction.currentBid || auction.startingBid || 0);
+  const buyerPremium = Math.round((hammerPrice * Number(auction.buyerPremiumPercent || 0)) / 100);
+  const depositRequired = Number(auction.depositRequired || 0);
+  const reservePrice = Number(auction.reservePrice || 0);
+  const totalBuyerObligation = hammerPrice + buyerPremium;
+  return {
+    hammerPrice,
+    buyerPremium,
+    depositRequired,
+    balanceDue: Math.max(0, totalBuyerObligation - depositRequired),
+    totalBuyerObligation,
+    reservePrice,
+    reserveMet: reservePrice <= 0 || hammerPrice >= reservePrice,
+    sellerProceedsPlaceholder: hammerPrice,
+    moneyMovementStatus: "simulated_only",
+  };
+}
+
+export function validateAuctionContract(auction = {}) {
+  const errors = {};
+  for (const field of AUCTION_CONTRACT_REQUIRED_FIELDS) {
+    if (auction[field] === undefined || auction[field] === null || auction[field] === "") errors[field] = `${field} is required.`;
+  }
+  if (auction.category && !AUCTION_CATEGORIES.some((category) => category.id === auction.category)) errors.category = "Unsupported auction category.";
+  if (String(auction.category || "").includes("real-estate")) errors.category = "Immovable property categories are not supported.";
+  if (auction.auctionType && !AUCTION_TYPES.includes(auction.auctionType)) errors.auctionType = "Unsupported auction type.";
+  if (auction.status && !AUCTION_STATUSES.includes(auction.status)) errors.status = "Unsupported auction status.";
+  if (Number(auction.startingBid || 0) <= 0) errors.startingBid = "Starting bid must be greater than zero.";
+  if (Number(auction.minimumIncrement || 0) <= 0) errors.minimumIncrement = "Minimum increment must be greater than zero.";
+  if (Number(auction.depositRequired || 0) < 0) errors.depositRequired = "Deposit cannot be negative.";
+  return {
+    valid: Object.keys(errors).length === 0,
+    errors,
+    providerBoundary: "local_contract_only",
+    productionReady: false,
+  };
+}
+
+export function createAuctionContractSnapshot(storage, auctionId) {
+  const auction = getAuctionById(storage, auctionId);
+  if (!auction) return null;
+  const bids = getAuctionBids(storage, auctionId);
+  const visibleBids = getVisibleBidHistory(storage, auctionId);
+  const highestStandardBid = bids.filter((bid) => bid.bidType !== "sealed").sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0))[0] || null;
+  const highestSealedBid = bids.filter((bid) => bid.bidType === "sealed").sort((a, b) => Number(b.sealedAmount || 0) - Number(a.sealedAmount || 0))[0] || null;
+  const leadingBid = highestSealedBid && Number(highestSealedBid.sealedAmount || 0) > Number(highestStandardBid?.amount || 0) ? highestSealedBid : highestStandardBid;
+  const leadingAmount = leadingBid?.bidType === "sealed" ? Number(leadingBid.sealedAmount || 0) : Number(leadingBid?.amount || auction.currentBid || auction.startingBid || 0);
+  const financials = calculateAuctionFinancials(auction, leadingAmount);
+  const contract = validateAuctionContract(auction);
+  return {
+    auctionId,
+    lotNumber: auction.lotNumber,
+    contractStatus: contract.valid ? "READY_LOCAL_CONTRACT" : "BLOCKED_CONTRACT_ERRORS",
+    contractErrors: contract.errors,
+    bidCount: bids.length,
+    visibleBidCount: visibleBids.length,
+    leadingBidderId: leadingBid?.bidderId || auction.highBidderId || "",
+    leadingBidType: leadingBid?.bidType || "",
+    financials,
+    canCloseLocally: contract.valid && ["live", "extended"].includes(auction.status) && bids.length > 0,
+    blockers: [
+      "No live auction exchange provider is active.",
+      "No real payment, escrow, title transfer, legal, email, SMS, push, or socket provider is active.",
+    ],
+    providerBoundary: "provider_independent_local_only",
+    productionReady: false,
+  };
 }
 
 export function createAuctionListing(storage, user, input = {}) {
@@ -503,6 +596,13 @@ export function placeAuctionBid(storage, user, auctionId, input = {}) {
   const verification = getBidderVerification(storage, user);
   const permission = canBid(user, auction, verification);
   if (!permission.allowed) return { valid: false, errors: { permission: permission.reason } };
+  const idempotencyKey = String(input.idempotencyKey || "").trim();
+  const existingRecord = findAuctionIdempotencyRecord(storage, idempotencyKey);
+  if (existingRecord) {
+    if (existingRecord.action !== "place_bid" || existingRecord.auctionId !== auctionId || existingRecord.actorId !== user.id) return { valid: false, errors: { idempotency: "Idempotency key is already used for a different auction action." } };
+    const existingBid = loadAuctionBids(storage).find((bid) => bid.bidId === existingRecord.resultId);
+    return existingBid ? { valid: true, idempotent: true, bid: existingBid, auction: getAuctionById(storage, auctionId) } : { valid: false, errors: { idempotency: "Idempotency record points to a missing bid." } };
+  }
   const bidType = input.bidType || "standard";
   const bidAmount = Number(input.amount || 0);
   const currentFloor = Number(auction.currentBid || auction.startingBid || 0);
@@ -540,7 +640,62 @@ export function placeAuctionBid(storage, user, auctionId, input = {}) {
   if (bidType !== "sealed" && bidAmount >= Number(auction.reservePrice || 0)) {
     appendAuctionEscrowLedger(storage, { auctionId, bidderId: user.id, type: "deposit_hold", status: "simulated_pending", amount: Number(auction.depositRequired || 0), note: "Deposit hold readiness record only; no real funds are held." });
   }
+  recordAuctionIdempotency(storage, { key: idempotencyKey, action: "place_bid", auctionId, actorId: user.id, resultId: bid.bidId });
   return { valid: true, bid, auction: nextAuction };
+}
+
+export function closeAuctionLocally(storage, user, auctionId, input = {}) {
+  if (!["admin", "auction_admin", "super_admin"].includes(normalizeRole(user?.role))) return { valid: false, errors: { permission: "Auction close and award requires auction admin access." } };
+  const auction = getAuctionById(storage, auctionId);
+  if (!auction) return { valid: false, errors: { auction: "Auction lot was not found." } };
+  const idempotencyKey = String(input.idempotencyKey || "").trim();
+  const existingRecord = findAuctionIdempotencyRecord(storage, idempotencyKey);
+  if (existingRecord) {
+    if (existingRecord.action !== "close_auction" || existingRecord.auctionId !== auctionId || existingRecord.actorId !== user.id) return { valid: false, errors: { idempotency: "Idempotency key is already used for a different auction action." } };
+    const closedAuction = getAuctionById(storage, auctionId);
+    return { valid: true, idempotent: true, auction: closedAuction, award: existingRecord.award || null };
+  }
+  if (!["live", "extended"].includes(auction.status)) return { valid: false, errors: { status: "Only live or extended auctions can be closed locally." } };
+  const snapshot = createAuctionContractSnapshot(storage, auctionId);
+  if (!snapshot?.canCloseLocally) return { valid: false, errors: { contract: "Auction contract is not ready to close locally." } };
+  const award = snapshot.financials.reserveMet && snapshot.leadingBidderId
+    ? {
+        bidderId: snapshot.leadingBidderId,
+        bidType: snapshot.leadingBidType,
+        hammerPrice: snapshot.financials.hammerPrice,
+        buyerPremium: snapshot.financials.buyerPremium,
+        totalBuyerObligation: snapshot.financials.totalBuyerObligation,
+        balanceDue: snapshot.financials.balanceDue,
+        awardStatus: "local_award_ready",
+      }
+    : {
+        bidderId: "",
+        bidType: "",
+        hammerPrice: snapshot.financials.hammerPrice,
+        buyerPremium: 0,
+        totalBuyerObligation: 0,
+        balanceDue: 0,
+        awardStatus: "reserve_not_met_unsold",
+      };
+  const nextStatus = award.bidderId ? "closed" : "unsold";
+  const nextAuction = {
+    ...auction,
+    status: nextStatus,
+    assetLifecycleState: award.bidderId ? "auction_closed" : "unsold",
+    winningBidderId: award.bidderId,
+    paymentStatus: award.bidderId ? "balance_pending" : auction.paymentStatus,
+    escrowStatus: award.bidderId ? "auction_won" : auction.escrowStatus,
+    lifecycleHistory: [...(auction.lifecycleHistory || []), { status: nextStatus, actorId: user.id, timestamp: new Date().toISOString(), note: "Auction closed locally; no live exchange, payment, escrow, or title action occurred." }],
+    updatedAt: new Date().toISOString(),
+  };
+  saveAuctionListings(storage, loadAuctionListings(storage).map((item) => item.id === auctionId ? nextAuction : item));
+  if (award.bidderId) {
+    appendAuctionEscrowLedger(storage, { auctionId, bidderId: award.bidderId, type: "award_balance_due", status: "simulated_pending", amount: award.balanceDue, note: "Local award balance due record only; no real funds are held or moved." });
+    queueAuctionNotificationEvent(storage, user, auctionId, "auction_won", award.bidderId);
+  }
+  appendAuctionAudit(storage, { auctionId, actorId: user.id, action: "auction_closed_locally", detail: award.awardStatus });
+  recordAuctionIdempotency(storage, { key: idempotencyKey, action: "close_auction", auctionId, actorId: user.id, resultId: auctionId, award });
+  return { valid: true, auction: nextAuction, award, contract: snapshot };
 }
 
 export function toggleAuctionWatchlist(storage, user, auctionId) {

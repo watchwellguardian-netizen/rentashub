@@ -5,8 +5,8 @@ A4 status: A4-01 open
 Production ready: No
 
 Completion formula: sum(weight * completion) / sum(weight)
-Verified build completion: 61.5%
-Remaining build scope: 38.5%
+Verified build completion: 62.1%
+Remaining build scope: 37.9%
 
 | Module | Feature | Classification | Weight | Completion | Verified points | Test status |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
@@ -25,7 +25,7 @@ Remaining build scope: 38.5%
 | Claims and Disputes | Claims, disputes, admin queues, and local workflow transitions | backend-implemented | 3 | 0.65 | 1.95 | Protection/dispute tests pass |
 | Revenue | Payment intent, wallet, earnings, payout, refund placeholder workflow | blocked-externally | 5 | 0.45 | 2.25 | Payment ledger and revenue readiness tests pass |
 | Escrow | Escrow intake, ledger, release, refund, and dispute readiness | blocked-externally | 5 | 0.4 | 2 | Escrow readiness tests pass |
-| Auctions | Auction landing, lots, bidding UI, supplier/admin/dealer surfaces | simulated | 5 | 0.55 | 2.75 | Auction tests pass |
+| Auctions | Auction landing, lots, bidding UI, local contract layer, supplier/admin/dealer surfaces | locally-functional | 5 | 0.7 | 3.5 | Auction local contract and workflow tests pass |
 | Inspections | Inspector directory, registration, quote, booking, report workflow | locally-functional | 3 | 0.65 | 1.95 | Inspection tests pass |
 | Transport | Transport directory, provider registration, quote and booking readiness | locally-functional | 3 | 0.65 | 1.95 | Transport tests pass |
 | Financing | Financing directory, partner registration, referral readiness | locally-functional | 3 | 0.6 | 1.8 | Financing tests pass |

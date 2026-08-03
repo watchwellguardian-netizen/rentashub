@@ -1,6 +1,6 @@
 # S5-ABW-001 Remaining Build Gap Register
 
-Overall remaining build scope: 38.5%
+Overall remaining build scope: 37.9%
 
 ## Escrow: Escrow intake, ledger, release, refund, and dispute readiness
 
@@ -56,15 +56,6 @@ Overall remaining build scope: 38.5%
 - Required action: advance from blocked-externally to verified runtime or production evidence where applicable.
 - Evidence required: server/src/routes/authRoutes.js, server/tests/auth.test.mjs, tests/production/s5-s3f-auth-authorization-readiness.test.mjs
 
-## Auctions: Auction landing, lots, bidding UI, supplier/admin/dealer surfaces
-
-- Priority weight: 5
-- Remaining weighted points: 2.25
-- Classification: simulated
-- Dependency/blocker: Provider independent and simulated
-- Required action: advance from simulated to verified runtime or production evidence where applicable.
-- Evidence required: src/pages/AuctionPages.jsx, src/lib/auctionService.js, tests/production/auction-module.test.mjs
-
 ## Database: PostgreSQL adapter, migrations, and execution harness
 
 - Priority weight: 5
@@ -109,6 +100,15 @@ Overall remaining build scope: 38.5%
 - Dependency/blocker: CI/live execution pending
 - Required action: advance from blocked-externally to verified runtime or production evidence where applicable.
 - Evidence required: tests/production/s5-s3c-redis-bullmq-readiness.test.mjs
+
+## Auctions: Auction landing, lots, bidding UI, local contract layer, supplier/admin/dealer surfaces
+
+- Priority weight: 5
+- Remaining weighted points: 1.5
+- Classification: locally-functional
+- Dependency/blocker: Provider independent and simulated
+- Required action: advance from locally-functional to verified runtime or production evidence where applicable.
+- Evidence required: src/pages/AuctionPages.jsx, src/lib/auctionService.js, tests/production/auction-module.test.mjs
 
 ## Browser and Accessibility: Playwright browser journey and accessibility runtime suite
 

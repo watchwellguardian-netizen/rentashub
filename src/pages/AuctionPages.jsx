@@ -16,8 +16,10 @@ import {
   AUCTION_TYPES,
   adminUpdateAuctionStatus,
   calculateAuctionKpis,
+  closeAuctionLocally,
   createAuctionListing,
   createAuctionDispute,
+  createAuctionContractSnapshot,
   generateAuctionDocumentPlaceholder,
   filterAuctions,
   getAuctionById,
@@ -557,6 +559,10 @@ export function AdminAuctionPage({ view = "dashboard" }) {
     adminUpdateAuctionStatus(window.localStorage, user, auctionId, status);
     setAuctions(loadAuctionListings(window.localStorage));
   };
+  const close = (auctionId) => {
+    closeAuctionLocally(window.localStorage, user, auctionId, { idempotencyKey: `admin-close-${auctionId}` });
+    setAuctions(loadAuctionListings(window.localStorage));
+  };
   return (
     <main className="page dashboard-grid">
       <section className="hero-panel wide"><p className="eyebrow">Admin Auctions</p><h1>RentasHub auction control center</h1><p>Approve, reject, pause, extend, cancel, suspend, review KYC/fraud, inspect bid ledger, GCT readiness, and government/court/customs queues.</p></section>
@@ -565,7 +571,10 @@ export function AdminAuctionPage({ view = "dashboard" }) {
       <section className="panel wide">
         <div className="section-heading"><span>{view.replaceAll("_", " ")}</span></div>
         {["bid_ledger", "gct", "settings", "kyc", "fraud", "compliance"].includes(view) ? <AdminControlledView view={view} audit={audit} escrow={escrow} /> : (
-          <div className="asset-list">{auctions.map((auction) => <article className="asset-card" key={auction.id}><div><span className="status-badge neutral">{auction.status}</span><h3>{auction.title}</h3><p>{auction.lotNumber} / {auction.sellerType} / {auction.parish}</p></div><div className="card-actions"><Button onClick={() => update(auction.id, "live")}>Approve/live</Button><Button variant="secondary" onClick={() => update(auction.id, "suspended")}>Suspend</Button><Button variant="ghost" onClick={() => update(auction.id, "cancelled")}>Cancel</Button></div></article>)}</div>
+          <div className="asset-list">{auctions.map((auction) => {
+            const contract = createAuctionContractSnapshot(window.localStorage, auction.id);
+            return <article className="asset-card" key={auction.id}><div><span className="status-badge neutral">{auction.status}</span><h3>{auction.title}</h3><p>{auction.lotNumber} / {auction.sellerType} / {auction.parish}</p><p>Contract: {contract?.contractStatus?.replaceAll("_", " ").toLowerCase()} / close ready: {contract?.canCloseLocally ? "yes" : "no"}</p></div><div className="card-actions"><Button onClick={() => update(auction.id, "live")}>Approve/live</Button><Button variant="secondary" onClick={() => close(auction.id)}>Close local</Button><Button variant="secondary" onClick={() => update(auction.id, "suspended")}>Suspend</Button><Button variant="ghost" onClick={() => update(auction.id, "cancelled")}>Cancel</Button></div></article>;
+          })}</div>
         )}
       </section>
     </main>

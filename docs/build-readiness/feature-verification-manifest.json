@@ -1,6 +1,6 @@
 {
   "sprint": "S5-ABW-001",
-  "generatedAt": "2026-08-03T19:26:05.827Z",
+  "generatedAt": "2026-08-03T19:40:08.385Z",
   "outputs": [
     "docs/build-readiness/authoritative-build-register.json",
     "docs/build-readiness/module-completion-matrix.md",
@@ -21,15 +21,15 @@
     "formula": "sum(weight * completion) / sum(weight)",
     "totalFeatures": 31,
     "totalWeightedPoints": 120,
-    "verifiedWeightedPoints": 73.75,
-    "remainingWeightedPoints": 46.25,
-    "completedPercent": 61.5,
-    "remainingPercent": 38.5,
+    "verifiedWeightedPoints": 74.5,
+    "remainingWeightedPoints": 45.5,
+    "completedPercent": 62.1,
+    "remainingPercent": 37.9,
     "byClassification": {
-      "locally-functional": 9,
+      "locally-functional": 10,
       "blocked-externally": 9,
       "backend-implemented": 7,
-      "simulated": 2,
+      "simulated": 1,
       "documented-only": 2,
       "not-started": 2
     },
@@ -127,10 +127,10 @@
       },
       "Auctions": {
         "totalPoints": 5,
-        "verifiedPoints": 2.75,
+        "verifiedPoints": 3.5,
         "features": 1,
-        "remainingPoints": 2.25,
-        "completedPercent": 55
+        "remainingPoints": 1.5,
+        "completedPercent": 70
       },
       "Inspections": {
         "totalPoints": 3,
@@ -433,9 +433,9 @@
     {
       "id": "auction-platform",
       "module": "Auctions",
-      "feature": "Auction landing, lots, bidding UI, supplier/admin/dealer surfaces",
-      "classification": "simulated",
-      "remainingPoints": 2.25
+      "feature": "Auction landing, lots, bidding UI, local contract layer, supplier/admin/dealer surfaces",
+      "classification": "locally-functional",
+      "remainingPoints": 1.5
     },
     {
       "id": "inspection-marketplace",

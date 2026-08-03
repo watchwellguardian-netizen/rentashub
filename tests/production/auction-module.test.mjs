@@ -11,7 +11,10 @@ import {
   AUCTION_ROUTE_GROUPS,
   adminUpdateAuctionStatus,
   calculateAuctionKpis,
+  calculateAuctionFinancials,
+  closeAuctionLocally,
   canBid,
+  createAuctionContractSnapshot,
   createAuctionListing,
   createAuctionDispute,
   generateAuctionDocumentPlaceholder,
@@ -24,6 +27,7 @@ import {
   loadAuctionBids,
   loadAuctionDisputes,
   loadAuctionEscrowLedger,
+  loadAuctionIdempotencyRecords,
   loadAuctionListings,
   placeAuctionBid,
   queueAuctionNotificationEvent,
@@ -35,6 +39,7 @@ import {
   validateAuctionPaymentTransition,
   validateAuctionStatusTransition,
   validateAuctionInput,
+  validateAuctionContract,
 } from "../../src/lib/auctionService.js";
 import { canAccessRole, expandAllowedRoles, roleLabel } from "../../src/lib/rbac.js";
 
@@ -144,6 +149,52 @@ test("standard proxy and sealed bids are timestamped and sealed bid amounts are 
   assert.ok(loadAuctionAudit(local).some((entry) => entry.action.includes("bid")));
 });
 
+test("auction contract validation and financial calculations are deterministic and provider-independent", () => {
+  const local = storage();
+  const auction = getAuctionById(local, "auction-excavator-001");
+  const contract = validateAuctionContract(auction);
+  assert.equal(contract.valid, true);
+  assert.equal(contract.productionReady, false);
+  assert.equal(contract.providerBoundary, "local_contract_only");
+  const financials = calculateAuctionFinancials(auction, 9000000);
+  assert.deepEqual({
+    hammerPrice: financials.hammerPrice,
+    buyerPremium: financials.buyerPremium,
+    depositRequired: financials.depositRequired,
+    balanceDue: financials.balanceDue,
+    totalBuyerObligation: financials.totalBuyerObligation,
+    reserveMet: financials.reserveMet,
+    moneyMovementStatus: financials.moneyMovementStatus,
+  }, {
+    hammerPrice: 9000000,
+    buyerPremium: 450000,
+    depositRequired: 250000,
+    balanceDue: 9200000,
+    totalBuyerObligation: 9450000,
+    reserveMet: true,
+    moneyMovementStatus: "simulated_only",
+  });
+  const invalid = validateAuctionContract({ ...auction, category: "real-estate", minimumIncrement: 0 });
+  assert.equal(invalid.valid, false);
+  assert.match(invalid.errors.category, /Immovable/);
+  assert.match(invalid.errors.minimumIncrement, /greater than zero/);
+});
+
+test("auction bid idempotency prevents duplicate bid creation and rejects key reuse", () => {
+  const local = storage();
+  const first = placeAuctionBid(local, customer, "auction-excavator-001", { amount: 9000000, bidType: "standard", idempotencyKey: "bid-key-001" });
+  assert.equal(first.valid, true);
+  const second = placeAuctionBid(local, customer, "auction-excavator-001", { amount: 9200000, bidType: "standard", idempotencyKey: "bid-key-001" });
+  assert.equal(second.valid, true);
+  assert.equal(second.idempotent, true);
+  assert.equal(second.bid.bidId, first.bid.bidId);
+  assert.equal(loadAuctionBids(local).filter((bid) => bid.bidderId === customer.id).length, 1);
+  const reused = placeAuctionBid(local, broker, "auction-excavator-001", { amount: 9300000, bidType: "standard", idempotencyKey: "bid-key-001" });
+  assert.equal(reused.valid, false);
+  assert.match(reused.errors.idempotency, /different auction action/);
+  assert.equal(loadAuctionIdempotencyRecords(local).length, 1);
+});
+
 test("reserve-met bid creates simulated escrow ledger but no real funds claim", () => {
   const local = storage();
   const result = placeAuctionBid(local, customer, "auction-excavator-001", { amount: 9000000, bidType: "standard" });
@@ -216,6 +267,43 @@ test("operational workflow exposes inactive provider interfaces and connection p
   assert.deepEqual(AUCTION_PAYMENT_STATUSES.includes("fully_simulated_paid"), true);
 });
 
+test("auction contract snapshot and local close award produce auditable simulated outcome only", () => {
+  const local = storage();
+  const bid = placeAuctionBid(local, customer, "auction-excavator-001", { amount: 9000000, bidType: "standard", idempotencyKey: "award-bid-001" });
+  assert.equal(bid.valid, true);
+  const snapshot = createAuctionContractSnapshot(local, "auction-excavator-001");
+  assert.equal(snapshot.contractStatus, "READY_LOCAL_CONTRACT");
+  assert.equal(snapshot.canCloseLocally, true);
+  assert.equal(snapshot.leadingBidderId, customer.id);
+  assert.equal(snapshot.productionReady, false);
+  assert.match(snapshot.blockers.join(" "), /No live auction exchange/);
+  const blocked = closeAuctionLocally(local, customer, "auction-excavator-001", { idempotencyKey: "close-key-001" });
+  assert.equal(blocked.valid, false);
+  assert.match(blocked.errors.permission, /admin/);
+  const closed = closeAuctionLocally(local, admin, "auction-excavator-001", { idempotencyKey: "close-key-001" });
+  assert.equal(closed.valid, true);
+  assert.equal(closed.auction.status, "closed");
+  assert.equal(closed.auction.winningBidderId, customer.id);
+  assert.equal(closed.award.awardStatus, "local_award_ready");
+  assert.equal(closed.award.totalBuyerObligation, 9450000);
+  assert.equal(loadAuctionEscrowLedger(local)[0].simulatedOnly, true);
+  assert.ok(loadAuctionAudit(local).some((entry) => entry.action === "auction_closed_locally"));
+  const repeated = closeAuctionLocally(local, admin, "auction-excavator-001", { idempotencyKey: "close-key-001" });
+  assert.equal(repeated.valid, true);
+  assert.equal(repeated.idempotent, true);
+});
+
+test("auction local close marks reserve-not-met lots unsold without money movement", () => {
+  const local = storage();
+  const bid = placeAuctionBid(local, customer, "auction-excavator-001", { amount: 8050000, bidType: "standard", idempotencyKey: "under-reserve-bid" });
+  assert.equal(bid.valid, true);
+  const closed = closeAuctionLocally(local, admin, "auction-excavator-001", { idempotencyKey: "under-reserve-close" });
+  assert.equal(closed.valid, true);
+  assert.equal(closed.auction.status, "unsold");
+  assert.equal(closed.auction.winningBidderId, "");
+  assert.equal(closed.award.awardStatus, "reserve_not_met_unsold");
+});
+
 test("invalid payment and escrow transitions are blocked", () => {
   assert.equal(validateAuctionPaymentTransition("not_started", "fully_simulated_paid").valid, false);
   assert.equal(validateAuctionPaymentTransition("not_started", "deposit_pending").valid, true);
@@ -255,6 +343,8 @@ test("Phase 1C operational screens and seller wizard copy are present", () => {
   assert.match(pages, /AuctionDocumentLibraryPage/);
   assert.match(pages, /AuctionNotificationAuditPage/);
   assert.match(pages, /AuctionDisputePage/);
+  assert.match(pages, /Close local/);
+  assert.match(pages, /createAuctionContractSnapshot/);
 });
 
 test("auction UI keeps live-provider and legal claims controlled", () => {
