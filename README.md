@@ -222,4 +222,5 @@ Module 46 selects Supabase Auth as the production authentication target. `VITE_A
 See `docs/production-credential-readiness.md` for the credential-level handoff checklist.
 See `docs/phase-2-production-activation-roadmap.md` for the recommended Module 44-50 production activation sequence.
 #   r e n t a s h u b  
+ #   r e n t a s h u b  
  
