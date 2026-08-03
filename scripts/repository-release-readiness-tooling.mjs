@@ -244,9 +244,9 @@ export function renderPrApprovalEvidenceChecklist() {
   ].join("\n");
 }
 
-export function buildArtifactIntegrityReport() {
-  const artifact = validateReleaseArtifacts();
-  const zip = validateZipArtifactInclusionExclusion();
+export function buildArtifactIntegrityReport({ requireBuild = false } = {}) {
+  const artifact = validateReleaseArtifacts({ requireBuild });
+  const zip = validateZipArtifactInclusionExclusion({ requireBuild });
   const blockers = [...artifact.blockers, ...zip.blockers];
   return {
     status: blockers.length ? "FAIL" : "PASS",
@@ -284,8 +284,8 @@ export function renderArtifactIntegrityReport() {
   ].join("\n");
 }
 
-export function buildZipArtifactExpansionReport() {
-  const zip = validateZipArtifactInclusionExclusion();
+export function buildZipArtifactExpansionReport({ requireBuild = false } = {}) {
+  const zip = validateZipArtifactInclusionExclusion({ requireBuild });
   return {
     status: zip.status,
     requiredFilesChecked: zip.requiredFiles.length,

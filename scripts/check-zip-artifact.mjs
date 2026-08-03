@@ -3,8 +3,7 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = process.cwd();
-const required = [
-  "dist/index.html",
+const sourceRequired = [
   "docs/deployment-readiness.md",
   "docs/monitoring-observability-readiness.md",
   "docs/pilot-operations-playbook.md",
@@ -65,6 +64,7 @@ const required = [
   "Dockerfile",
   "docker-compose.example.yml",
 ];
+const buildRequired = ["dist/index.html"];
 
 const forbiddenSegments = new Set(["node_modules", ".git"]);
 const forbiddenPatterns = [/^server[\\/]\.data[\\/]/, /rentashub-dev-db\.json$/];
@@ -82,7 +82,8 @@ function walk(dir, files = []) {
   return files;
 }
 
-export function validateZipArtifactInclusionExclusion() {
+export function validateZipArtifactInclusionExclusion({ requireBuild = true } = {}) {
+  const required = requireBuild ? [...sourceRequired, ...buildRequired] : sourceRequired;
   const missing = required.filter((file) => !existsSync(join(root, file)));
   const files = walk(root);
   const forbidden = files.filter((file) => forbiddenPatterns.some((pattern) => pattern.test(file)));

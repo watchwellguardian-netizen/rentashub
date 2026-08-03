@@ -52,7 +52,7 @@ jobs:
           - name: artifact-validation
             command: npm run artifact:validate
           - name: zip-sanity
-            command: npm run zip:check
+            command: npm run build && npm run zip:check
           - name: production-build
             command: npm run build
     steps:
