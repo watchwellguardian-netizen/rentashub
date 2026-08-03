@@ -8,10 +8,14 @@ export function redactStorageUrl(rawUrl = "") {
 }
 
 export function validateObjectStorageConfig(input = {}) {
-  const provider = input.provider || process.env.OBJECT_STORAGE_PROVIDER || "local_s3";
-  const endpoint = input.endpoint || process.env.OBJECT_STORAGE_ENDPOINT || "";
-  const bucket = input.bucket || process.env.OBJECT_STORAGE_BUCKET || "rentashub-local-evidence";
-  const confirmDisposable = input.confirmDisposable === true || process.env.OBJECT_STORAGE_CONFIRM_DISPOSABLE === "true";
+  const hasProvider = Object.prototype.hasOwnProperty.call(input, "provider");
+  const hasEndpoint = Object.prototype.hasOwnProperty.call(input, "endpoint");
+  const hasBucket = Object.prototype.hasOwnProperty.call(input, "bucket");
+  const hasConfirmDisposable = Object.prototype.hasOwnProperty.call(input, "confirmDisposable");
+  const provider = hasProvider ? input.provider : process.env.OBJECT_STORAGE_PROVIDER || "local_s3";
+  const endpoint = hasEndpoint ? input.endpoint || "" : hasProvider ? "" : process.env.OBJECT_STORAGE_ENDPOINT || "";
+  const bucket = hasBucket ? input.bucket || "" : hasProvider ? "" : process.env.OBJECT_STORAGE_BUCKET || "rentashub-local-evidence";
+  const confirmDisposable = hasConfirmDisposable ? input.confirmDisposable === true : process.env.OBJECT_STORAGE_CONFIRM_DISPOSABLE === "true";
   if (provider === "local_s3") {
     return {
       status: "READY",

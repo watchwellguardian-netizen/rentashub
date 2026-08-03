@@ -32,8 +32,13 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: npm
+
+      - name: Prepare runtime evidence directory
+        run: |
+          mkdir -p artifacts/runtime-evidence
+          printf '{"status":"STARTED","workflow":"object-storage-export-runtime-validation","runtimeEvidenceGenerated":false}\n' > artifacts/runtime-evidence/object-storage-export-s5-s3d.json
 
       - name: Install project dependencies
         run: npm ci
