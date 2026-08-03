@@ -124,3 +124,12 @@ test("S5-S3B runtime suite is implemented but remains blocked without executable
   assert.equal(result.liveSupabaseTouched ?? result.environment?.liveSupabaseBlocked, true);
   assert.doesNotMatch(JSON.stringify(result), /SUPABASE_SERVICE_ROLE_KEY|postgresql:\/\/postgres:[^R]/);
 });
+
+test("PostgreSQL runtime workflow is psql-only and initializes evidence before runtime execution", () => {
+  const workflow = readFileSync(".github/workflows/postgres-runtime-validation.yml", "utf8");
+  assert.match(workflow, /postgres:16/);
+  assert.match(workflow, /postgresql:\/\/postgres:postgres@127\.0\.0\.1:5432\/rentashub_pg005_test/);
+  assert.match(workflow, /postgres-pg006\.json/);
+  assert.match(workflow, /psql --version/);
+  assert.doesNotMatch(workflow, /npm install -g "supabase@|supabase --version|supabase link|supabase db push/);
+});
