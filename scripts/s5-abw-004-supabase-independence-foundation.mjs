@@ -80,6 +80,7 @@ function printReport(report) {
   console.log(`LOCAL READY: ${report.localReady}`);
   console.log(`CREDENTIAL READY: ${report.credentialReady}`);
   console.log(`BLOCKED CREDENTIALS: ${report.blockedCredentials}`);
+  console.log(`INVALID MODES: ${report.invalidModeCount}`);
   console.log(`LIVE SUPABASE REQUIRED: ${report.liveSupabaseRequired ? "YES" : "NO"}`);
   console.log(`PRODUCTION READY: NO`);
 }

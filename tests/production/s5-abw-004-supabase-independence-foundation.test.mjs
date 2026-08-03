@@ -29,6 +29,8 @@ test("S5-ABW-004 defines a full Supabase replacement component map", () => {
   for (const component of SUPABASE_REPLACEMENT_COMPONENTS) {
     assert.ok(component.replaces.length > 0);
     assert.ok(component.requiredTechnologies.length > 0);
+    assert.ok(component.allowedModes.includes(component.defaultMode));
+    assert.ok(component.allowedModes.includes(component.productionMode));
     assert.ok(component.credentialEnvNames.length > 0);
     assert.ok(component.validationCommands.length > 0);
     assert.ok(component.failClosedRule);
@@ -44,6 +46,7 @@ test("S5-ABW-004 defaults to local/provider-neutral modes without requiring Supa
   assert.equal(report.liveProviderActivation, false);
   assert.equal(report.componentsTotal, REQUIRED_COMPONENTS.length);
   assert.equal(report.blockedCredentials, 0);
+  assert.equal(report.invalidModeCount, 0);
   assert.ok(report.localReady >= 6);
 });
 
@@ -61,6 +64,24 @@ test("S5-ABW-004 fails closed when production providers are selected without cre
   assert.equal(database.status, "BLOCKED_CREDENTIALS");
   assert.ok(database.missingCredentials.includes("DATABASE_URL"));
   assert.throws(() => assertProviderModeReady("database", { DATABASE_PROVIDER: "postgres" }), /DATABASE_URL/);
+});
+
+test("S5-ABW-004 rejects unsupported provider modes before credential readiness", () => {
+  const report = buildSupabaseReplacementReadiness({
+    DATABASE_PROVIDER: "firebase",
+    DATABASE_URL: "postgresql://user:password@localhost:5432/rentashub_test",
+    DATABASE_SSL_MODE: "require",
+    MIGRATION_TARGET_ENV: "uat",
+  });
+  const database = report.components.find((component) => component.id === "database");
+  assert.equal(database.status, "BLOCKED_INVALID_MODE");
+  assert.equal(database.invalidMode, true);
+  assert.ok(database.allowedModes.includes("postgres"));
+  assert.ok(report.invalidModeCount >= 1);
+  assert.throws(
+    () => assertProviderModeReady("database", { DATABASE_PROVIDER: "firebase" }),
+    /unsupported mode/,
+  );
 });
 
 test("S5-ABW-004 marks production-like modes credential-ready only by variable presence, not production certification", () => {

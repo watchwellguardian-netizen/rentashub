@@ -10,6 +10,7 @@
   "localReady": 7,
   "credentialReady": 0,
   "blockedCredentials": 0,
+  "invalidModeCount": 0,
   "components": [
     {
       "id": "database",
@@ -22,6 +23,11 @@
       "defaultMode": "json",
       "productionMode": "postgres",
       "status": "READY_LOCAL",
+      "invalidMode": false,
+      "allowedModes": [
+        "json",
+        "postgres"
+      ],
       "localMode": true,
       "productionReady": false,
       "liveProviderActive": false,
@@ -57,6 +63,11 @@
       "defaultMode": "application_policy",
       "productionMode": "postgres_rls_plus_application_policy",
       "status": "READY_LOCAL",
+      "invalidMode": false,
+      "allowedModes": [
+        "application_policy",
+        "postgres_rls_plus_application_policy"
+      ],
       "localMode": true,
       "productionReady": false,
       "liveProviderActive": false,
@@ -90,6 +101,11 @@
       "defaultMode": "local",
       "productionMode": "oidc",
       "status": "READY_LOCAL",
+      "invalidMode": false,
+      "allowedModes": [
+        "local",
+        "oidc"
+      ],
       "localMode": true,
       "productionReady": false,
       "liveProviderActive": false,
@@ -127,6 +143,13 @@
       "defaultMode": "local_placeholder",
       "productionMode": "s3",
       "status": "READY_LOCAL",
+      "invalidMode": false,
+      "allowedModes": [
+        "local_placeholder",
+        "s3",
+        "supabase",
+        "cloudinary"
+      ],
       "localMode": true,
       "productionReady": false,
       "liveProviderActive": false,
@@ -163,6 +186,11 @@
       "defaultMode": "local_event_log",
       "productionMode": "redis_streams_or_websocket_gateway",
       "status": "READY_LOCAL",
+      "invalidMode": false,
+      "allowedModes": [
+        "local_event_log",
+        "redis_streams_or_websocket_gateway"
+      ],
       "localMode": true,
       "productionReady": false,
       "liveProviderActive": false,
@@ -197,6 +225,11 @@
       "defaultMode": "local_worker",
       "productionMode": "bullmq",
       "status": "READY_LOCAL",
+      "invalidMode": false,
+      "allowedModes": [
+        "local_worker",
+        "bullmq"
+      ],
       "localMode": true,
       "productionReady": false,
       "liveProviderActive": false,
@@ -233,6 +266,13 @@
       "defaultMode": "local_logs",
       "productionMode": "sentry_better_stack",
       "status": "READY_LOCAL",
+      "invalidMode": false,
+      "allowedModes": [
+        "local_logs",
+        "sentry",
+        "better_stack",
+        "sentry_better_stack"
+      ],
       "localMode": true,
       "productionReady": false,
       "liveProviderActive": false,

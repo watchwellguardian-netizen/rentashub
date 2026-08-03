@@ -13,6 +13,7 @@ export const SUPABASE_REPLACEMENT_STATUS = {
   CREDENTIAL_READY: "CREDENTIAL_READY",
   BLOCKED_CREDENTIALS: "BLOCKED_CREDENTIALS",
   BLOCKED_RUNTIME: "BLOCKED_RUNTIME",
+  BLOCKED_INVALID_MODE: "BLOCKED_INVALID_MODE",
 };
 
 export const SUPABASE_REPLACEMENT_COMPONENTS = [
@@ -22,6 +23,7 @@ export const SUPABASE_REPLACEMENT_COMPONENTS = [
     selectedBy: "DATABASE_PROVIDER",
     defaultMode: "json",
     productionMode: "postgres",
+    allowedModes: ["json", "postgres"],
     requiredTechnologies: ["PostgreSQL 16+", "node-postgres or reviewed PostgreSQL driver", "SQL migrations", "repository contracts"],
     localCapability: "JSON adapter and repository contracts run without credentials.",
     credentialEnvNames: ["DATABASE_PROVIDER", "DATABASE_URL", "DATABASE_SSL_MODE", "MIGRATION_TARGET_ENV"],
@@ -35,6 +37,7 @@ export const SUPABASE_REPLACEMENT_COMPONENTS = [
     selectedBy: "AUTHZ_POLICY_PROVIDER",
     defaultMode: "application_policy",
     productionMode: "postgres_rls_plus_application_policy",
+    allowedModes: ["application_policy", "postgres_rls_plus_application_policy"],
     requiredTechnologies: ["PostgreSQL RLS-compatible SQL", "application operation grid", "tenant ownership predicates", "admin exception matrix"],
     localCapability: "Application role/tenant policy enforcement and static RLS SQL checks run without credentials.",
     credentialEnvNames: ["AUTHZ_POLICY_PROVIDER", "RLS_VALIDATION_MODE", "AUTH_TEST_TENANT_IDS"],
@@ -48,6 +51,7 @@ export const SUPABASE_REPLACEMENT_COMPONENTS = [
     selectedBy: "AUTH_PROVIDER",
     defaultMode: "local",
     productionMode: "oidc",
+    allowedModes: ["local", "oidc"],
     requiredTechnologies: ["OIDC provider", "JWKS verification", "short-lived access tokens", "session revocation store", "MFA provider"],
     localCapability: "Local auth service supports register, login, logout, refresh, password hashing, and role mapping.",
     credentialEnvNames: ["AUTH_PROVIDER", "OIDC_ISSUER_URL", "OIDC_CLIENT_ID", "OIDC_AUDIENCE", "OIDC_JWKS_URL", "OIDC_CLIENT_SECRET"],
@@ -61,6 +65,7 @@ export const SUPABASE_REPLACEMENT_COMPONENTS = [
     selectedBy: "FILE_STORAGE_PROVIDER",
     defaultMode: "local_placeholder",
     productionMode: "s3",
+    allowedModes: ["local_placeholder", "s3", "supabase", "cloudinary"],
     requiredTechnologies: ["S3-compatible object storage", "signed URL service", "bucket policy matrix", "file metadata repository", "malware scan hook"],
     localCapability: "Metadata-only upload intent and storage classification checks run without credentials.",
     credentialEnvNames: ["FILE_STORAGE_PROVIDER", "FILE_STORAGE_BUCKET", "FILE_STORAGE_REGION", "FILE_STORAGE_ACCESS_KEY", "FILE_STORAGE_SECRET_KEY"],
@@ -74,6 +79,7 @@ export const SUPABASE_REPLACEMENT_COMPONENTS = [
     selectedBy: "EVENT_BUS_PROVIDER",
     defaultMode: "local_event_log",
     productionMode: "redis_streams_or_websocket_gateway",
+    allowedModes: ["local_event_log", "redis_streams_or_websocket_gateway"],
     requiredTechnologies: ["domain event contracts", "Redis Streams or queue-backed fanout", "WebSocket/SSE gateway", "tenant-scoped channels"],
     localCapability: "Audit/domain event definitions and local notification flows run without credentials.",
     credentialEnvNames: ["EVENT_BUS_PROVIDER", "REDIS_URL", "WEBSOCKET_GATEWAY_URL", "EVENT_CHANNEL_NAMESPACE"],
@@ -87,6 +93,7 @@ export const SUPABASE_REPLACEMENT_COMPONENTS = [
     selectedBy: "BACKGROUND_WORKER_PROVIDER",
     defaultMode: "local_worker",
     productionMode: "bullmq",
+    allowedModes: ["local_worker", "bullmq"],
     requiredTechnologies: ["Express/API controllers", "BullMQ workers", "Redis", "idempotent job handlers", "dead-letter queue"],
     localCapability: "Local job contracts, queue readiness, and failure-mode tests run without credentials.",
     credentialEnvNames: ["BACKGROUND_WORKER_PROVIDER", "REDIS_URL", "QUEUE_NAMESPACE", "JOB_TIMEOUT_SECONDS"],
@@ -100,6 +107,7 @@ export const SUPABASE_REPLACEMENT_COMPONENTS = [
     selectedBy: "MONITORING_PROVIDER",
     defaultMode: "local_logs",
     productionMode: "sentry_better_stack",
+    allowedModes: ["local_logs", "sentry", "better_stack", "sentry_better_stack"],
     requiredTechnologies: ["structured logs", "request IDs", "health/readiness/liveness endpoints", "alert routing", "log drain"],
     localCapability: "Structured log redaction and health endpoint readiness run without credentials.",
     credentialEnvNames: ["MONITORING_PROVIDER", "SENTRY_DSN", "BETTER_STACK_SOURCE_TOKEN", "ALERT_WEBHOOK_URL"],
@@ -118,6 +126,10 @@ function selectedMode(env, component) {
   return String(env[component.selectedBy] || component.defaultMode).trim().toLowerCase();
 }
 
+function modeIsAllowed(mode, component) {
+  return component.allowedModes.includes(mode);
+}
+
 function missingCredentials(env, component) {
   const mode = selectedMode(env, component);
   if (mode === component.defaultMode || mode === "local" || mode === "json" || mode === "local_placeholder") return [];
@@ -131,9 +143,12 @@ function hasSecretLeak(value) {
 export function buildSupabaseReplacementReadiness(env = process.env) {
   const components = SUPABASE_REPLACEMENT_COMPONENTS.map((component) => {
     const mode = selectedMode(env, component);
+    const invalidMode = !modeIsAllowed(mode, component);
     const missing = missingCredentials(env, component);
     const localMode = mode === component.defaultMode || ["local", "json", "local_placeholder", "local_event_log", "local_worker", "application_policy", "local_logs"].includes(mode);
-    const status = localMode
+    const status = invalidMode
+      ? SUPABASE_REPLACEMENT_STATUS.BLOCKED_INVALID_MODE
+      : localMode
       ? SUPABASE_REPLACEMENT_STATUS.READY_LOCAL
       : missing.length
         ? SUPABASE_REPLACEMENT_STATUS.BLOCKED_CREDENTIALS
@@ -146,6 +161,8 @@ export function buildSupabaseReplacementReadiness(env = process.env) {
       defaultMode: component.defaultMode,
       productionMode: component.productionMode,
       status,
+      invalidMode,
+      allowedModes: component.allowedModes,
       localMode,
       productionReady: false,
       liveProviderActive: false,
@@ -161,6 +178,7 @@ export function buildSupabaseReplacementReadiness(env = process.env) {
   const credentialReady = components.filter((component) => component.status === SUPABASE_REPLACEMENT_STATUS.CREDENTIAL_READY).length;
   const localReady = components.filter((component) => component.status === SUPABASE_REPLACEMENT_STATUS.READY_LOCAL).length;
   const blockedCredentials = components.filter((component) => component.status === SUPABASE_REPLACEMENT_STATUS.BLOCKED_CREDENTIALS).length;
+  const invalidModeCount = components.filter((component) => component.status === SUPABASE_REPLACEMENT_STATUS.BLOCKED_INVALID_MODE).length;
   const report = {
     platform: "RentasHub",
     sprint: "S5-ABW-004",
@@ -173,6 +191,7 @@ export function buildSupabaseReplacementReadiness(env = process.env) {
     localReady,
     credentialReady,
     blockedCredentials,
+    invalidModeCount,
     components,
     architectureDecision: "RentasHub should depend on open standards and replaceable providers, while retaining Supabase compatibility as one possible PostgreSQL/Auth/Storage implementation.",
     manualInterventionStillRequired: [
@@ -197,6 +216,12 @@ export function assertProviderModeReady(componentId, env = process.env) {
   if (!component) {
     const error = new Error(`Unknown provider replacement component "${componentId}".`);
     error.code = "unknown_provider_component";
+    throw error;
+  }
+  if (component.status === SUPABASE_REPLACEMENT_STATUS.BLOCKED_INVALID_MODE) {
+    const error = new Error(`${component.id} selected unsupported mode "${component.selectedMode}". Allowed modes: ${component.allowedModes.join(", ")}`);
+    error.code = "provider_component_invalid_mode";
+    error.details = component.allowedModes.map((mode) => ({ mode, message: `${mode} is an allowed mode for ${component.id}.` }));
     throw error;
   }
   if (component.status === SUPABASE_REPLACEMENT_STATUS.BLOCKED_CREDENTIALS) {
