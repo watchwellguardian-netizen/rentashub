@@ -261,5 +261,8 @@
     "react-router-dom": "^6.26.0",
     "typescript": "^5.8.2",
     "vite": "8.0.16"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
   }
 }

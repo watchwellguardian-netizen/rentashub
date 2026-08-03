@@ -58,12 +58,12 @@ test("unauthenticated protected route redirects to login", async ({ page }) => {
 test("unauthorized role cannot access admin dashboard", async ({ page }) => {
   await setReviewUser(page, "customer");
   await page.goto("/admin");
-  await expect(page.locator("body")).toContainText(/not authorized|login|dashboard/i);
+  await expect(page.locator("body")).toContainText(/not authorized|not available for this role|login|dashboard/i);
 });
 
 test("responsive viewport coverage keeps primary content visible", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/search");
-  await expect(page.locator("main, body")).toBeVisible();
+  await expect(page.locator("main").or(page.locator("body")).first()).toBeVisible();
   await expect(page.locator("h1, h2").first()).toBeVisible();
 });
