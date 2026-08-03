@@ -10,9 +10,12 @@ export function redactRedisUrl(rawUrl = "") {
 }
 
 export function validateRedisConfig(input = {}, options = {}) {
-  const mode = input.mode || process.env.REDIS_PROVIDER || "local";
-  const redisUrl = input.redisUrl || process.env.REDIS_URL || "";
-  const confirmDisposable = input.confirmDisposable === true || process.env.REDIS_CONFIRM_DISPOSABLE === "true";
+  const hasMode = Object.prototype.hasOwnProperty.call(input, "mode");
+  const hasRedisUrl = Object.prototype.hasOwnProperty.call(input, "redisUrl");
+  const hasConfirmDisposable = Object.prototype.hasOwnProperty.call(input, "confirmDisposable");
+  const mode = hasMode ? input.mode : process.env.REDIS_PROVIDER || "local";
+  const redisUrl = hasRedisUrl ? input.redisUrl || "" : hasMode ? "" : process.env.REDIS_URL || "";
+  const confirmDisposable = hasConfirmDisposable ? input.confirmDisposable === true : process.env.REDIS_CONFIRM_DISPOSABLE === "true";
   if (mode === "local") {
     return {
       status: "READY",
